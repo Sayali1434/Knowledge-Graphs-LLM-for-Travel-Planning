@@ -1,0 +1,104 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"Selected the most cost-effective and time-efficient itinerary, prioritizing proximity and meal compatibility while ensuring all required slots are covered.\",\n  \"stay_node_key\": \"Accommodation::32219665.0\",\n  \"outbound_flight_node_key\": \"Flight::F1374152\",\n  \"return_flight_node_key\": \"Flight::F2585714\",\n  \"estimated_total_cost\": 2472.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-21\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": null,\n        \"morning_attraction\": null,\n        \"lunch\": null,\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": \"Restaurant::606222.0\"\n      },\n      \"notes\": \"Due to late arrival, dinner is the only feasible local activity.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-22\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::4250777.0\",\n        \"morning_attraction\": \"Attraction::1887189\",\n        \"lunch\": \"Restaurant::553446.0\",\n        \"afternoon_attraction\": \"Attraction::784186\",\n        \"dinner\": \"Restaurant::9799396.0\"\n      },\n      \"notes\": \"Full day planned with diverse activities and meals.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-23\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::4250777.0\",\n        \"morning_attraction\": \"Attraction::105618\",\n        \"lunch\": \"Restaurant::553446.0\",\n        \"afternoon_attraction\": \"Attraction::3947658\",\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Focused on attractions and breakfast before the return flight.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "Selected the most cost-effective and time-efficient itinerary, prioritizing proximity and meal compatibility while ensuring all required slots are covered.",
+    "stay_node_key": "Accommodation::32219665.0",
+    "outbound_flight_node_key": "Flight::F1374152",
+    "return_flight_node_key": "Flight::F2585714",
+    "estimated_total_cost": 2472.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-21",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": null,
+          "lunch": null,
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": "Restaurant::606222.0"
+        },
+        "notes": "Due to late arrival, dinner is the only feasible local activity."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-22",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::4250777.0",
+          "morning_attraction": "Attraction::1887189",
+          "lunch": "Restaurant::553446.0",
+          "afternoon_attraction": "Attraction::784186",
+          "dinner": "Restaurant::9799396.0",
+          "event": null
+        },
+        "notes": "Full day planned with diverse activities and meals."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-23",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::4250777.0",
+          "morning_attraction": "Attraction::105618",
+          "lunch": "Restaurant::553446.0",
+          "afternoon_attraction": "Attraction::3947658",
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Focused on attractions and breakfast before the return flight."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 1215.0,
+      "selected_node_keys": [
+        "Accommodation::32219665.0",
+        "Flight::F1374152",
+        "Flight::F2585714",
+        "Restaurant::606222.0",
+        "Restaurant::4250777.0",
+        "Attraction::1887189",
+        "Restaurant::553446.0",
+        "Attraction::784186",
+        "Restaurant::9799396.0",
+        "Restaurant::4250777.0",
+        "Attraction::105618",
+        "Restaurant::553446.0",
+        "Attraction::3947658"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 1,
+        "lunch": 6,
+        "dinner": 9
+      },
+      "day_1_local_activity_start": "17:34",
+      "last_day_latest_local_activity_finish": "17:33",
+      "day_1_expected_slots": [
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_9.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_9_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_9_graph.cypher"
+  }
+}

@@ -1,0 +1,3390 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_9\", \"query_text\": \"Plan a 3-day trip for 6 people from Miami to Louisville from November 21st to November 23rd, 2024, with a budget of $8,250. Include dining options featuring American and Asian cuisines.\", \"request\": {\"org\": \"Miami\", \"dest\": \"Louisville\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-21', '2024-11-22', '2024-11-23']\", \"people_number\": 6, \"local_constraint\": \"{'house rule': None, 'cuisine': ['American', 'Asian'], 'room type': None, 'event': None, 'attraction': None, 'transportation': None}\", \"budget\": 8250, \"query\": \"Plan a 3-day trip for 6 people from Miami to Louisville from November 21st to November 23rd, 2024, with a budget of $8,250. Include dining options featuring American and Asian cuisines.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-21\", \"2024-11-22\", \"2024-11-23\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": null, \"cuisine\": \"American, Asian\", \"room type\": null, \"event\": null, \"attraction\": null, \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F3025454\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"Louisville\", \"DepTime\": \"15:41\", \"ArrTime\": \"18:18\", \"Price\": 182}}, {\"node_key\": \"Flight::F1028442\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"Louisville\", \"DepTime\": \"15:29\", \"ArrTime\": \"18:13\", \"Price\": 217}}, {\"node_key\": \"Flight::F3601032\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"Louisville\", \"DepTime\": \"15:35\", \"ArrTime\": \"18:08\", \"Price\": 234}}, {\"node_key\": \"Flight::F1374152\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"Louisville\", \"DepTime\": \"14:46\", \"ArrTime\": \"17:04\", \"Price\": 314}}, {\"node_key\": \"Flight::F2292325\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"Louisville\", \"DepTime\": \"14:06\", \"ArrTime\": \"16:47\", \"Price\": 361}}, {\"node_key\": \"Flight::F2585714\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Louisville\", \"DestCityName\": \"Miami\", \"DepTime\": \"19:33\", \"ArrTime\": \"22:00\", \"Price\": 229}}, {\"node_key\": \"Flight::F3601061\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Louisville\", \"DestCityName\": \"Miami\", \"DepTime\": \"18:55\", \"ArrTime\": \"21:30\", \"Price\": 251}}, {\"node_key\": \"Flight::F2120867\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Louisville\", \"DestCityName\": \"Miami\", \"DepTime\": \"19:39\", \"ArrTime\": \"22:20\", \"Price\": 252}}, {\"node_key\": \"Flight::F3025481\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Louisville\", \"DestCityName\": \"Miami\", \"DepTime\": \"19:05\", \"ArrTime\": \"21:26\", \"Price\": 332}}, {\"node_key\": \"Flight::F1028468\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Louisville\", \"DestCityName\": \"Miami\", \"DepTime\": \"18:32\", \"ArrTime\": \"20:53\", \"Price\": 441}}, {\"node_key\": \"Accommodation::43025169.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43025169.0\", \"name\": \"HIghlands Modern Get Away\", \"City\": \"Louisville\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$118 per night\", \"originalPrice\": null, \"price\": \"$118\", \"qualifier\": \"night\", \"total\": \"$586 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  896 reviews\", \"localizedLabel\": \"4.93 (896)\", \"average\": 4.93, \"reviewsCount\": 896}, \"coordinates\": {\"latitude\": 38.22438, \"longitude\": -85.68486}}}, {\"node_key\": \"Accommodation::32219665.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"32219665.0\", \"name\": \"Bourbon City Loft - Free downtown parking!\", \"City\": \"Louisville\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$180 per night\", \"originalPrice\": null, \"price\": \"$180\", \"qualifier\": \"night\", \"total\": \"$898 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  756 reviews\", \"localizedLabel\": \"4.97 (756)\", \"average\": 4.97, \"reviewsCount\": 756}, \"coordinates\": {\"latitude\": 38.25016, \"longitude\": -85.75816}}}, {\"node_key\": \"Accommodation::45217201.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45217201.0\", \"name\": \"1 bedroom efficiency kitchenette\", \"City\": \"Louisville\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No children under 10 & No smoking\", \"pricing\": {\"label\": \"$43 per night\", \"originalPrice\": null, \"price\": \"$43\", \"qualifier\": \"night\", \"total\": \"$211 total\"}, \"rating\": {\"label\": \"4.82 out of 5 average rating,  100 reviews\", \"localizedLabel\": \"4.82 (100)\", \"average\": 4.82, \"reviewsCount\": 100}, \"coordinates\": {\"latitude\": 38.29861, \"longitude\": -85.83507}}}, {\"node_key\": \"Accommodation::15302357.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"15302357.0\", \"name\": \"2 bdrms in country barn home - Louisville 23mi\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$57 per night\", \"originalPrice\": null, \"price\": \"$57\", \"qualifier\": \"night\", \"total\": \"$281 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  273 reviews\", \"localizedLabel\": \"4.95 (273)\", \"average\": 4.95, \"reviewsCount\": 273}, \"coordinates\": {\"latitude\": 38.56512, \"longitude\": -85.74858}}}, {\"node_key\": \"Accommodation::30296589.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"30296589.0\", \"name\": \"Boho Suite minutes from downtown!\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$59 per night\", \"originalPrice\": null, \"price\": \"$59\", \"qualifier\": \"night\", \"total\": \"$291 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  748 reviews\", \"localizedLabel\": \"4.95 (748)\", \"average\": 4.95, \"reviewsCount\": 748}, \"coordinates\": {\"latitude\": 38.32982, \"longitude\": -85.71739}}}, {\"node_key\": \"Accommodation::15315040.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"15315040.0\", \"name\": \"Charming Home In The Highlands\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$73 per night\", \"originalPrice\": null, \"price\": \"$73\", \"qualifier\": \"night\", \"total\": \"$362 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  533 reviews\", \"localizedLabel\": \"4.97 (533)\", \"average\": 4.97, \"reviewsCount\": 533}, \"coordinates\": {\"latitude\": 38.24089, \"longitude\": -85.72581}}}, {\"node_key\": \"Accommodation::45708675.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45708675.0\", \"name\": \"Walk Everywhere! NuLu/Butchertown Derby Loft\", \"City\": \"Louisville\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$123 per night\", \"originalPrice\": null, \"price\": \"$123\", \"qualifier\": \"night\", \"total\": \"$614 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  299 reviews\", \"localizedLabel\": \"4.98 (299)\", \"average\": 4.98, \"reviewsCount\": 299}, \"coordinates\": {\"latitude\": 38.25568, \"longitude\": -85.73799}}}, {\"node_key\": \"Accommodation::18911391.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"18911391.0\", \"name\": \"Welcome to your home away from home!\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$65 per night\", \"originalPrice\": null, \"price\": \"$65\", \"qualifier\": \"night\", \"total\": \"$322 total\"}, \"rating\": {\"label\": \"4.87 out of 5 average rating,  196 reviews\", \"localizedLabel\": \"4.87 (196)\", \"average\": 4.87, \"reviewsCount\": 196}, \"coordinates\": {\"latitude\": 38.22645, \"longitude\": -85.70962}}}, {\"node_key\": \"Accommodation::1546296.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"1546296.0\", \"name\": \"Large room with private bath in quiet neighborhood\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$70 per night\", \"originalPrice\": null, \"price\": \"$70\", \"qualifier\": \"night\", \"total\": \"$346 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  1320 reviews\", \"localizedLabel\": \"4.96 (1320)\", \"average\": 4.96, \"reviewsCount\": 1320}, \"coordinates\": {\"latitude\": 38.2629, \"longitude\": -85.66379}}}, {\"node_key\": \"Accommodation::20894753.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"20894753.0\", \"name\": \"Butchertown Nook II - Private Suite&Bath w/Parking\", \"City\": \"Louisville\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$70 per night, originally $99\", \"originalPrice\": \"$99\", \"price\": \"$70\", \"qualifier\": \"night\", \"total\": \"$348 total\"}, \"rating\": {\"label\": \"4.8 out of 5 average rating,  420 reviews\", \"localizedLabel\": \"4.8 (420)\", \"average\": 4.8, \"reviewsCount\": 420}, \"coordinates\": {\"latitude\": 38.25839, \"longitude\": -85.71971}}}, {\"node_key\": \"Attraction::1887189\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1887189\", \"name\": \"Louisville Mega Cavern\", \"City\": \"Louisville\", \"subtype\": [\"Caverns & Caves\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 350 things to do in Louisville\", \"address\": \"1841 Taylor Avenue, Louisville, KY 40213-1565\", \"description\": \"While visiting Louisville, Kentucky, you won't want to miss MEGA ZIPS, the world's ONLY underground zipline adventure tour! Featuring 6 ziplines nearly 100 feet off the cavern floor and two challenge bridges, MEGA ZIPS is 2.5 hours of adrenaline-fueled adventure! Though fun for the whole family, the kids will especially love MEGA QUEST, the only underground ropes challenge course in the world! MEGA QUEST features two levels and 76 challenge elements including mini-ziplines and rope walls. Exp...\"}}, {\"node_key\": \"Attraction::784186\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"784186\", \"name\": \"Conrad-Caldwell House Museum (Conrad's Castle)\", \"City\": \"Louisville\", \"subtype\": [\"Historic Sites\", \"Specialty Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 350 things to do in Louisville\", \"address\": \"1402 St James Ct, Louisville, KY 40208-2127\", \"description\": \"The Conrad-Caldwell House Museum is a historic, Victorian mansion located in the heart of Old Louisville on St. James Court. It is one of the finest examples of Richardsonian Romanesque architecture and was the masterpiece of famed local architect Arthur Loomis of Clarke & Loomis. Surrounded by a beautiful courtyard neighborhood at the center of the largest collection of Victorian Homes in the US, \\\"Conrad's Castle\\\" featured all the latest innovations of its day, including interior plumbing an...\"}}, {\"node_key\": \"Attraction::7771783\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"7771783\", \"name\": \"Copper & Kings American Brandy Distillery\", \"City\": \"Louisville\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#5 of 350 things to do in Louisville\", \"address\": \"1121 E Washington St, Louisville, KY 40206-1822\", \"description\": \"Copper & Kings is an American Brandy distillery located in the Butchertown neighborhood of Louisville, Kentucky. The American Brandy revival is happening right in the heart of Bourbon Country as we age our purely copper pot distilled brandies in the best Kentucky Bourbon barrels. And because we like to give back, we've even finished a blend of Kentucky Straight Bourbons in our American Apple Brandy barrels for our newest release. Come see how Copper & Kings continues to push boundaries and wh...\"}}, {\"node_key\": \"Attraction::8325302\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8325302\", \"name\": \"Kentucky Peerless Distilling Co\", \"City\": \"Louisville\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#3 of 350 things to do in Louisville\", \"address\": \"120 North 10th Street, Louisville, KY 40202-2610\", \"description\": \"Kentucky Peerless Distilling Company opened in Louisville, Kentucky in 2015, but the distillery's roots extend back to 1889, when their ancestor, Henry Kraver, began distilling bourbon. Corky and Carson Taylor, fourth and fifth generation descendants of Kraver, are the historic-turned-urban Bourbon makers dedicated to providing a distinctively-authentic bourbon experience with distillery tours and tastings. Visit to experience, first-hand, the Peerless Caliber that sets Peerless spirits apart.\"}}, {\"node_key\": \"Attraction::105618\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105618\", \"name\": \"Louisville Slugger Museum & Factory\", \"City\": \"Louisville\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 350 things to do in Louisville\", \"address\": \"800 W Main St, Louisville, KY 40202-2620\", \"description\": \"Batter up! It takes a special place to craft the #1 Bat in Major League Baseball. At Louisville Slugger Museum & Factory, experience history-in-the-making as you stroll through the actual factory where world-famous Louisville Slugger bats are created. The award-winning factory tour is a highlight of the visit here, but there's plenty more to enjoy along with it. Admire the World's Biggest Bat - stretching 120 feet into the sky. Hold bats actually used by baseball superstars like Mickey Mantle...\"}}, {\"node_key\": \"Attraction::144389\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144389\", \"name\": \"Churchill Downs\", \"City\": \"Louisville\", \"subtype\": [\"Horse Tracks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\", \"Casinos & Gambling\", \"Fun & Games\"], \"visit_duration\": \"2.333333333333333\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 350 things to do in Louisville\", \"address\": \"700 Central Ave, Louisville, KY 40208-1200\", \"description\": \"This beautiful racetrack has been the home of the Kentucky Derby since 1875.\"}}, {\"node_key\": \"Attraction::104504\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104504\", \"name\": \"Kentucky Derby Museum\", \"City\": \"Louisville\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 350 things to do in Louisville\", \"address\": \"704 Central Ave, Louisville, KY 40208-1212\", \"description\": \"The Kentucky Derby Museum, where every day is Derby day, is the official tour provider of historic Churchill Downs. When you visit the Museum, you will find yourself immersed in the next best thing to actually being at the Derby! As the exclusive tour provider for the track, various tours are offered throughout the year even when the track isn’t in session with live racing. General admission includes two levels of family-friendly interactive permanent & temporary exhibits, \\\"The Greatest Race,...\"}}, {\"node_key\": \"Attraction::3947658\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3947658\", \"name\": \"The Big Four Bridge\", \"City\": \"Louisville\", \"subtype\": [\"Bridges\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 350 things to do in Louisville\", \"address\": \"1101 River Rd, Louisville, KY 40206-1725\"}}, {\"node_key\": \"Attraction::587544\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"587544\", \"name\": \"Muhammad Ali Center\", \"City\": \"Louisville\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 350 things to do in Louisville\", \"address\": \"144 N 6th St, Louisville, KY 40202-2939\", \"description\": \"Located in the heart of historic downtown Louisville, Kentucky, the Muhammad Ali Center is a cultural attraction and international education center inspired by the ideals of hometown hero Muhammad Ali. The Ali Center features 2 levels of award-winning exhibits, a five-screen orientation theater film, historic Civil Rights era media footage, video of Ali fights, interactive boxing fun, two art galleries, children's Hope and Dream wall, meeting and event space, retail store and more.\"}}, {\"node_key\": \"Attraction::5505860\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"5505860\", \"name\": \"Evan Williams Bourbon Experience\", \"City\": \"Louisville\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#11 of 350 things to do in Louisville\", \"address\": \"528 W Main St, Louisville, KY 40202-2920\", \"description\": \"Visit the Evan Williams Bourbon Experience in Downtown Louisville for tastings, tours, and more. An official stop on the Kentucky Bourbon Trail®, we’ve got something for every Bourbon fan. Sip on our rich history in a speakeasy-style tasting complete with stories and samples of our award-winning lineup. Tour our artisanal still before enjoying craft cocktails at the bar On3. Or check out the gift shop for Evan Williams apparel and hard-to-find bottles. Plan your visit to experience Bourbon Do...\"}}, {\"node_key\": \"Restaurant::606222.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"606222.0\", \"name\": \"Proof on Main\", \"City\": \"Louisville\", \"mealTypes\": [\"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"American\", \"Contemporary\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"702 W Main St, Louisville, KY 40202-2634\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::553446.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"553446.0\", \"name\": \"Jack Fry's\", \"City\": \"Louisville\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"1007 Bardstown Rd, Louisville, KY 40204-1317\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::3523515.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3523515.0\", \"name\": \"Brown Hotel Lobby Bar & Grill\", \"City\": \"Louisville\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"355 W Broadway, Louisville, KY 40202-2105\", \"hours\": {\"weekRanges\": [[{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::9799396.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"9799396.0\", \"name\": \"Mussel & Burger Bar Downtown\", \"City\": \"Louisville\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"113 S 7th St Located in Louisville's Central Business District, Louisville, KY 40202-2703\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::13495830.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"13495830.0\", \"name\": \"Porch Kitchen & Bar\", \"City\": \"Louisville\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Grill\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"280 West Jefferson, Louisville, KY 40202\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 600, \"closeHours\": \"10:00\"}, {\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4250777.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4250777.0\", \"name\": \"Wild Eggs\", \"City\": \"Louisville\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1311 Herr Ln Ste 101, Louisville, KY 40222-4384\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 390, \"openHours\": \"06:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::397389.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"397389.0\", \"name\": \"Buck's Restaurant & Bar\", \"City\": \"Louisville\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"425 W Ormsby Ave, Louisville, KY 40203-3009\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2232987.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2232987.0\", \"name\": \"Hammerheads\", \"City\": \"Louisville\", \"mealTypes\": [\"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"921 Swan St, Louisville, KY 40204-1809\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4449950.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4449950.0\", \"name\": \"Down One Bourbon Bar & Restaurant\", \"City\": \"Louisville\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\", \"Street Food\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"321 W Main St Located in Louisville's Central Business District., Louisville, KY 40202-4283\", \"hours\": {\"weekRanges\": [[], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4325804.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4325804.0\", \"name\": \"Momma's Mustard, Pickles & BBQ\", \"City\": \"Louisville\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Bar\", \"Barbecue\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"102 Bauer Ave, Louisville, KY 40207-2559\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7AVOz\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7AVOz\", \"name\": \"Bonnie Raitt\", \"city\": \"Louisville\", \"dateTitle\": \"13-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7AVOz\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7u0ax\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u0ax\", \"name\": \"Joe Bonamassa\", \"city\": \"Louisville\", \"dateTitle\": \"05-03-2025\", \"segmentName\": \"Music\", \"genreName\": \"Blues\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u0ax\", \"availabilityStarts\": \"2024-07-26T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7F-A8\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7F-A8\", \"name\": \"Marshall Thundering Herd Football vs. Coastal Carolina Chanticleers Football\", \"city\": \"Louisville\", \"dateTitle\": \"16-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7F-A8\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7u6ZU\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u6ZU\", \"name\": \"Marshall Thundering Herd Football vs. Louisiana Monroe Warhawks Football\", \"city\": \"Louisville\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u6ZU\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7aV3A\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7aV3A\", \"name\": \"Ohio Bobcats Football vs. Ball State Cardinals Football\", \"city\": \"Louisville\", \"dateTitle\": \"29-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7aV3A\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7aVoN\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7aVoN\", \"name\": \"Ohio Bobcats Football vs. Eastern Michigan Eagles Football\", \"city\": \"Louisville\", \"dateTitle\": \"13-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7aVoN\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::17AOvOG62khBvDT\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG62khBvDT\", \"name\": \"Banff Mountain Film Festival\", \"city\": \"Louisville\", \"dateTitle\": \"03-04-2025\", \"segmentName\": \"Film\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/banff-mountain-film-festival-huntington-west-virginia-04-03-2025/event/160060F19BE81EFF\", \"availabilityStarts\": \"2024-09-09T16:00:00Z\", \"price\": 9.87, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::1AvbZboGkwto-Yf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1AvbZboGkwto-Yf\", \"name\": \"Hot Wheels Power Smasher Pre-Show 10:00AM - 11:15AM\", \"city\": \"Louisville\", \"dateTitle\": \"01-02-2025\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-1000am-charleston-west-virginia-02-01-2025/event/160061...\", \"availabilityStarts\": \"2024-09-06T14:00:00Z\", \"price\": 10, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::1AvbZboGkwt3-YI\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1AvbZboGkwt3-YI\", \"name\": \"Hot Wheels Power Smasher Pre-Show 12:00PM-1:00PM\", \"city\": \"Louisville\", \"dateTitle\": \"02-02-2025\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-1200pm100pm-charleston-west-virginia-02-02-2025/event/1...\", \"availabilityStarts\": \"2024-09-06T14:00:00Z\", \"price\": 10, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::1AvbZboGkwt3vYO\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1AvbZboGkwt3vYO\", \"name\": \"Hot Wheels Power Smasher Pre-Show 5:00PM-6:15PM\", \"city\": \"Louisville\", \"dateTitle\": \"01-02-2025\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-500pm615pm-charleston-west-virginia-02-01-2025/event/16...\", \"availabilityStarts\": \"2024-09-06T14:00:00Z\", \"price\": 10, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 169.73}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 169.73}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 179.58}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 179.58}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 187.27}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 187.99}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 187.99}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 204.93}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 204.93}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 209.94}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 209.94}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 228.62}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 228.62}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 361.27}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 361.27}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 441.76}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 447.35}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 447.35}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 458.77}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 458.77}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 465.93}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 486.65}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 486.65}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 491.9}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 491.9}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 579.46}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 579.46}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 681.14}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 731.61}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 731.61}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 745.14}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 751.97}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 751.97}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 765.04}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 778.96}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 832.65}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 913.77}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 930.21}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 930.21}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 938.71}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 945.06}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 973.35}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 997.8}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 997.8}, {\"source\": \"Accommodation::1546296.0\", \"target\": \"Restaurant::4325804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1116.85}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1141.27}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1185.05}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1185.05}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1185.86}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1197.34}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1197.34}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1339.3}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1339.3}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1352.48}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1352.48}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1472.53}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1517.62}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1566.04}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1566.04}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1734.68}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1734.68}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1775.8}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1878.68}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1895.36}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1902.96}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1904.77}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1904.77}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1908.69}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1936.62}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1936.62}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1946.29}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1953.96}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1953.96}, {\"source\": \"Accommodation::18911391.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1964.49}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2038.99}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2047.13}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2064.56}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2067.26}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2067.26}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2069.06}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2125.2}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2152.99}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2152.99}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2172.75}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2172.75}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2184.21}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2184.21}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2189.1}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2189.1}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2269.49}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2286.39}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2381.32}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2402.47}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2509.32}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2535.78}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2568.65}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2568.65}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2610.67}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2610.67}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2651.12}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2662.64}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2662.64}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2676.68}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2676.68}, {\"source\": \"Accommodation::18911391.0\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2709.91}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2719.54}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2719.54}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2730.74}, {\"source\": \"Restaurant::3523515.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2730.74}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2734.45}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2734.45}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2768.82}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2768.82}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2790.39}, {\"source\": \"Restaurant::13495830.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2790.39}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2827.13}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2827.13}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2848.17}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2848.17}, {\"source\": \"Accommodation::18911391.0\", \"target\": \"Attraction::1887189\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2848.66}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2863.51}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2869.73}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3000.38}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3000.38}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3019.35}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3049.54}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3049.54}, {\"source\": \"Accommodation::43025169.0\", \"target\": \"Attraction::1887189\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3066.58}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3067.56}, {\"source\": \"Restaurant::9799396.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3067.56}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::13495830.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3096.83}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3115.57}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3117.97}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3118.87}, {\"source\": \"Restaurant::606222.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3118.87}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::4449950.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3141.03}, {\"source\": \"Restaurant::4449950.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3141.03}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3168.45}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3168.45}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3170.05}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3170.05}, {\"source\": \"Accommodation::32219665.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3192.5}, {\"source\": \"Attraction::104504\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3203.65}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::104504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3203.65}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3250.58}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3275.57}, {\"source\": \"Attraction::144389\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3420.23}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::144389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3420.23}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3428.95}, {\"source\": \"Attraction::8325302\", \"target\": \"Restaurant::2232987.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3434.64}, {\"source\": \"Restaurant::2232987.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3434.64}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3475.33}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3521.38}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3534.18}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3557.85}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3569.93}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::3523515.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3605.8}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3607.95}, {\"source\": \"Attraction::5505860\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3616.08}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::5505860\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3616.08}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::9799396.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3645.05}, {\"source\": \"Attraction::784186\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3656.35}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3656.35}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Restaurant::606222.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3656.66}, {\"source\": \"Accommodation::45708675.0\", \"target\": \"Attraction::784186\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3692.44}, {\"source\": \"Attraction::587544\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3744.67}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::587544\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3744.67}, {\"source\": \"Accommodation::43025169.0\", \"target\": \"Restaurant::4325804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3747.47}, {\"source\": \"Attraction::7771783\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3782.86}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3782.86}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3793.71}, {\"source\": \"Accommodation::18911391.0\", \"target\": \"Attraction::7771783\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3793.86}, {\"source\": \"Accommodation::43025169.0\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3833.17}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3860.31}, {\"source\": \"Attraction::105618\", \"target\": \"Restaurant::553446.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3980.98}, {\"source\": \"Restaurant::553446.0\", \"target\": \"Attraction::105618\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3980.98}, {\"source\": \"Accommodation::15315040.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4060.73}, {\"source\": \"Accommodation::20894753.0\", \"target\": \"Attraction::8325302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4084.56}, {\"source\": \"Attraction::3947658\", \"target\": \"Restaurant::397389.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4124.86}, {\"source\": \"Restaurant::397389.0\", \"target\": \"Attraction::3947658\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4124.86}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-21\", \"2024-11-22\", \"2024-11-23\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3025454\", \"dep_time\": \"15:41\", \"arr_time\": \"18:18\", \"local_activity_start_after_arrival_buffer\": \"18:48\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F1028442\", \"dep_time\": \"15:29\", \"arr_time\": \"18:13\", \"local_activity_start_after_arrival_buffer\": \"18:43\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F3601032\", \"dep_time\": \"15:35\", \"arr_time\": \"18:08\", \"local_activity_start_after_arrival_buffer\": \"18:38\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F1374152\", \"dep_time\": \"14:46\", \"arr_time\": \"17:04\", \"local_activity_start_after_arrival_buffer\": \"17:34\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F2292325\", \"dep_time\": \"14:06\", \"arr_time\": \"16:47\", \"local_activity_start_after_arrival_buffer\": \"17:17\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2585714\", \"dep_time\": \"19:33\", \"arr_time\": \"22:00\", \"latest_local_activity_finish_before_airport_buffer\": \"17:33\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F3601061\", \"dep_time\": \"18:55\", \"arr_time\": \"21:30\", \"latest_local_activity_finish_before_airport_buffer\": \"16:55\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F2120867\", \"dep_time\": \"19:39\", \"arr_time\": \"22:20\", \"latest_local_activity_finish_before_airport_buffer\": \"17:39\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F3025481\", \"dep_time\": \"19:05\", \"arr_time\": \"21:26\", \"latest_local_activity_finish_before_airport_buffer\": \"17:05\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1028468\", \"dep_time\": \"18:32\", \"arr_time\": \"20:53\", \"latest_local_activity_finish_before_airport_buffer\": \"16:32\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::4250777.0\"], \"lunch\": [\"Restaurant::553446.0\", \"Restaurant::9799396.0\", \"Restaurant::4250777.0\", \"Restaurant::397389.0\", \"Restaurant::4449950.0\", \"Restaurant::4325804.0\"], \"dinner\": [\"Restaurant::606222.0\", \"Restaurant::553446.0\", \"Restaurant::3523515.0\", \"Restaurant::9799396.0\", \"Restaurant::13495830.0\", \"Restaurant::397389.0\", \"Restaurant::2232987.0\", \"Restaurant::4449950.0\", \"Restaurant::4325804.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::1887189\", \"Attraction::784186\", \"Attraction::7771783\", \"Attraction::8325302\", \"Attraction::105618\", \"Attraction::144389\", \"Attraction::104504\", \"Attraction::3947658\", \"Attraction::587544\", \"Attraction::5505860\"], \"afternoon_attraction\": [\"Attraction::1887189\", \"Attraction::784186\", \"Attraction::7771783\", \"Attraction::8325302\", \"Attraction::105618\", \"Attraction::144389\", \"Attraction::104504\", \"Attraction::3947658\", \"Attraction::587544\", \"Attraction::5505860\"]}, \"event_slots_by_date\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::4250777.0\", \"name\": \"Wild Eggs\"}], \"lunch\": [{\"node_key\": \"Restaurant::553446.0\", \"name\": \"Jack Fry's\"}, {\"node_key\": \"Restaurant::9799396.0\", \"name\": \"Mussel & Burger Bar Downtown\"}, {\"node_key\": \"Restaurant::4250777.0\", \"name\": \"Wild Eggs\"}, {\"node_key\": \"Restaurant::397389.0\", \"name\": \"Buck's Restaurant & Bar\"}, {\"node_key\": \"Restaurant::4449950.0\", \"name\": \"Down One Bourbon Bar & Restaurant\"}, {\"node_key\": \"Restaurant::4325804.0\", \"name\": \"Momma's Mustard, Pickles & BBQ\"}], \"dinner\": [{\"node_key\": \"Restaurant::606222.0\", \"name\": \"Proof on Main\"}, {\"node_key\": \"Restaurant::553446.0\", \"name\": \"Jack Fry's\"}, {\"node_key\": \"Restaurant::3523515.0\", \"name\": \"Brown Hotel Lobby Bar & Grill\"}, {\"node_key\": \"Restaurant::9799396.0\", \"name\": \"Mussel & Burger Bar Downtown\"}, {\"node_key\": \"Restaurant::13495830.0\", \"name\": \"Porch Kitchen & Bar\"}, {\"node_key\": \"Restaurant::397389.0\", \"name\": \"Buck's Restaurant & Bar\"}, {\"node_key\": \"Restaurant::2232987.0\", \"name\": \"Hammerheads\"}, {\"node_key\": \"Restaurant::4449950.0\", \"name\": \"Down One Bourbon Bar & Restaurant\"}, {\"node_key\": \"Restaurant::4325804.0\", \"name\": \"Momma's Mustard, Pickles & BBQ\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-21\", \"required_slots\": {\"Flight::F3025454\": [], \"Flight::F1028442\": [], \"Flight::F3601032\": [], \"Flight::F1374152\": [\"dinner\"], \"Flight::F2292325\": [\"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-22\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-23\", \"required_slots\": {\"Flight::F2585714\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F3601061\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F2120867\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F3025481\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1028468\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_9",
+    "query_text": "Plan a 3-day trip for 6 people from Miami to Louisville from November 21st to November 23rd, 2024, with a budget of $8,250. Include dining options featuring American and Asian cuisines.",
+    "request": {
+      "org": "Miami",
+      "dest": "Louisville",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-21', '2024-11-22', '2024-11-23']",
+      "people_number": 6,
+      "local_constraint": "{'house rule': None, 'cuisine': ['American', 'Asian'], 'room type': None, 'event': None, 'attraction': None, 'transportation': None}",
+      "budget": 8250,
+      "query": "Plan a 3-day trip for 6 people from Miami to Louisville from November 21st to November 23rd, 2024, with a budget of $8,250. Include dining options featuring American and Asian cuisines.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-21",
+      "2024-11-22",
+      "2024-11-23"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": "American, Asian",
+      "room type": null,
+      "event": null,
+      "attraction": null,
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3025454",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "Miami",
+          "DestCityName": "Louisville",
+          "DepTime": "15:41",
+          "ArrTime": "18:18",
+          "Price": 182
+        }
+      },
+      {
+        "node_key": "Flight::F1028442",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "Miami",
+          "DestCityName": "Louisville",
+          "DepTime": "15:29",
+          "ArrTime": "18:13",
+          "Price": 217
+        }
+      },
+      {
+        "node_key": "Flight::F3601032",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "Miami",
+          "DestCityName": "Louisville",
+          "DepTime": "15:35",
+          "ArrTime": "18:08",
+          "Price": 234
+        }
+      },
+      {
+        "node_key": "Flight::F1374152",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "Miami",
+          "DestCityName": "Louisville",
+          "DepTime": "14:46",
+          "ArrTime": "17:04",
+          "Price": 314
+        }
+      },
+      {
+        "node_key": "Flight::F2292325",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "Miami",
+          "DestCityName": "Louisville",
+          "DepTime": "14:06",
+          "ArrTime": "16:47",
+          "Price": 361
+        }
+      },
+      {
+        "node_key": "Flight::F2585714",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Louisville",
+          "DestCityName": "Miami",
+          "DepTime": "19:33",
+          "ArrTime": "22:00",
+          "Price": 229
+        }
+      },
+      {
+        "node_key": "Flight::F3601061",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Louisville",
+          "DestCityName": "Miami",
+          "DepTime": "18:55",
+          "ArrTime": "21:30",
+          "Price": 251
+        }
+      },
+      {
+        "node_key": "Flight::F2120867",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Louisville",
+          "DestCityName": "Miami",
+          "DepTime": "19:39",
+          "ArrTime": "22:20",
+          "Price": 252
+        }
+      },
+      {
+        "node_key": "Flight::F3025481",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Louisville",
+          "DestCityName": "Miami",
+          "DepTime": "19:05",
+          "ArrTime": "21:26",
+          "Price": 332
+        }
+      },
+      {
+        "node_key": "Flight::F1028468",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Louisville",
+          "DestCityName": "Miami",
+          "DepTime": "18:32",
+          "ArrTime": "20:53",
+          "Price": 441
+        }
+      },
+      {
+        "node_key": "Accommodation::43025169.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43025169.0",
+          "name": "HIghlands Modern Get Away",
+          "City": "Louisville",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$118 per night",
+            "originalPrice": null,
+            "price": "$118",
+            "qualifier": "night",
+            "total": "$586 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  896 reviews",
+            "localizedLabel": "4.93 (896)",
+            "average": 4.93,
+            "reviewsCount": 896
+          },
+          "coordinates": {
+            "latitude": 38.22438,
+            "longitude": -85.68486
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::32219665.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "32219665.0",
+          "name": "Bourbon City Loft - Free downtown parking!",
+          "City": "Louisville",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$180 per night",
+            "originalPrice": null,
+            "price": "$180",
+            "qualifier": "night",
+            "total": "$898 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  756 reviews",
+            "localizedLabel": "4.97 (756)",
+            "average": 4.97,
+            "reviewsCount": 756
+          },
+          "coordinates": {
+            "latitude": 38.25016,
+            "longitude": -85.75816
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45217201.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45217201.0",
+          "name": "1 bedroom efficiency kitchenette",
+          "City": "Louisville",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No children under 10 & No smoking",
+          "pricing": {
+            "label": "$43 per night",
+            "originalPrice": null,
+            "price": "$43",
+            "qualifier": "night",
+            "total": "$211 total"
+          },
+          "rating": {
+            "label": "4.82 out of 5 average rating,  100 reviews",
+            "localizedLabel": "4.82 (100)",
+            "average": 4.82,
+            "reviewsCount": 100
+          },
+          "coordinates": {
+            "latitude": 38.29861,
+            "longitude": -85.83507
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::15302357.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "15302357.0",
+          "name": "2 bdrms in country barn home - Louisville 23mi",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$57 per night",
+            "originalPrice": null,
+            "price": "$57",
+            "qualifier": "night",
+            "total": "$281 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  273 reviews",
+            "localizedLabel": "4.95 (273)",
+            "average": 4.95,
+            "reviewsCount": 273
+          },
+          "coordinates": {
+            "latitude": 38.56512,
+            "longitude": -85.74858
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::30296589.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "30296589.0",
+          "name": "Boho Suite minutes from downtown!",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$59 per night",
+            "originalPrice": null,
+            "price": "$59",
+            "qualifier": "night",
+            "total": "$291 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  748 reviews",
+            "localizedLabel": "4.95 (748)",
+            "average": 4.95,
+            "reviewsCount": 748
+          },
+          "coordinates": {
+            "latitude": 38.32982,
+            "longitude": -85.71739
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::15315040.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "15315040.0",
+          "name": "Charming Home In The Highlands",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$73 per night",
+            "originalPrice": null,
+            "price": "$73",
+            "qualifier": "night",
+            "total": "$362 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  533 reviews",
+            "localizedLabel": "4.97 (533)",
+            "average": 4.97,
+            "reviewsCount": 533
+          },
+          "coordinates": {
+            "latitude": 38.24089,
+            "longitude": -85.72581
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45708675.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45708675.0",
+          "name": "Walk Everywhere! NuLu/Butchertown Derby Loft",
+          "City": "Louisville",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$123 per night",
+            "originalPrice": null,
+            "price": "$123",
+            "qualifier": "night",
+            "total": "$614 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  299 reviews",
+            "localizedLabel": "4.98 (299)",
+            "average": 4.98,
+            "reviewsCount": 299
+          },
+          "coordinates": {
+            "latitude": 38.25568,
+            "longitude": -85.73799
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::18911391.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "18911391.0",
+          "name": "Welcome to your home away from home!",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$65 per night",
+            "originalPrice": null,
+            "price": "$65",
+            "qualifier": "night",
+            "total": "$322 total"
+          },
+          "rating": {
+            "label": "4.87 out of 5 average rating,  196 reviews",
+            "localizedLabel": "4.87 (196)",
+            "average": 4.87,
+            "reviewsCount": 196
+          },
+          "coordinates": {
+            "latitude": 38.22645,
+            "longitude": -85.70962
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::1546296.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "1546296.0",
+          "name": "Large room with private bath in quiet neighborhood",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$70 per night",
+            "originalPrice": null,
+            "price": "$70",
+            "qualifier": "night",
+            "total": "$346 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  1320 reviews",
+            "localizedLabel": "4.96 (1320)",
+            "average": 4.96,
+            "reviewsCount": 1320
+          },
+          "coordinates": {
+            "latitude": 38.2629,
+            "longitude": -85.66379
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::20894753.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "20894753.0",
+          "name": "Butchertown Nook II - Private Suite&Bath w/Parking",
+          "City": "Louisville",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$70 per night, originally $99",
+            "originalPrice": "$99",
+            "price": "$70",
+            "qualifier": "night",
+            "total": "$348 total"
+          },
+          "rating": {
+            "label": "4.8 out of 5 average rating,  420 reviews",
+            "localizedLabel": "4.8 (420)",
+            "average": 4.8,
+            "reviewsCount": 420
+          },
+          "coordinates": {
+            "latitude": 38.25839,
+            "longitude": -85.71971
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::1887189",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1887189",
+          "name": "Louisville Mega Cavern",
+          "City": "Louisville",
+          "subtype": [
+            "Caverns & Caves"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "5.0",
+          "rankingString": "#1 of 350 things to do in Louisville",
+          "address": "1841 Taylor Avenue, Louisville, KY 40213-1565",
+          "description": "While visiting Louisville, Kentucky, you won't want to miss MEGA ZIPS, the world's ONLY underground zipline adventure tour! Featuring 6 ziplines nearly 100 feet off the cavern floor and two challenge bridges, MEGA ZIPS is 2.5 hours of adrenaline-fueled adventure! Though fun for the whole family, the kids will especially love MEGA QUEST, the only underground ropes challenge course in the world! MEGA QUEST features two levels and 76 challenge elements including mini-ziplines and rope walls. Exp..."
+        }
+      },
+      {
+        "node_key": "Attraction::784186",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "784186",
+          "name": "Conrad-Caldwell House Museum (Conrad's Castle)",
+          "City": "Louisville",
+          "subtype": [
+            "Historic Sites",
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#2 of 350 things to do in Louisville",
+          "address": "1402 St James Ct, Louisville, KY 40208-2127",
+          "description": "The Conrad-Caldwell House Museum is a historic, Victorian mansion located in the heart of Old Louisville on St. James Court. It is one of the finest examples of Richardsonian Romanesque architecture and was the masterpiece of famed local architect Arthur Loomis of Clarke & Loomis. Surrounded by a beautiful courtyard neighborhood at the center of the largest collection of Victorian Homes in the US, \"Conrad's Castle\" featured all the latest innovations of its day, including interior plumbing an..."
+        }
+      },
+      {
+        "node_key": "Attraction::7771783",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "7771783",
+          "name": "Copper & Kings American Brandy Distillery",
+          "City": "Louisville",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#5 of 350 things to do in Louisville",
+          "address": "1121 E Washington St, Louisville, KY 40206-1822",
+          "description": "Copper & Kings is an American Brandy distillery located in the Butchertown neighborhood of Louisville, Kentucky. The American Brandy revival is happening right in the heart of Bourbon Country as we age our purely copper pot distilled brandies in the best Kentucky Bourbon barrels. And because we like to give back, we've even finished a blend of Kentucky Straight Bourbons in our American Apple Brandy barrels for our newest release. Come see how Copper & Kings continues to push boundaries and wh..."
+        }
+      },
+      {
+        "node_key": "Attraction::8325302",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8325302",
+          "name": "Kentucky Peerless Distilling Co",
+          "City": "Louisville",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#3 of 350 things to do in Louisville",
+          "address": "120 North 10th Street, Louisville, KY 40202-2610",
+          "description": "Kentucky Peerless Distilling Company opened in Louisville, Kentucky in 2015, but the distillery's roots extend back to 1889, when their ancestor, Henry Kraver, began distilling bourbon. Corky and Carson Taylor, fourth and fifth generation descendants of Kraver, are the historic-turned-urban Bourbon makers dedicated to providing a distinctively-authentic bourbon experience with distillery tours and tastings. Visit to experience, first-hand, the Peerless Caliber that sets Peerless spirits apart."
+        }
+      },
+      {
+        "node_key": "Attraction::105618",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105618",
+          "name": "Louisville Slugger Museum & Factory",
+          "City": "Louisville",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#6 of 350 things to do in Louisville",
+          "address": "800 W Main St, Louisville, KY 40202-2620",
+          "description": "Batter up! It takes a special place to craft the #1 Bat in Major League Baseball. At Louisville Slugger Museum & Factory, experience history-in-the-making as you stroll through the actual factory where world-famous Louisville Slugger bats are created. The award-winning factory tour is a highlight of the visit here, but there's plenty more to enjoy along with it. Admire the World's Biggest Bat - stretching 120 feet into the sky. Hold bats actually used by baseball superstars like Mickey Mantle..."
+        }
+      },
+      {
+        "node_key": "Attraction::144389",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144389",
+          "name": "Churchill Downs",
+          "City": "Louisville",
+          "subtype": [
+            "Horse Tracks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Casinos & Gambling",
+            "Fun & Games"
+          ],
+          "visit_duration": "2.333333333333333",
+          "rating": "4.5",
+          "rankingString": "#13 of 350 things to do in Louisville",
+          "address": "700 Central Ave, Louisville, KY 40208-1200",
+          "description": "This beautiful racetrack has been the home of the Kentucky Derby since 1875."
+        }
+      },
+      {
+        "node_key": "Attraction::104504",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104504",
+          "name": "Kentucky Derby Museum",
+          "City": "Louisville",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#9 of 350 things to do in Louisville",
+          "address": "704 Central Ave, Louisville, KY 40208-1212",
+          "description": "The Kentucky Derby Museum, where every day is Derby day, is the official tour provider of historic Churchill Downs. When you visit the Museum, you will find yourself immersed in the next best thing to actually being at the Derby! As the exclusive tour provider for the track, various tours are offered throughout the year even when the track isn’t in session with live racing. General admission includes two levels of family-friendly interactive permanent & temporary exhibits, \"The Greatest Race,..."
+        }
+      },
+      {
+        "node_key": "Attraction::3947658",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3947658",
+          "name": "The Big Four Bridge",
+          "City": "Louisville",
+          "subtype": [
+            "Bridges"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#10 of 350 things to do in Louisville",
+          "address": "1101 River Rd, Louisville, KY 40206-1725"
+        }
+      },
+      {
+        "node_key": "Attraction::587544",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "587544",
+          "name": "Muhammad Ali Center",
+          "City": "Louisville",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#15 of 350 things to do in Louisville",
+          "address": "144 N 6th St, Louisville, KY 40202-2939",
+          "description": "Located in the heart of historic downtown Louisville, Kentucky, the Muhammad Ali Center is a cultural attraction and international education center inspired by the ideals of hometown hero Muhammad Ali. The Ali Center features 2 levels of award-winning exhibits, a five-screen orientation theater film, historic Civil Rights era media footage, video of Ali fights, interactive boxing fun, two art galleries, children's Hope and Dream wall, meeting and event space, retail store and more."
+        }
+      },
+      {
+        "node_key": "Attraction::5505860",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "5505860",
+          "name": "Evan Williams Bourbon Experience",
+          "City": "Louisville",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#11 of 350 things to do in Louisville",
+          "address": "528 W Main St, Louisville, KY 40202-2920",
+          "description": "Visit the Evan Williams Bourbon Experience in Downtown Louisville for tastings, tours, and more. An official stop on the Kentucky Bourbon Trail®, we’ve got something for every Bourbon fan. Sip on our rich history in a speakeasy-style tasting complete with stories and samples of our award-winning lineup. Tour our artisanal still before enjoying craft cocktails at the bar On3. Or check out the gift shop for Evan Williams apparel and hard-to-find bottles. Plan your visit to experience Bourbon Do..."
+        }
+      },
+      {
+        "node_key": "Restaurant::606222.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "606222.0",
+          "name": "Proof on Main",
+          "City": "Louisville",
+          "mealTypes": [
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Contemporary"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "702 W Main St, Louisville, KY 40202-2634",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::553446.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "553446.0",
+          "name": "Jack Fry's",
+          "City": "Louisville",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "1007 Bardstown Rd, Louisville, KY 40204-1317",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3523515.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3523515.0",
+          "name": "Brown Hotel Lobby Bar & Grill",
+          "City": "Louisville",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "355 W Broadway, Louisville, KY 40202-2105",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::9799396.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "9799396.0",
+          "name": "Mussel & Burger Bar Downtown",
+          "City": "Louisville",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "113 S 7th St Located in Louisville's Central Business District, Louisville, KY 40202-2703",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::13495830.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "13495830.0",
+          "name": "Porch Kitchen & Bar",
+          "City": "Louisville",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Grill"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "280 West Jefferson, Louisville, KY 40202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 600,
+                  "closeHours": "10:00"
+                },
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4250777.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4250777.0",
+          "name": "Wild Eggs",
+          "City": "Louisville",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1311 Herr Ln Ste 101, Louisville, KY 40222-4384",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 390,
+                  "openHours": "06:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::397389.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "397389.0",
+          "name": "Buck's Restaurant & Bar",
+          "City": "Louisville",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "425 W Ormsby Ave, Louisville, KY 40203-3009",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2232987.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2232987.0",
+          "name": "Hammerheads",
+          "City": "Louisville",
+          "mealTypes": [
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "921 Swan St, Louisville, KY 40204-1809",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4449950.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4449950.0",
+          "name": "Down One Bourbon Bar & Restaurant",
+          "City": "Louisville",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Street Food"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "321 W Main St Located in Louisville's Central Business District., Louisville, KY 40202-4283",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4325804.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4325804.0",
+          "name": "Momma's Mustard, Pickles & BBQ",
+          "City": "Louisville",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Barbecue"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "102 Bauer Ave, Louisville, KY 40207-2559",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7AVOz",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7AVOz",
+          "name": "Bonnie Raitt",
+          "city": "Louisville",
+          "dateTitle": "13-11-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7AVOz",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u0ax",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u0ax",
+          "name": "Joe Bonamassa",
+          "city": "Louisville",
+          "dateTitle": "05-03-2025",
+          "segmentName": "Music",
+          "genreName": "Blues",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u0ax",
+            "availabilityStarts": "2024-07-26T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7F-A8",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7F-A8",
+          "name": "Marshall Thundering Herd Football vs. Coastal Carolina Chanticleers Football",
+          "city": "Louisville",
+          "dateTitle": "16-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7F-A8",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u6ZU",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u6ZU",
+          "name": "Marshall Thundering Herd Football vs. Louisiana Monroe Warhawks Football",
+          "city": "Louisville",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u6ZU",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7aV3A",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7aV3A",
+          "name": "Ohio Bobcats Football vs. Ball State Cardinals Football",
+          "city": "Louisville",
+          "dateTitle": "29-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7aV3A",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7aVoN",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7aVoN",
+          "name": "Ohio Bobcats Football vs. Eastern Michigan Eagles Football",
+          "city": "Louisville",
+          "dateTitle": "13-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7aVoN",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG62khBvDT",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG62khBvDT",
+          "name": "Banff Mountain Film Festival",
+          "city": "Louisville",
+          "dateTitle": "03-04-2025",
+          "segmentName": "Film",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/banff-mountain-film-festival-huntington-west-virginia-04-03-2025/event/160060F19BE81EFF",
+            "availabilityStarts": "2024-09-09T16:00:00Z",
+            "price": 9.87,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::1AvbZboGkwto-Yf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1AvbZboGkwto-Yf",
+          "name": "Hot Wheels Power Smasher Pre-Show 10:00AM - 11:15AM",
+          "city": "Louisville",
+          "dateTitle": "01-02-2025",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-1000am-charleston-west-virginia-02-01-2025/event/160061...",
+            "availabilityStarts": "2024-09-06T14:00:00Z",
+            "price": 10,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::1AvbZboGkwt3-YI",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1AvbZboGkwt3-YI",
+          "name": "Hot Wheels Power Smasher Pre-Show 12:00PM-1:00PM",
+          "city": "Louisville",
+          "dateTitle": "02-02-2025",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-1200pm100pm-charleston-west-virginia-02-02-2025/event/1...",
+            "availabilityStarts": "2024-09-06T14:00:00Z",
+            "price": 10,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::1AvbZboGkwt3vYO",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1AvbZboGkwt3vYO",
+          "name": "Hot Wheels Power Smasher Pre-Show 5:00PM-6:15PM",
+          "city": "Louisville",
+          "dateTitle": "01-02-2025",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/hot-wheels-power-smasher-preshow-500pm615pm-charleston-west-virginia-02-01-2025/event/16...",
+            "availabilityStarts": "2024-09-06T14:00:00Z",
+            "price": 10,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 169.73
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 169.73
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 179.58
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 179.58
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 187.27
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 187.99
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 187.99
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 204.93
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 204.93
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 209.94
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 209.94
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 228.62
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 228.62
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 361.27
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 361.27
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 441.76
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 447.35
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 447.35
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 458.77
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 458.77
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 465.93
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 486.65
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 486.65
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 491.9
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 491.9
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 579.46
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 579.46
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 681.14
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 731.61
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 731.61
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 745.14
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 751.97
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 751.97
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 765.04
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 778.96
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 832.65
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 913.77
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 930.21
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 930.21
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 938.71
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 945.06
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 973.35
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 997.8
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 997.8
+      },
+      {
+        "source": "Accommodation::1546296.0",
+        "target": "Restaurant::4325804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1116.85
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1141.27
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1185.05
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1185.05
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1185.86
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1197.34
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1197.34
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1339.3
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1339.3
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1352.48
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1352.48
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1472.53
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1517.62
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1566.04
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1566.04
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1734.68
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1734.68
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1775.8
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1878.68
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1895.36
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1902.96
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1904.77
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1904.77
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1908.69
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1936.62
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1936.62
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1946.29
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1953.96
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1953.96
+      },
+      {
+        "source": "Accommodation::18911391.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1964.49
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2038.99
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2047.13
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2064.56
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2067.26
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2067.26
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2069.06
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2125.2
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2152.99
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2152.99
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2172.75
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2172.75
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2184.21
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2184.21
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2189.1
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2189.1
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2269.49
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2286.39
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2381.32
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2402.47
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2509.32
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2535.78
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2568.65
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2568.65
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2610.67
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2610.67
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2651.12
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2662.64
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2662.64
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2676.68
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2676.68
+      },
+      {
+        "source": "Accommodation::18911391.0",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2709.91
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2719.54
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2719.54
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2730.74
+      },
+      {
+        "source": "Restaurant::3523515.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2730.74
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2734.45
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2734.45
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2768.82
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2768.82
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2790.39
+      },
+      {
+        "source": "Restaurant::13495830.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2790.39
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2827.13
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2827.13
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2848.17
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2848.17
+      },
+      {
+        "source": "Accommodation::18911391.0",
+        "target": "Attraction::1887189",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2848.66
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2863.51
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2869.73
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3000.38
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3000.38
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3019.35
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3049.54
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3049.54
+      },
+      {
+        "source": "Accommodation::43025169.0",
+        "target": "Attraction::1887189",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3066.58
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3067.56
+      },
+      {
+        "source": "Restaurant::9799396.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3067.56
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::13495830.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3096.83
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3115.57
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3117.97
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3118.87
+      },
+      {
+        "source": "Restaurant::606222.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3118.87
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::4449950.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3141.03
+      },
+      {
+        "source": "Restaurant::4449950.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3141.03
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3168.45
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3168.45
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3170.05
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3170.05
+      },
+      {
+        "source": "Accommodation::32219665.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3192.5
+      },
+      {
+        "source": "Attraction::104504",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3203.65
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::104504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3203.65
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3250.58
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3275.57
+      },
+      {
+        "source": "Attraction::144389",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3420.23
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::144389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3420.23
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3428.95
+      },
+      {
+        "source": "Attraction::8325302",
+        "target": "Restaurant::2232987.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3434.64
+      },
+      {
+        "source": "Restaurant::2232987.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3434.64
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3475.33
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3521.38
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3534.18
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3557.85
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3569.93
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::3523515.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3605.8
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3607.95
+      },
+      {
+        "source": "Attraction::5505860",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3616.08
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::5505860",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3616.08
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::9799396.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3645.05
+      },
+      {
+        "source": "Attraction::784186",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3656.35
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3656.35
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Restaurant::606222.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3656.66
+      },
+      {
+        "source": "Accommodation::45708675.0",
+        "target": "Attraction::784186",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3692.44
+      },
+      {
+        "source": "Attraction::587544",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3744.67
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::587544",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3744.67
+      },
+      {
+        "source": "Accommodation::43025169.0",
+        "target": "Restaurant::4325804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3747.47
+      },
+      {
+        "source": "Attraction::7771783",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3782.86
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3782.86
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3793.71
+      },
+      {
+        "source": "Accommodation::18911391.0",
+        "target": "Attraction::7771783",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3793.86
+      },
+      {
+        "source": "Accommodation::43025169.0",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3833.17
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3860.31
+      },
+      {
+        "source": "Attraction::105618",
+        "target": "Restaurant::553446.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3980.98
+      },
+      {
+        "source": "Restaurant::553446.0",
+        "target": "Attraction::105618",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3980.98
+      },
+      {
+        "source": "Accommodation::15315040.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4060.73
+      },
+      {
+        "source": "Accommodation::20894753.0",
+        "target": "Attraction::8325302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4084.56
+      },
+      {
+        "source": "Attraction::3947658",
+        "target": "Restaurant::397389.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4124.86
+      },
+      {
+        "source": "Restaurant::397389.0",
+        "target": "Attraction::3947658",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4124.86
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-21",
+        "2024-11-22",
+        "2024-11-23"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3025454",
+          "dep_time": "15:41",
+          "arr_time": "18:18",
+          "local_activity_start_after_arrival_buffer": "18:48",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F1028442",
+          "dep_time": "15:29",
+          "arr_time": "18:13",
+          "local_activity_start_after_arrival_buffer": "18:43",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F3601032",
+          "dep_time": "15:35",
+          "arr_time": "18:08",
+          "local_activity_start_after_arrival_buffer": "18:38",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F1374152",
+          "dep_time": "14:46",
+          "arr_time": "17:04",
+          "local_activity_start_after_arrival_buffer": "17:34",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F2292325",
+          "dep_time": "14:06",
+          "arr_time": "16:47",
+          "local_activity_start_after_arrival_buffer": "17:17",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2585714",
+          "dep_time": "19:33",
+          "arr_time": "22:00",
+          "latest_local_activity_finish_before_airport_buffer": "17:33",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F3601061",
+          "dep_time": "18:55",
+          "arr_time": "21:30",
+          "latest_local_activity_finish_before_airport_buffer": "16:55",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F2120867",
+          "dep_time": "19:39",
+          "arr_time": "22:20",
+          "latest_local_activity_finish_before_airport_buffer": "17:39",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F3025481",
+          "dep_time": "19:05",
+          "arr_time": "21:26",
+          "latest_local_activity_finish_before_airport_buffer": "17:05",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1028468",
+          "dep_time": "18:32",
+          "arr_time": "20:53",
+          "latest_local_activity_finish_before_airport_buffer": "16:32",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::4250777.0"
+        ],
+        "lunch": [
+          "Restaurant::553446.0",
+          "Restaurant::9799396.0",
+          "Restaurant::4250777.0",
+          "Restaurant::397389.0",
+          "Restaurant::4449950.0",
+          "Restaurant::4325804.0"
+        ],
+        "dinner": [
+          "Restaurant::606222.0",
+          "Restaurant::553446.0",
+          "Restaurant::3523515.0",
+          "Restaurant::9799396.0",
+          "Restaurant::13495830.0",
+          "Restaurant::397389.0",
+          "Restaurant::2232987.0",
+          "Restaurant::4449950.0",
+          "Restaurant::4325804.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::1887189",
+          "Attraction::784186",
+          "Attraction::7771783",
+          "Attraction::8325302",
+          "Attraction::105618",
+          "Attraction::144389",
+          "Attraction::104504",
+          "Attraction::3947658",
+          "Attraction::587544",
+          "Attraction::5505860"
+        ],
+        "afternoon_attraction": [
+          "Attraction::1887189",
+          "Attraction::784186",
+          "Attraction::7771783",
+          "Attraction::8325302",
+          "Attraction::105618",
+          "Attraction::144389",
+          "Attraction::104504",
+          "Attraction::3947658",
+          "Attraction::587544",
+          "Attraction::5505860"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-21": [],
+        "2024-11-22": [],
+        "2024-11-23": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::4250777.0",
+            "name": "Wild Eggs"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::553446.0",
+            "name": "Jack Fry's"
+          },
+          {
+            "node_key": "Restaurant::9799396.0",
+            "name": "Mussel & Burger Bar Downtown"
+          },
+          {
+            "node_key": "Restaurant::4250777.0",
+            "name": "Wild Eggs"
+          },
+          {
+            "node_key": "Restaurant::397389.0",
+            "name": "Buck's Restaurant & Bar"
+          },
+          {
+            "node_key": "Restaurant::4449950.0",
+            "name": "Down One Bourbon Bar & Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4325804.0",
+            "name": "Momma's Mustard, Pickles & BBQ"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::606222.0",
+            "name": "Proof on Main"
+          },
+          {
+            "node_key": "Restaurant::553446.0",
+            "name": "Jack Fry's"
+          },
+          {
+            "node_key": "Restaurant::3523515.0",
+            "name": "Brown Hotel Lobby Bar & Grill"
+          },
+          {
+            "node_key": "Restaurant::9799396.0",
+            "name": "Mussel & Burger Bar Downtown"
+          },
+          {
+            "node_key": "Restaurant::13495830.0",
+            "name": "Porch Kitchen & Bar"
+          },
+          {
+            "node_key": "Restaurant::397389.0",
+            "name": "Buck's Restaurant & Bar"
+          },
+          {
+            "node_key": "Restaurant::2232987.0",
+            "name": "Hammerheads"
+          },
+          {
+            "node_key": "Restaurant::4449950.0",
+            "name": "Down One Bourbon Bar & Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4325804.0",
+            "name": "Momma's Mustard, Pickles & BBQ"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-21": [],
+        "2024-11-22": [],
+        "2024-11-23": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-21",
+          "required_slots": {
+            "Flight::F3025454": [],
+            "Flight::F1028442": [],
+            "Flight::F3601032": [],
+            "Flight::F1374152": [
+              "dinner"
+            ],
+            "Flight::F2292325": [
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-22",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-23",
+          "required_slots": {
+            "Flight::F2585714": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F3601061": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F2120867": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F3025481": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1028468": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-21": [],
+      "2024-11-22": [],
+      "2024-11-23": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

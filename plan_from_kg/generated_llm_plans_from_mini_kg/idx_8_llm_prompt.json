@@ -1,0 +1,3014 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_8\", \"query_text\": \"Plan a 3-day trip for 2 people from Sarasota to Cincinnati from November 5th to November 7th, 2024, with a budget of $2,250. Accommodations should allow pets.\", \"request\": {\"org\": \"Sarasota\", \"dest\": \"Cincinnati\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-05', '2024-11-06', '2024-11-07']\", \"people_number\": 2, \"local_constraint\": \"{'house rule': 'pets', 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}\", \"budget\": 2250, \"query\": \"Plan a 3-day trip for 2 people from Sarasota to Cincinnati from November 5th to November 7th, 2024, with a budget of $2,250. Accommodations should allow pets.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Luxury Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": \"pets\", \"cuisine\": null, \"room type\": null, \"event\": null, \"attraction\": null, \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F0916370\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Sarasota\", \"DestCityName\": \"Cincinnati\", \"DepTime\": \"12:35\", \"ArrTime\": \"14:45\", \"Price\": 235}}, {\"node_key\": \"Flight::F0378723\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Sarasota\", \"DestCityName\": \"Cincinnati\", \"DepTime\": \"12:14\", \"ArrTime\": \"14:53\", \"Price\": 254}}, {\"node_key\": \"Flight::F2559456\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Sarasota\", \"DestCityName\": \"Cincinnati\", \"DepTime\": \"22:48\", \"ArrTime\": \"00:58\", \"Price\": 261}}, {\"node_key\": \"Flight::F3578016\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Sarasota\", \"DestCityName\": \"Cincinnati\", \"DepTime\": \"16:07\", \"ArrTime\": \"18:49\", \"Price\": 277}}, {\"node_key\": \"Flight::F2102701\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Sarasota\", \"DestCityName\": \"Cincinnati\", \"DepTime\": \"20:30\", \"ArrTime\": \"22:41\", \"Price\": 393}}, {\"node_key\": \"Flight::F0379068\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Cincinnati\", \"DestCityName\": \"Sarasota\", \"DepTime\": \"21:20\", \"ArrTime\": \"23:32\", \"Price\": 222}}, {\"node_key\": \"Flight::F2104777\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Cincinnati\", \"DestCityName\": \"Sarasota\", \"DepTime\": \"19:42\", \"ArrTime\": \"21:39\", \"Price\": 240}}, {\"node_key\": \"Flight::F1342106\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Cincinnati\", \"DestCityName\": \"Sarasota\", \"DepTime\": \"17:40\", \"ArrTime\": \"19:46\", \"Price\": 267}}, {\"node_key\": \"Accommodation::5.85e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.85e+17\", \"name\": \"Charming 2BR/2BA with  King Suite & Coffee Bar\", \"City\": \"Cincinnati\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$112 per night\", \"originalPrice\": null, \"price\": \"$112\", \"qualifier\": \"night\", \"total\": \"$559 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  164 reviews\", \"localizedLabel\": \"4.99 (164)\", \"average\": 4.99, \"reviewsCount\": 164}, \"coordinates\": {\"latitude\": 39.1522427, \"longitude\": -84.3815958}}}, {\"node_key\": \"Accommodation::17956285.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"17956285.0\", \"name\": \"Downtown Full Home w/ Stunning Views -Free Parking\", \"City\": \"Cincinnati\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$153 per night\", \"originalPrice\": null, \"price\": \"$153\", \"qualifier\": \"night\", \"total\": \"$763 total\"}, \"rating\": {\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}, \"coordinates\": {\"latitude\": 39.11319, \"longitude\": -84.50697}}}, {\"node_key\": \"Accommodation::28105905.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"28105905.0\", \"name\": \"The Swing House\", \"City\": \"Cincinnati\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$230 per night\", \"originalPrice\": null, \"price\": \"$230\", \"qualifier\": \"night\", \"total\": \"$1,148 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  745 reviews\", \"localizedLabel\": \"4.99 (745)\", \"average\": 4.99, \"reviewsCount\": 745}, \"coordinates\": {\"latitude\": 39.13846, \"longitude\": -84.5417}}}, {\"node_key\": \"Accommodation::21264952.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21264952.0\", \"name\": \"Private Second Floor Apartment by Nature Preserve\", \"City\": \"Cincinnati\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$73 per night\", \"originalPrice\": null, \"price\": \"$73\", \"qualifier\": \"night\", \"total\": \"$362 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  354 reviews\", \"localizedLabel\": \"4.98 (354)\", \"average\": 4.98, \"reviewsCount\": 354}, \"coordinates\": {\"latitude\": 39.18909, \"longitude\": -84.54314}}}, {\"node_key\": \"Accommodation::49457090.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"49457090.0\", \"name\": \"Arcade in OTR,Walk to TQL stadium & GABP\", \"City\": \"Cincinnati\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$92 per night, originally $101\", \"originalPrice\": \"$101\", \"price\": \"$92\", \"qualifier\": \"night\", \"total\": \"$458 total\"}, \"rating\": {\"label\": \"4.79 out of 5 average rating,  276 reviews\", \"localizedLabel\": \"4.79 (276)\", \"average\": 4.79, \"reviewsCount\": 276}, \"coordinates\": {\"latitude\": 39.11247, \"longitude\": -84.51929}}}, {\"node_key\": \"Attraction::1154959\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1154959\", \"name\": \"Spring Grove Cemetery & Arboretum\", \"City\": \"Cincinnati\", \"subtype\": [\"Nature & Wildlife Areas\", \"Cemeteries\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 405 things to do in Cincinnati\", \"address\": \"4521 Spring Grove Ave, Cincinnati, OH 45232-1934\"}}, {\"node_key\": \"Attraction::5027384\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"5027384\", \"name\": \"Smale Riverfront Park\", \"City\": \"Cincinnati\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"5.0\", \"rankingString\": \"#4 of 405 things to do in Cincinnati\", \"address\": \"166 West Mehring Way, Cincinnati, OH 45201\"}}, {\"node_key\": \"Attraction::8838536\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8838536\", \"name\": \"Greater Cincinnati Police Museum\", \"City\": \"Cincinnati\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 405 things to do in Cincinnati\", \"address\": \"308 Reading Rd 2nd Floor, Cincinnati, OH 45202-1345\", \"description\": \"The Greater Cincinnati Police Museum is the only regional police museum in the country. We cover all Federal, State, Local, and Private agencies in South West Ohio, Northern Kentucky, and Eastern Indiana, the safest place in the country to live.\"}}, {\"node_key\": \"Attraction::105691\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105691\", \"name\": \"Cincinnati Zoo & Botanical Garden\", \"City\": \"Cincinnati\", \"subtype\": [\"Gardens\", \"Zoos\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#20 of 405 things to do in Cincinnati\", \"address\": \"3400 Vine Street, Cincinnati, OH 45220-1333\", \"description\": \"This second oldest zoo in the U.S., considered one of the best in the country, is most renowned for its endangered species and birthing programs, particularly for gorillas and white tigers, and has a wonderful collection of felines and a delightful manatees exhibit.\"}}, {\"node_key\": \"Attraction::274056\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"274056\", \"name\": \"Great American Ball Park\", \"City\": \"Cincinnati\", \"subtype\": [\"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#11 of 405 things to do in Cincinnati\", \"address\": \"100 Joe Nuxhall Way, Cincinnati, OH 45202-5108\", \"description\": \"This new home for the Cincinnati Reds, the oldest major league baseball team in the U.S., balances its spiffy new look with nostalgic tributes to the team's history including reminders of Crosley Field, where it all began.\"}}, {\"node_key\": \"Attraction::105687\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105687\", \"name\": \"Cincinnati Museum Center\", \"City\": \"Cincinnati\", \"subtype\": [\"History Museums\", \"Natural History Museums\", \"Children's Museums\", \"Science Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 405 things to do in Cincinnati\", \"address\": \"1301 Western Ave Union Terminal, Cincinnati, OH 45203-1138\", \"description\": \"Visit cincymuseum.org for details on updates regarding the museums, programs, events, hours and more!\"}}, {\"node_key\": \"Attraction::281504\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"281504\", \"name\": \"Fountain Square\", \"City\": \"Cincinnati\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#21 of 405 things to do in Cincinnati\", \"address\": \"520 Vine Street 5th and Vine Street, Cincinnati, OH 45202\"}}, {\"node_key\": \"Attraction::105690\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105690\", \"name\": \"Cincinnati Art Museum\", \"City\": \"Cincinnati\", \"subtype\": [\"Art Museums\", \"Ballets\"], \"subcategories\": [\"Museums\", \"Concerts & Shows\"], \"visit_duration\": \"2.75\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 405 things to do in Cincinnati\", \"address\": \"953 Eden Park Dr, Cincinnati, OH 45202-1557\", \"description\": \"One of the most prestigious art museums in the country, with over 67,000 works of art, this grandiose building atop an Eden Park hill, is well-known for its 19th-century European and American paintings, but also contains numerous other works including an outstanding pottery gallery.\"}}, {\"node_key\": \"Attraction::274057\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"274057\", \"name\": \"National Underground Railroad Freedom Center\", \"City\": \"Cincinnati\", \"subtype\": [\"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#16 of 405 things to do in Cincinnati\", \"address\": \"50 E Freedom Way, Cincinnati, OH 45202-3413\", \"description\": \"Located in Cincinnati, Ohio, the National Underground Railroad Freedom Center stands as the nation's newest monument to freedom. It brings to life the importance - and relevance - of struggles for freedom around the world and throughout history, including today.\"}}, {\"node_key\": \"Attraction::3290600\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3290600\", \"name\": \"American Sign Museum\", \"City\": \"Cincinnati\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 405 things to do in Cincinnati\", \"address\": \"1330 Monmouth St, Cincinnati, OH 45225-1344\", \"description\": \"We are home to a visual history of American Signage from 1870 through 1970. Hand carved wooden signs, gold leaf, electric light bulbs, and neon all grace our walls and tell amazing stories, especially when told by our founder and avid collector Tod. Take a trip down memory lane and visit us in the Camp Washington neighborhood of Cincinnati!\"}}, {\"node_key\": \"Restaurant::477241.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"477241.0\", \"name\": \"The Melting Pot\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\"], \"avg_cost\": \"44.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"11023 Montgomery Rd, Cincinnati, OH 45249\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::23679785.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"23679785.0\", \"name\": \"Rosie's Italian\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Italian\", \"Bar\", \"Contemporary\", \"Pub\"], \"avg_cost\": \"27.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"300 E 7th St, Cincinnati, OH 45202-2210\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::19826259.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"19826259.0\", \"name\": \"Pepp & Dolores\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\", \"Contemporary\"], \"avg_cost\": \"27.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1501 Vine Street, Cincinnati, OH 45202\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::25292453.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"25292453.0\", \"name\": \"Five On Vine\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\"], \"avg_cost\": \"27.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1324 Vine St, Cincinnati, OH 45202-7119\", \"hours\": {\"weekRanges\": [[{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2587212.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2587212.0\", \"name\": \"Moerlein Lager House\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Gastropub\"], \"avg_cost\": \"27.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"115 Joe Nuxhall Way, Cincinnati, OH 45202-4143\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::330984.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"330984.0\", \"name\": \"Jeff Ruby's Precinct\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"44.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"311 Delta Ave, Cincinnati, OH 45226-2135\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4045591.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4045591.0\", \"name\": \"Sotto\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\", \"European\", \"Tuscan\", \"Central-Italian\"], \"avg_cost\": \"27.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"118 East Sixth Street, Cincinnati, OH 45202-3202\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::330989.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"330989.0\", \"name\": \"Jeff Ruby's Steakhouse\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Steakhouse\", \"Seafood\", \"Sushi\"], \"avg_cost\": \"44.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"505 Vine St, Cincinnati, OH 45202-3113\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::6481795.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6481795.0\", \"name\": \"The Eagle Food and Beer Hall\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"27.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1342 Vine St, Cincinnati, OH 45202-7159\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2562460.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2562460.0\", \"name\": \"Taste of Belgium - OTR\", \"City\": \"Cincinnati\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Belgian\"], \"avg_cost\": \"27.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1135 Vine St, Cincinnati, OH 45202-7226\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7af-p\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7af-p\", \"name\": \"Avatar: The Last Airbender in Concert\", \"city\": \"Cincinnati\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7af-p\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::17AOvOG6uSak68x\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG6uSak68x\", \"name\": \"Coat Check - Papadosio - Not a Concert Ticket\", \"city\": \"Cincinnati\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/coat-check-papadosio-not-a-concert-louisville-kentucky-10-31-2024/event/160060DCC9187422\", \"availabilityStarts\": \"2024-07-01T16:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::1AvbZboGkgdJMQW\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1AvbZboGkgdJMQW\", \"name\": \"Coat Check - Shrek Rave - Not a Concert Ticket\", \"city\": \"Cincinnati\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/coat-check-shrek-rave-not-a-louisville-kentucky-11-01-2024/event/1600611D439B76BD\", \"availabilityStarts\": \"2024-09-05T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::1AvbZboGklAQNcd\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1AvbZboGklAQNcd\", \"name\": \"Coat Check - Tape B - Not a Concert Ticket\", \"city\": \"Cincinnati\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/coat-check-tape-b-not-a-louisville-kentucky-11-02-2024/event/1600611AC56A3B43\", \"availabilityStarts\": \"2024-09-06T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK-bZN\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK-bZN\", \"name\": \"DIZGO: Late Night After Disco Biscuits\", \"city\": \"Cincinnati\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/dizgo-late-night-after-disco-madison-live-734-tickets/13858023\", \"availabilityStarts\": \"2024-08-20T15:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AKOseK\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKOseK\", \"name\": \"Doom Flamingo, lespecial\", \"city\": \"Cincinnati\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/doom-flamingo-lespecial-madison-theater-730-tickets/13831093\", \"availabilityStarts\": \"2024-08-07T14:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::1ApZk7fGkdz4UNa\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1ApZk7fGkdz4UNa\", \"name\": \"Drake White - VIP Experience Upgrade\", \"city\": \"Cincinnati\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://livemu.sc/DrakeWhite-VIP\", \"availabilityStarts\": \"2024-08-20T21:39:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK_ePV\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK_ePV\", \"name\": \"Eric McM\", \"city\": \"Cincinnati\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/eric-mcm-the-southgate-house-revival-tickets/13642974\", \"availabilityStarts\": \"2024-10-03T03:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AKbvkf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKbvkf\", \"name\": \"Green Jelly\", \"city\": \"Cincinnati\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/green-jelly-madison-live-734-tickets/13601194\", \"availabilityStarts\": \"2024-09-18T16:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK_Vx7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK_Vx7\", \"name\": \"Haunted Fest Official After Party featuring: Levity\", \"city\": \"Cincinnati\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Dance/Electronic\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/haunted-fest-official-after-party-madison-live-734-tickets/13674884\", \"availabilityStarts\": \"2024-10-18T15:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::281504\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 70.22}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 70.22}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 95.95}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 95.95}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 188.14}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 188.14}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 189.71}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 189.71}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 273.44}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 273.44}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 296.82}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 405.08}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 448.92}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 486.08}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 486.08}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 497.85}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 497.85}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 521.72}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 521.72}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 544.58}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 555.89}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 555.89}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 576.5}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 609.53}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 613.09}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 613.09}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 660.19}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 660.19}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 673.28}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 673.28}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 685.16}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 685.16}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 686.46}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 686.46}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 701.89}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 701.89}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 706.23}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 706.23}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 761.54}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 766.16}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 766.16}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 771.56}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 771.56}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 775.73}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 789.39}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 856.03}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 856.03}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 884.3}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 889.05}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 960.1}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 985.74}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 985.74}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1049.66}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1049.66}, {\"source\": \"Attraction::281504\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1188.02}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1188.02}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1201.55}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1242.81}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1242.81}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1281.13}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1320.75}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1356.09}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1377.41}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1377.41}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1381.5}, {\"source\": \"Attraction::8838536\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1394.18}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1394.18}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1400.52}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1420.22}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1420.22}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1457.67}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1457.67}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1521.61}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1521.61}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1576.29}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1576.29}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1577.6}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1631.85}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1631.85}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1638.16}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1638.16}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1641.27}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1641.27}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1646.86}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1646.86}, {\"source\": \"Attraction::274057\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1659.64}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1659.64}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1678.21}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1678.21}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1695.52}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1695.52}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1712.79}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1712.79}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1758.01}, {\"source\": \"Attraction::274056\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1780.3}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1780.3}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1783.8}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1783.8}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1799.26}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1817.93}, {\"source\": \"Attraction::5027384\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1835.32}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1835.32}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1852.4}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1852.4}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1902.8}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1907.81}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1907.81}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1917.44}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1918.13}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1918.13}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1939.65}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1939.65}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1953.27}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1981.96}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2005.06}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2015.89}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2015.89}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2041.78}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2274.92}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2274.92}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2276.44}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2276.44}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2392.78}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2392.78}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2640.07}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2834.19}, {\"source\": \"Attraction::105687\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2918.46}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2918.46}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::105687\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3195.0}, {\"source\": \"Accommodation::21264952.0\", \"target\": \"Attraction::1154959\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3205.82}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3284.91}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::1154959\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3335.95}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3467.86}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3477.81}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3477.81}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3592.47}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3592.47}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3653.01}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3653.01}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3701.64}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3842.02}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3868.0}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3868.0}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3887.59}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3899.8}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4084.83}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::19826259.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4089.71}, {\"source\": \"Restaurant::19826259.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4089.71}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::6481795.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4231.73}, {\"source\": \"Restaurant::6481795.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4231.73}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::25292453.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4292.05}, {\"source\": \"Restaurant::25292453.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4292.05}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::8838536\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4335.55}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4416.81}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4429.38}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4429.38}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::2562460.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4487.78}, {\"source\": \"Restaurant::2562460.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4487.78}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4583.89}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4583.89}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4703.75}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4758.01}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4781.87}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::281504\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4823.93}, {\"source\": \"Attraction::105690\", \"target\": \"Restaurant::330984.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4945.35}, {\"source\": \"Restaurant::330984.0\", \"target\": \"Attraction::105690\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4945.35}, {\"source\": \"Accommodation::21264952.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5077.35}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::4045591.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5163.3}, {\"source\": \"Restaurant::4045591.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5163.3}, {\"source\": \"Attraction::105691\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5177.33}, {\"source\": \"Restaurant::2587212.0\", \"target\": \"Attraction::105691\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5177.33}, {\"source\": \"Attraction::3290600\", \"target\": \"Restaurant::330989.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5205.82}, {\"source\": \"Restaurant::330989.0\", \"target\": \"Attraction::3290600\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5205.82}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::274057\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5271.36}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::274056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5458.35}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Attraction::5027384\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5465.56}, {\"source\": \"Accommodation::28105905.0\", \"target\": \"Restaurant::2587212.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5509.9}, {\"source\": \"Accommodation::49457090.0\", \"target\": \"Attraction::1154959\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5826.41}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Restaurant::330984.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5830.66}, {\"source\": \"Accommodation::17956285.0\", \"target\": \"Attraction::1154959\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5903.95}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F0916370\", \"dep_time\": \"12:35\", \"arr_time\": \"14:45\", \"local_activity_start_after_arrival_buffer\": \"15:15\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F0378723\", \"dep_time\": \"12:14\", \"arr_time\": \"14:53\", \"local_activity_start_after_arrival_buffer\": \"15:23\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F2559456\", \"dep_time\": \"22:48\", \"arr_time\": \"00:58\", \"local_activity_start_after_arrival_buffer\": \"01:28\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3578016\", \"dep_time\": \"16:07\", \"arr_time\": \"18:49\", \"local_activity_start_after_arrival_buffer\": \"19:19\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2102701\", \"dep_time\": \"20:30\", \"arr_time\": \"22:41\", \"local_activity_start_after_arrival_buffer\": \"23:11\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F0379068\", \"dep_time\": \"21:20\", \"arr_time\": \"23:32\", \"latest_local_activity_finish_before_airport_buffer\": \"19:20\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2104777\", \"dep_time\": \"19:42\", \"arr_time\": \"21:39\", \"latest_local_activity_finish_before_airport_buffer\": \"17:42\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1342106\", \"dep_time\": \"17:40\", \"arr_time\": \"19:46\", \"latest_local_activity_finish_before_airport_buffer\": \"15:40\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::2562460.0\"], \"lunch\": [\"Restaurant::477241.0\", \"Restaurant::19826259.0\", \"Restaurant::2587212.0\", \"Restaurant::330989.0\", \"Restaurant::6481795.0\", \"Restaurant::2562460.0\"], \"dinner\": [\"Restaurant::477241.0\", \"Restaurant::23679785.0\", \"Restaurant::19826259.0\", \"Restaurant::25292453.0\", \"Restaurant::2587212.0\", \"Restaurant::330984.0\", \"Restaurant::4045591.0\", \"Restaurant::330989.0\", \"Restaurant::6481795.0\", \"Restaurant::2562460.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::1154959\", \"Attraction::5027384\", \"Attraction::8838536\", \"Attraction::105691\", \"Attraction::274056\", \"Attraction::105687\", \"Attraction::281504\", \"Attraction::105690\", \"Attraction::274057\", \"Attraction::3290600\"], \"afternoon_attraction\": [\"Attraction::1154959\", \"Attraction::5027384\", \"Attraction::8838536\", \"Attraction::105691\", \"Attraction::274056\", \"Attraction::105687\", \"Attraction::281504\", \"Attraction::105690\", \"Attraction::274057\", \"Attraction::3290600\"]}, \"event_slots_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::2562460.0\", \"name\": \"Taste of Belgium - OTR\"}], \"lunch\": [{\"node_key\": \"Restaurant::477241.0\", \"name\": \"The Melting Pot\"}, {\"node_key\": \"Restaurant::19826259.0\", \"name\": \"Pepp & Dolores\"}, {\"node_key\": \"Restaurant::2587212.0\", \"name\": \"Moerlein Lager House\"}, {\"node_key\": \"Restaurant::330989.0\", \"name\": \"Jeff Ruby's Steakhouse\"}, {\"node_key\": \"Restaurant::6481795.0\", \"name\": \"The Eagle Food and Beer Hall\"}, {\"node_key\": \"Restaurant::2562460.0\", \"name\": \"Taste of Belgium - OTR\"}], \"dinner\": [{\"node_key\": \"Restaurant::477241.0\", \"name\": \"The Melting Pot\"}, {\"node_key\": \"Restaurant::23679785.0\", \"name\": \"Rosie's Italian\"}, {\"node_key\": \"Restaurant::19826259.0\", \"name\": \"Pepp & Dolores\"}, {\"node_key\": \"Restaurant::25292453.0\", \"name\": \"Five On Vine\"}, {\"node_key\": \"Restaurant::2587212.0\", \"name\": \"Moerlein Lager House\"}, {\"node_key\": \"Restaurant::330984.0\", \"name\": \"Jeff Ruby's Precinct\"}, {\"node_key\": \"Restaurant::4045591.0\", \"name\": \"Sotto\"}, {\"node_key\": \"Restaurant::330989.0\", \"name\": \"Jeff Ruby's Steakhouse\"}, {\"node_key\": \"Restaurant::6481795.0\", \"name\": \"The Eagle Food and Beer Hall\"}, {\"node_key\": \"Restaurant::2562460.0\", \"name\": \"Taste of Belgium - OTR\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-05\", \"required_slots\": {\"Flight::F0916370\": [\"dinner\"], \"Flight::F0378723\": [\"dinner\"], \"Flight::F2559456\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3578016\": [], \"Flight::F2102701\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-06\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-07\", \"required_slots\": {\"Flight::F0379068\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2104777\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1342106\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_8",
+    "query_text": "Plan a 3-day trip for 2 people from Sarasota to Cincinnati from November 5th to November 7th, 2024, with a budget of $2,250. Accommodations should allow pets.",
+    "request": {
+      "org": "Sarasota",
+      "dest": "Cincinnati",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-05', '2024-11-06', '2024-11-07']",
+      "people_number": 2,
+      "local_constraint": "{'house rule': 'pets', 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}",
+      "budget": 2250,
+      "query": "Plan a 3-day trip for 2 people from Sarasota to Cincinnati from November 5th to November 7th, 2024, with a budget of $2,250. Accommodations should allow pets.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Luxury Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-05",
+      "2024-11-06",
+      "2024-11-07"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": "pets",
+      "cuisine": null,
+      "room type": null,
+      "event": null,
+      "attraction": null,
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F0916370",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Sarasota",
+          "DestCityName": "Cincinnati",
+          "DepTime": "12:35",
+          "ArrTime": "14:45",
+          "Price": 235
+        }
+      },
+      {
+        "node_key": "Flight::F0378723",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Sarasota",
+          "DestCityName": "Cincinnati",
+          "DepTime": "12:14",
+          "ArrTime": "14:53",
+          "Price": 254
+        }
+      },
+      {
+        "node_key": "Flight::F2559456",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Sarasota",
+          "DestCityName": "Cincinnati",
+          "DepTime": "22:48",
+          "ArrTime": "00:58",
+          "Price": 261
+        }
+      },
+      {
+        "node_key": "Flight::F3578016",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Sarasota",
+          "DestCityName": "Cincinnati",
+          "DepTime": "16:07",
+          "ArrTime": "18:49",
+          "Price": 277
+        }
+      },
+      {
+        "node_key": "Flight::F2102701",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Sarasota",
+          "DestCityName": "Cincinnati",
+          "DepTime": "20:30",
+          "ArrTime": "22:41",
+          "Price": 393
+        }
+      },
+      {
+        "node_key": "Flight::F0379068",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Cincinnati",
+          "DestCityName": "Sarasota",
+          "DepTime": "21:20",
+          "ArrTime": "23:32",
+          "Price": 222
+        }
+      },
+      {
+        "node_key": "Flight::F2104777",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Cincinnati",
+          "DestCityName": "Sarasota",
+          "DepTime": "19:42",
+          "ArrTime": "21:39",
+          "Price": 240
+        }
+      },
+      {
+        "node_key": "Flight::F1342106",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Cincinnati",
+          "DestCityName": "Sarasota",
+          "DepTime": "17:40",
+          "ArrTime": "19:46",
+          "Price": 267
+        }
+      },
+      {
+        "node_key": "Accommodation::5.85e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.85e+17",
+          "name": "Charming 2BR/2BA with  King Suite & Coffee Bar",
+          "City": "Cincinnati",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$112 per night",
+            "originalPrice": null,
+            "price": "$112",
+            "qualifier": "night",
+            "total": "$559 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  164 reviews",
+            "localizedLabel": "4.99 (164)",
+            "average": 4.99,
+            "reviewsCount": 164
+          },
+          "coordinates": {
+            "latitude": 39.1522427,
+            "longitude": -84.3815958
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::17956285.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "17956285.0",
+          "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+          "City": "Cincinnati",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$153 per night",
+            "originalPrice": null,
+            "price": "$153",
+            "qualifier": "night",
+            "total": "$763 total"
+          },
+          "rating": {
+            "label": "4.8 out of 5 average rating,  604 reviews",
+            "localizedLabel": "4.8 (604)",
+            "average": 4.8,
+            "reviewsCount": 604
+          },
+          "coordinates": {
+            "latitude": 39.11319,
+            "longitude": -84.50697
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::28105905.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "28105905.0",
+          "name": "The Swing House",
+          "City": "Cincinnati",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$230 per night",
+            "originalPrice": null,
+            "price": "$230",
+            "qualifier": "night",
+            "total": "$1,148 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  745 reviews",
+            "localizedLabel": "4.99 (745)",
+            "average": 4.99,
+            "reviewsCount": 745
+          },
+          "coordinates": {
+            "latitude": 39.13846,
+            "longitude": -84.5417
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::21264952.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21264952.0",
+          "name": "Private Second Floor Apartment by Nature Preserve",
+          "City": "Cincinnati",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$73 per night",
+            "originalPrice": null,
+            "price": "$73",
+            "qualifier": "night",
+            "total": "$362 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  354 reviews",
+            "localizedLabel": "4.98 (354)",
+            "average": 4.98,
+            "reviewsCount": 354
+          },
+          "coordinates": {
+            "latitude": 39.18909,
+            "longitude": -84.54314
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::49457090.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "49457090.0",
+          "name": "Arcade in OTR,Walk to TQL stadium & GABP",
+          "City": "Cincinnati",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$92 per night, originally $101",
+            "originalPrice": "$101",
+            "price": "$92",
+            "qualifier": "night",
+            "total": "$458 total"
+          },
+          "rating": {
+            "label": "4.79 out of 5 average rating,  276 reviews",
+            "localizedLabel": "4.79 (276)",
+            "average": 4.79,
+            "reviewsCount": 276
+          },
+          "coordinates": {
+            "latitude": 39.11247,
+            "longitude": -84.51929
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::1154959",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1154959",
+          "name": "Spring Grove Cemetery & Arboretum",
+          "City": "Cincinnati",
+          "subtype": [
+            "Nature & Wildlife Areas",
+            "Cemeteries"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "5.0",
+          "rankingString": "#2 of 405 things to do in Cincinnati",
+          "address": "4521 Spring Grove Ave, Cincinnati, OH 45232-1934"
+        }
+      },
+      {
+        "node_key": "Attraction::5027384",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "5027384",
+          "name": "Smale Riverfront Park",
+          "City": "Cincinnati",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "5.0",
+          "rankingString": "#4 of 405 things to do in Cincinnati",
+          "address": "166 West Mehring Way, Cincinnati, OH 45201"
+        }
+      },
+      {
+        "node_key": "Attraction::8838536",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8838536",
+          "name": "Greater Cincinnati Police Museum",
+          "City": "Cincinnati",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 405 things to do in Cincinnati",
+          "address": "308 Reading Rd 2nd Floor, Cincinnati, OH 45202-1345",
+          "description": "The Greater Cincinnati Police Museum is the only regional police museum in the country. We cover all Federal, State, Local, and Private agencies in South West Ohio, Northern Kentucky, and Eastern Indiana, the safest place in the country to live."
+        }
+      },
+      {
+        "node_key": "Attraction::105691",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105691",
+          "name": "Cincinnati Zoo & Botanical Garden",
+          "City": "Cincinnati",
+          "subtype": [
+            "Gardens",
+            "Zoos"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#20 of 405 things to do in Cincinnati",
+          "address": "3400 Vine Street, Cincinnati, OH 45220-1333",
+          "description": "This second oldest zoo in the U.S., considered one of the best in the country, is most renowned for its endangered species and birthing programs, particularly for gorillas and white tigers, and has a wonderful collection of felines and a delightful manatees exhibit."
+        }
+      },
+      {
+        "node_key": "Attraction::274056",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "274056",
+          "name": "Great American Ball Park",
+          "City": "Cincinnati",
+          "subtype": [
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#11 of 405 things to do in Cincinnati",
+          "address": "100 Joe Nuxhall Way, Cincinnati, OH 45202-5108",
+          "description": "This new home for the Cincinnati Reds, the oldest major league baseball team in the U.S., balances its spiffy new look with nostalgic tributes to the team's history including reminders of Crosley Field, where it all began."
+        }
+      },
+      {
+        "node_key": "Attraction::105687",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105687",
+          "name": "Cincinnati Museum Center",
+          "City": "Cincinnati",
+          "subtype": [
+            "History Museums",
+            "Natural History Museums",
+            "Children's Museums",
+            "Science Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#15 of 405 things to do in Cincinnati",
+          "address": "1301 Western Ave Union Terminal, Cincinnati, OH 45203-1138",
+          "description": "Visit cincymuseum.org for details on updates regarding the museums, programs, events, hours and more!"
+        }
+      },
+      {
+        "node_key": "Attraction::281504",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "281504",
+          "name": "Fountain Square",
+          "City": "Cincinnati",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#21 of 405 things to do in Cincinnati",
+          "address": "520 Vine Street 5th and Vine Street, Cincinnati, OH 45202"
+        }
+      },
+      {
+        "node_key": "Attraction::105690",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105690",
+          "name": "Cincinnati Art Museum",
+          "City": "Cincinnati",
+          "subtype": [
+            "Art Museums",
+            "Ballets"
+          ],
+          "subcategories": [
+            "Museums",
+            "Concerts & Shows"
+          ],
+          "visit_duration": "2.75",
+          "rating": "4.5",
+          "rankingString": "#7 of 405 things to do in Cincinnati",
+          "address": "953 Eden Park Dr, Cincinnati, OH 45202-1557",
+          "description": "One of the most prestigious art museums in the country, with over 67,000 works of art, this grandiose building atop an Eden Park hill, is well-known for its 19th-century European and American paintings, but also contains numerous other works including an outstanding pottery gallery."
+        }
+      },
+      {
+        "node_key": "Attraction::274057",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "274057",
+          "name": "National Underground Railroad Freedom Center",
+          "City": "Cincinnati",
+          "subtype": [
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#16 of 405 things to do in Cincinnati",
+          "address": "50 E Freedom Way, Cincinnati, OH 45202-3413",
+          "description": "Located in Cincinnati, Ohio, the National Underground Railroad Freedom Center stands as the nation's newest monument to freedom. It brings to life the importance - and relevance - of struggles for freedom around the world and throughout history, including today."
+        }
+      },
+      {
+        "node_key": "Attraction::3290600",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3290600",
+          "name": "American Sign Museum",
+          "City": "Cincinnati",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 405 things to do in Cincinnati",
+          "address": "1330 Monmouth St, Cincinnati, OH 45225-1344",
+          "description": "We are home to a visual history of American Signage from 1870 through 1970. Hand carved wooden signs, gold leaf, electric light bulbs, and neon all grace our walls and tell amazing stories, especially when told by our founder and avid collector Tod. Take a trip down memory lane and visit us in the Camp Washington neighborhood of Cincinnati!"
+        }
+      },
+      {
+        "node_key": "Restaurant::477241.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "477241.0",
+          "name": "The Melting Pot",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "44.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "11023 Montgomery Rd, Cincinnati, OH 45249",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::23679785.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "23679785.0",
+          "name": "Rosie's Italian",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian",
+            "Bar",
+            "Contemporary",
+            "Pub"
+          ],
+          "avg_cost": "27.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "300 E 7th St, Cincinnati, OH 45202-2210",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::19826259.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "19826259.0",
+          "name": "Pepp & Dolores",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "Contemporary"
+          ],
+          "avg_cost": "27.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "1501 Vine Street, Cincinnati, OH 45202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::25292453.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "25292453.0",
+          "name": "Five On Vine",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "27.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "1324 Vine St, Cincinnati, OH 45202-7119",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2587212.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2587212.0",
+          "name": "Moerlein Lager House",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Gastropub"
+          ],
+          "avg_cost": "27.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "115 Joe Nuxhall Way, Cincinnati, OH 45202-4143",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::330984.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "330984.0",
+          "name": "Jeff Ruby's Precinct",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "44.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "311 Delta Ave, Cincinnati, OH 45226-2135",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4045591.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4045591.0",
+          "name": "Sotto",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "European",
+            "Tuscan",
+            "Central-Italian"
+          ],
+          "avg_cost": "27.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "118 East Sixth Street, Cincinnati, OH 45202-3202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::330989.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "330989.0",
+          "name": "Jeff Ruby's Steakhouse",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood",
+            "Sushi"
+          ],
+          "avg_cost": "44.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "505 Vine St, Cincinnati, OH 45202-3113",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6481795.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6481795.0",
+          "name": "The Eagle Food and Beer Hall",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "27.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1342 Vine St, Cincinnati, OH 45202-7159",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2562460.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2562460.0",
+          "name": "Taste of Belgium - OTR",
+          "City": "Cincinnati",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Belgian"
+          ],
+          "avg_cost": "27.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1135 Vine St, Cincinnati, OH 45202-7226",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7af-p",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7af-p",
+          "name": "Avatar: The Last Airbender in Concert",
+          "city": "Cincinnati",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7af-p",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG6uSak68x",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG6uSak68x",
+          "name": "Coat Check - Papadosio - Not a Concert Ticket",
+          "city": "Cincinnati",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/coat-check-papadosio-not-a-concert-louisville-kentucky-10-31-2024/event/160060DCC9187422",
+            "availabilityStarts": "2024-07-01T16:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::1AvbZboGkgdJMQW",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1AvbZboGkgdJMQW",
+          "name": "Coat Check - Shrek Rave - Not a Concert Ticket",
+          "city": "Cincinnati",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/coat-check-shrek-rave-not-a-louisville-kentucky-11-01-2024/event/1600611D439B76BD",
+            "availabilityStarts": "2024-09-05T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::1AvbZboGklAQNcd",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1AvbZboGklAQNcd",
+          "name": "Coat Check - Tape B - Not a Concert Ticket",
+          "city": "Cincinnati",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/coat-check-tape-b-not-a-louisville-kentucky-11-02-2024/event/1600611AC56A3B43",
+            "availabilityStarts": "2024-09-06T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK-bZN",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK-bZN",
+          "name": "DIZGO: Late Night After Disco Biscuits",
+          "city": "Cincinnati",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/dizgo-late-night-after-disco-madison-live-734-tickets/13858023",
+            "availabilityStarts": "2024-08-20T15:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKOseK",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKOseK",
+          "name": "Doom Flamingo, lespecial",
+          "city": "Cincinnati",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/doom-flamingo-lespecial-madison-theater-730-tickets/13831093",
+            "availabilityStarts": "2024-08-07T14:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::1ApZk7fGkdz4UNa",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1ApZk7fGkdz4UNa",
+          "name": "Drake White - VIP Experience Upgrade",
+          "city": "Cincinnati",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://livemu.sc/DrakeWhite-VIP",
+            "availabilityStarts": "2024-08-20T21:39:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK_ePV",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK_ePV",
+          "name": "Eric McM",
+          "city": "Cincinnati",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/eric-mcm-the-southgate-house-revival-tickets/13642974",
+            "availabilityStarts": "2024-10-03T03:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKbvkf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKbvkf",
+          "name": "Green Jelly",
+          "city": "Cincinnati",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/green-jelly-madison-live-734-tickets/13601194",
+            "availabilityStarts": "2024-09-18T16:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK_Vx7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK_Vx7",
+          "name": "Haunted Fest Official After Party featuring: Levity",
+          "city": "Cincinnati",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Music",
+          "genreName": "Dance/Electronic",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/haunted-fest-official-after-party-madison-live-734-tickets/13674884",
+            "availabilityStarts": "2024-10-18T15:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 70.22
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 70.22
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 95.95
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 95.95
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 188.14
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 188.14
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 189.71
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 189.71
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 273.44
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 273.44
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 296.82
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 405.08
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 448.92
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 486.08
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 486.08
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 497.85
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 497.85
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 521.72
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 521.72
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 544.58
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 555.89
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 555.89
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 576.5
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 609.53
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 613.09
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 613.09
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 660.19
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 660.19
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 673.28
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 673.28
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 685.16
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 685.16
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 686.46
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 686.46
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 701.89
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 701.89
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 706.23
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 706.23
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 761.54
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 766.16
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 766.16
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 771.56
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 771.56
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 775.73
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 789.39
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 856.03
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 856.03
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 884.3
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 889.05
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 960.1
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 985.74
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 985.74
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1049.66
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1049.66
+      },
+      {
+        "source": "Attraction::281504",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1188.02
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1188.02
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1201.55
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1242.81
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1242.81
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1281.13
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1320.75
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1356.09
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1377.41
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1377.41
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1381.5
+      },
+      {
+        "source": "Attraction::8838536",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1394.18
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1394.18
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1400.52
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1420.22
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1420.22
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1457.67
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1457.67
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1521.61
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1521.61
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1576.29
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1576.29
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1577.6
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1631.85
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1631.85
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1638.16
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1638.16
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1641.27
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1641.27
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1646.86
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1646.86
+      },
+      {
+        "source": "Attraction::274057",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1659.64
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1659.64
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1678.21
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1678.21
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1695.52
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1695.52
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1712.79
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1712.79
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1758.01
+      },
+      {
+        "source": "Attraction::274056",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1780.3
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1780.3
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1783.8
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1783.8
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1799.26
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1817.93
+      },
+      {
+        "source": "Attraction::5027384",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1835.32
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1835.32
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1852.4
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1852.4
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1902.8
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1907.81
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1907.81
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1917.44
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1918.13
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1918.13
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1939.65
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1939.65
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1953.27
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1981.96
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2005.06
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2015.89
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2015.89
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2041.78
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2274.92
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2274.92
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2276.44
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2276.44
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2392.78
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2392.78
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2640.07
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2834.19
+      },
+      {
+        "source": "Attraction::105687",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2918.46
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2918.46
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::105687",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3195.0
+      },
+      {
+        "source": "Accommodation::21264952.0",
+        "target": "Attraction::1154959",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3205.82
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3284.91
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::1154959",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3335.95
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3467.86
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3477.81
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3477.81
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3592.47
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3592.47
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3653.01
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3653.01
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3701.64
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3842.02
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3868.0
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3868.0
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3887.59
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3899.8
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4084.83
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::19826259.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4089.71
+      },
+      {
+        "source": "Restaurant::19826259.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4089.71
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::6481795.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4231.73
+      },
+      {
+        "source": "Restaurant::6481795.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4231.73
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::25292453.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4292.05
+      },
+      {
+        "source": "Restaurant::25292453.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4292.05
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::8838536",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4335.55
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4416.81
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4429.38
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4429.38
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::2562460.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4487.78
+      },
+      {
+        "source": "Restaurant::2562460.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4487.78
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4583.89
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4583.89
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4703.75
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4758.01
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4781.87
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::281504",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4823.93
+      },
+      {
+        "source": "Attraction::105690",
+        "target": "Restaurant::330984.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4945.35
+      },
+      {
+        "source": "Restaurant::330984.0",
+        "target": "Attraction::105690",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4945.35
+      },
+      {
+        "source": "Accommodation::21264952.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5077.35
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::4045591.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5163.3
+      },
+      {
+        "source": "Restaurant::4045591.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5163.3
+      },
+      {
+        "source": "Attraction::105691",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5177.33
+      },
+      {
+        "source": "Restaurant::2587212.0",
+        "target": "Attraction::105691",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5177.33
+      },
+      {
+        "source": "Attraction::3290600",
+        "target": "Restaurant::330989.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5205.82
+      },
+      {
+        "source": "Restaurant::330989.0",
+        "target": "Attraction::3290600",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5205.82
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::274057",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5271.36
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::274056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5458.35
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Attraction::5027384",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5465.56
+      },
+      {
+        "source": "Accommodation::28105905.0",
+        "target": "Restaurant::2587212.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5509.9
+      },
+      {
+        "source": "Accommodation::49457090.0",
+        "target": "Attraction::1154959",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5826.41
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Restaurant::330984.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5830.66
+      },
+      {
+        "source": "Accommodation::17956285.0",
+        "target": "Attraction::1154959",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5903.95
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-05",
+        "2024-11-06",
+        "2024-11-07"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F0916370",
+          "dep_time": "12:35",
+          "arr_time": "14:45",
+          "local_activity_start_after_arrival_buffer": "15:15",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F0378723",
+          "dep_time": "12:14",
+          "arr_time": "14:53",
+          "local_activity_start_after_arrival_buffer": "15:23",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F2559456",
+          "dep_time": "22:48",
+          "arr_time": "00:58",
+          "local_activity_start_after_arrival_buffer": "01:28",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3578016",
+          "dep_time": "16:07",
+          "arr_time": "18:49",
+          "local_activity_start_after_arrival_buffer": "19:19",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2102701",
+          "dep_time": "20:30",
+          "arr_time": "22:41",
+          "local_activity_start_after_arrival_buffer": "23:11",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F0379068",
+          "dep_time": "21:20",
+          "arr_time": "23:32",
+          "latest_local_activity_finish_before_airport_buffer": "19:20",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2104777",
+          "dep_time": "19:42",
+          "arr_time": "21:39",
+          "latest_local_activity_finish_before_airport_buffer": "17:42",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1342106",
+          "dep_time": "17:40",
+          "arr_time": "19:46",
+          "latest_local_activity_finish_before_airport_buffer": "15:40",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::2562460.0"
+        ],
+        "lunch": [
+          "Restaurant::477241.0",
+          "Restaurant::19826259.0",
+          "Restaurant::2587212.0",
+          "Restaurant::330989.0",
+          "Restaurant::6481795.0",
+          "Restaurant::2562460.0"
+        ],
+        "dinner": [
+          "Restaurant::477241.0",
+          "Restaurant::23679785.0",
+          "Restaurant::19826259.0",
+          "Restaurant::25292453.0",
+          "Restaurant::2587212.0",
+          "Restaurant::330984.0",
+          "Restaurant::4045591.0",
+          "Restaurant::330989.0",
+          "Restaurant::6481795.0",
+          "Restaurant::2562460.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::1154959",
+          "Attraction::5027384",
+          "Attraction::8838536",
+          "Attraction::105691",
+          "Attraction::274056",
+          "Attraction::105687",
+          "Attraction::281504",
+          "Attraction::105690",
+          "Attraction::274057",
+          "Attraction::3290600"
+        ],
+        "afternoon_attraction": [
+          "Attraction::1154959",
+          "Attraction::5027384",
+          "Attraction::8838536",
+          "Attraction::105691",
+          "Attraction::274056",
+          "Attraction::105687",
+          "Attraction::281504",
+          "Attraction::105690",
+          "Attraction::274057",
+          "Attraction::3290600"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::2562460.0",
+            "name": "Taste of Belgium - OTR"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::477241.0",
+            "name": "The Melting Pot"
+          },
+          {
+            "node_key": "Restaurant::19826259.0",
+            "name": "Pepp & Dolores"
+          },
+          {
+            "node_key": "Restaurant::2587212.0",
+            "name": "Moerlein Lager House"
+          },
+          {
+            "node_key": "Restaurant::330989.0",
+            "name": "Jeff Ruby's Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::6481795.0",
+            "name": "The Eagle Food and Beer Hall"
+          },
+          {
+            "node_key": "Restaurant::2562460.0",
+            "name": "Taste of Belgium - OTR"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::477241.0",
+            "name": "The Melting Pot"
+          },
+          {
+            "node_key": "Restaurant::23679785.0",
+            "name": "Rosie's Italian"
+          },
+          {
+            "node_key": "Restaurant::19826259.0",
+            "name": "Pepp & Dolores"
+          },
+          {
+            "node_key": "Restaurant::25292453.0",
+            "name": "Five On Vine"
+          },
+          {
+            "node_key": "Restaurant::2587212.0",
+            "name": "Moerlein Lager House"
+          },
+          {
+            "node_key": "Restaurant::330984.0",
+            "name": "Jeff Ruby's Precinct"
+          },
+          {
+            "node_key": "Restaurant::4045591.0",
+            "name": "Sotto"
+          },
+          {
+            "node_key": "Restaurant::330989.0",
+            "name": "Jeff Ruby's Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::6481795.0",
+            "name": "The Eagle Food and Beer Hall"
+          },
+          {
+            "node_key": "Restaurant::2562460.0",
+            "name": "Taste of Belgium - OTR"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-05",
+          "required_slots": {
+            "Flight::F0916370": [
+              "dinner"
+            ],
+            "Flight::F0378723": [
+              "dinner"
+            ],
+            "Flight::F2559456": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3578016": [],
+            "Flight::F2102701": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-06",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-07",
+          "required_slots": {
+            "Flight::F0379068": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2104777": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1342106": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-05": [],
+      "2024-11-06": [],
+      "2024-11-07": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

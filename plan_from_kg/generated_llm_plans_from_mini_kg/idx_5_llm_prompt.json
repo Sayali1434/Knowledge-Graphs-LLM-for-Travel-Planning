@@ -1,0 +1,3022 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_5\", \"query_text\": \"Plan a 3-day trip for 1 person from Kansas City to Las Vegas from November 9th to November 11th, 2024, with a budget of $1,650.\", \"request\": {\"org\": \"Kansas City\", \"dest\": \"Las Vegas\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-09', '2024-11-10', '2024-11-11']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 1650, \"query\": \"Plan a 3-day trip for 1 person from Kansas City to Las Vegas from November 9th to November 11th, 2024, with a budget of $1,650.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-09\", \"2024-11-10\", \"2024-11-11\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Relaxation\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F0706499\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Kansas City\", \"DestCityName\": \"Las Vegas\", \"DepTime\": \"05:27\", \"ArrTime\": \"06:18\", \"Price\": 331}}, {\"node_key\": \"Flight::F3139599\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Kansas City\", \"DestCityName\": \"Las Vegas\", \"DepTime\": \"05:57\", \"ArrTime\": \"06:44\", \"Price\": 391}}, {\"node_key\": \"Flight::F4019791\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Kansas City\", \"DestCityName\": \"Las Vegas\", \"DepTime\": \"05:31\", \"ArrTime\": \"06:35\", \"Price\": 460}}, {\"node_key\": \"Flight::F2632463\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Kansas City\", \"DestCityName\": \"Las Vegas\", \"DepTime\": \"05:13\", \"ArrTime\": \"06:00\", \"Price\": 465}}, {\"node_key\": \"Flight::F0088549\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Kansas City\", \"DestCityName\": \"Las Vegas\", \"DepTime\": \"06:06\", \"ArrTime\": \"06:58\", \"Price\": 533}}, {\"node_key\": \"Flight::F3945290\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Las Vegas\", \"DestCityName\": \"Kansas City\", \"DepTime\": \"21:42\", \"ArrTime\": \"02:25\", \"Price\": 262}}, {\"node_key\": \"Flight::F2639544\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Las Vegas\", \"DestCityName\": \"Kansas City\", \"DepTime\": \"21:33\", \"ArrTime\": \"02:13\", \"Price\": 370}}, {\"node_key\": \"Flight::F2185695\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Las Vegas\", \"DestCityName\": \"Kansas City\", \"DepTime\": \"21:13\", \"ArrTime\": \"01:43\", \"Price\": 417}}, {\"node_key\": \"Flight::F0014910\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Las Vegas\", \"DestCityName\": \"Kansas City\", \"DepTime\": \"21:21\", \"ArrTime\": \"01:43\", \"Price\": 452}}, {\"node_key\": \"Flight::F1604092\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Las Vegas\", \"DestCityName\": \"Kansas City\", \"DepTime\": \"21:16\", \"ArrTime\": \"01:46\", \"Price\": 457}}, {\"node_key\": \"Accommodation::49736513.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"49736513.0\", \"name\": \"Adorable Sendera Santa\", \"City\": \"Las Vegas\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$61 per night\", \"originalPrice\": null, \"price\": \"$61\", \"qualifier\": \"night\", \"total\": \"$304 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  464 reviews\", \"localizedLabel\": \"4.94 (464)\", \"average\": 4.94, \"reviewsCount\": 464}, \"coordinates\": {\"latitude\": 36.054283142089844, \"longitude\": -115.21668243408203}}}, {\"node_key\": \"Accommodation::45514282.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45514282.0\", \"name\": \"Clean Cozy Room w/att'd Private Bath\", \"City\": \"Las Vegas\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking & No children under 10\", \"pricing\": {\"label\": \"$72 per night\", \"originalPrice\": null, \"price\": \"$72\", \"qualifier\": \"night\", \"total\": \"$357 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  755 reviews\", \"localizedLabel\": \"4.97 (755)\", \"average\": 4.97, \"reviewsCount\": 755}, \"coordinates\": {\"latitude\": 36.10082244873047, \"longitude\": -115.2711410522461}}}, {\"node_key\": \"Accommodation::45585555.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45585555.0\", \"name\": \"Super cozy brand new furnished private room! 2\", \"City\": \"Las Vegas\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$76 per night\", \"originalPrice\": null, \"price\": \"$76\", \"qualifier\": \"night\", \"total\": \"$377 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  241 reviews\", \"localizedLabel\": \"4.98 (241)\", \"average\": 4.98, \"reviewsCount\": 241}, \"coordinates\": {\"latitude\": 36.14235, \"longitude\": -115.21268}}}, {\"node_key\": \"Accommodation::10137144.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"10137144.0\", \"name\": \"Private Cozy Room with own entrance and pool .\", \"City\": \"Las Vegas\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$64 per night\", \"originalPrice\": null, \"price\": \"$64\", \"qualifier\": \"night\", \"total\": \"$316 total\"}, \"rating\": {\"label\": \"4.79 out of 5 average rating,  651 reviews\", \"localizedLabel\": \"4.79 (651)\", \"average\": 4.79, \"reviewsCount\": 651}, \"coordinates\": {\"latitude\": 36.09756, \"longitude\": -115.09042}}}, {\"node_key\": \"Accommodation::19671609.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"19671609.0\", \"name\": \"Studio 100% Private-Just 10 min. to Strip\", \"City\": \"Las Vegas\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No visitors & No parties\", \"pricing\": {\"label\": \"$101 per night, originally $122\", \"originalPrice\": \"$122\", \"price\": \"$101\", \"qualifier\": \"night\", \"total\": \"$502 total\"}, \"rating\": {\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}, \"coordinates\": {\"latitude\": 36.12292, \"longitude\": -115.13065}}}, {\"node_key\": \"Accommodation::31318395.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"31318395.0\", \"name\": \"Luxury Suite - Balcony & Las Vegas Strip Views!\", \"City\": \"Las Vegas\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$144 per night, originally $164\", \"originalPrice\": \"$164\", \"price\": \"$144\", \"qualifier\": \"night\", \"total\": \"$719 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  408 reviews\", \"localizedLabel\": \"4.95 (408)\", \"average\": 4.95, \"reviewsCount\": 408}, \"coordinates\": {\"latitude\": 36.10559, \"longitude\": -115.16747}}}, {\"node_key\": \"Accommodation::20572701.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"20572701.0\", \"name\": \"Vdara Studio 52nd FL Bellagio Ftns NO RESORT FEES\", \"City\": \"Las Vegas\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$235 per night, originally $270\", \"originalPrice\": \"$270\", \"price\": \"$235\", \"qualifier\": \"night\", \"total\": \"$1,171 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  446 reviews\", \"localizedLabel\": \"4.94 (446)\", \"average\": 4.94, \"reviewsCount\": 446}, \"coordinates\": {\"latitude\": 36.10983, \"longitude\": -115.17891}}}, {\"node_key\": \"Attraction::127003\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"127003\", \"name\": \"Fountains of Bellagio\", \"City\": \"Las Vegas\", \"subtype\": [\"Fountains\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 820 things to do in Las Vegas\", \"address\": \"3600 Las Vegas Blvd S Bellagio Hotel & Casino, Las Vegas, NV 89109-4303\", \"description\": \"Every night, over 1,000 fountains sway and dance to music and lights on an artificial lake in front of the Bellagio Resort.\"}}, {\"node_key\": \"Attraction::126583\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126583\", \"name\": \"The Las Vegas Strip\", \"City\": \"Las Vegas\", \"subtype\": [\"Points of Interest & Landmarks\", \"Historic Walking Areas\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 820 things to do in Las Vegas\", \"address\": \"S Las Vegas Blvd, Las Vegas, NV 89109\", \"description\": \"Stretching for over 4.2 miles, the most famous entertainment destination in the U.S. showcases an eclectic collection of mega hotels and resorts, glitzy casinos, lavish shopping malls, and Michelin-starred restaurants. The best way to enjoy the Strip is to stroll down the avenue and marvel at free spectacles like the dancing fountains of Bellagio and the erupting volcanoes of The Mirage. Or rest your legs by joining an open-top bus tour that cruises down the boulevard. For a more adventurous ...\"}}, {\"node_key\": \"Attraction::103329\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103329\", \"name\": \"Red Rock Canyon National Conservation Area\", \"City\": \"Las Vegas\", \"subtype\": [\"Geologic Formations\", \"National Parks\", \"State Parks\", \"Nature & Wildlife Areas\", \"Canyons\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 820 things to do in Las Vegas\", \"address\": \"1000 Scenic Loop Dr, Las Vegas, NV 89161\", \"description\": \"Visitors can admire colorful rock formations on several hiking trails or on a 13-mile scenic drive.\"}}, {\"node_key\": \"Attraction::6509306\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"6509306\", \"name\": \"High Roller\", \"City\": \"Las Vegas\", \"subtype\": [\"Observation Decks & Towers\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 820 things to do in Las Vegas\", \"address\": \"3545 Las Vegas Blvd South The Linq Promenade, Las Vegas, NV 89109-8978\", \"description\": \"Currently the second largest in the world, the 550-foot tall ferris wheel located at the LINQ lets you soar above Las Vegas for panoramic views of the city. Each revolution takes about 30 minutes and each cabin holds up to 40 people. The views are prettiest at night when the city is illuminated, and you can opt for a Happy Hour ticket that comes with an open bar in the cabin. Day tickets are cheaper if you are looking to save, and tickets are also included in several Las Vegas City Passes. – ...\"}}, {\"node_key\": \"Attraction::625114\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"625114\", \"name\": \"Bellagio Conservatory & Botanical Garden\", \"City\": \"Las Vegas\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 820 things to do in Las Vegas\", \"address\": \"3600 Las Vegas Blvd. S, Las Vegas, NV 89109\", \"description\": \"Brilliance abounds inside our breathtaking Conservatory & Botanical Gardens. The attention to detail is astounding. The passionate display of nature in all its awe-evoking glory - quite simply, sensational! Let your imagination wander as you assume a leisurely stroll amongst rare natural finds selected distinctively for Bellagio from all over the world. Admire the essence of every season recreated with exceptionally gorgeous plants, flowers and trees thoughtfully arranged to inspire full sple...\"}}, {\"node_key\": \"Attraction::104050\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104050\", \"name\": \"Stratosphere Tower\", \"City\": \"Las Vegas\", \"subtype\": [\"Observation Decks & Towers\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 820 things to do in Las Vegas\", \"address\": \"2000 Las Vegas Blvd S Stratosphere Casino Hotel & Tower, Las Vegas, NV 89104-2507\", \"description\": \"The Tower is a unique, iconic fixture in the Vegas skyline with a magnificent 360 degree view of the shimmering Las Vegas Strip and Valley.\"}}, {\"node_key\": \"Attraction::1936404\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1936404\", \"name\": \"Hoover Dam Bypass\", \"City\": \"Las Vegas\", \"subtype\": [\"Points of Interest & Landmarks\", \"Bridges\", \"Canyons\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 820 things to do in Las Vegas\", \"address\": \"U.S. Route 93, Las Vegas, NV\", \"description\": \"The 2,000-foot-long bridge spans the Colorado River canyon. As the world's highest concrete arch bridge, it shows off spectacular views of Hoover Dam.\"}}, {\"node_key\": \"Attraction::2538527\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2538527\", \"name\": \"The Mob Museum\", \"City\": \"Las Vegas\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 820 things to do in Las Vegas\", \"address\": \"300 Stewart Avenue, Las Vegas, NV 89101-2956\", \"description\": \"The Mob Museum is a 501(c)3 nonprofit organization with a mission to advance the public understanding of organized crime’s history and impact on American society. The Mob Museum offers a bold and authentic view of organized crime from vintage Las Vegas to the back alleys of American cities and—increasingly—across the borders and networks of the entire world. Explore the real stories and actual events of Mob history through interactive exhibits and one-of-a-kind Mob and law enforcement artifac...\"}}, {\"node_key\": \"Attraction::127002\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"127002\", \"name\": \"Eiffel Tower Viewing Deck\", \"City\": \"Las Vegas\", \"subtype\": [\"Observation Decks & Towers\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#52 of 820 things to do in Las Vegas\", \"address\": \"3655 Las Vegas Blvd. South Paris Las Vegas, Las Vegas, NV 89109-4345\", \"description\": \"An icon of the city skyline, this high-altitude attraction is located 46 stories up and is a half scale replica of the world-famous Paris, France landmark. Rise above the frenzy of the Strip at one of Paris Las Vegas’ premier attractions with amazing views. Known as one of the most romantic spots in Las Vegas, this is a must-see attraction.\"}}, {\"node_key\": \"Attraction::1156204\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1156204\", \"name\": \"Wynn Las Vegas Casino\", \"City\": \"Las Vegas\", \"subtype\": [\"Casinos\"], \"subcategories\": [\"Casinos & Gambling\", \"Fun & Games\"], \"visit_duration\": \"2.0\", \"rating\": \"4.5\", \"rankingString\": \"#20 of 820 things to do in Las Vegas\", \"address\": \"3131 Las Vegas Blvd S, Las Vegas, NV 89109-1967\", \"description\": \"Located in one of the world's largest hotels, this casino along the Strip offers new and upcoming games, poolside gaming, and its signature poker room.\"}}, {\"node_key\": \"Restaurant::21328871.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"21328871.0\", \"name\": \"Primal Steakhouse\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Steakhouse\"], \"avg_cost\": \"60.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"3542 S Maryland Pkwy, Las Vegas, NV 89169\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::17476783.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"17476783.0\", \"name\": \"Eggscellent\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Grill\", \"Healthy\"], \"avg_cost\": \"21.77\", \"rating\": \"5.0\", \"priceLevel\": \"$\", \"address\": \"2534 E Desert Inn Rd, Las Vegas, NV 89121-3611\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::3906440.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3906440.0\", \"name\": \"Kabuto\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Japanese\", \"Seafood\", \"Sushi\", \"Asian\"], \"avg_cost\": \"60.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"5040 Spring Mountain Rd, Las Vegas, NV 89146-8716\", \"hours\": {\"weekRanges\": [[{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::422629.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"422629.0\", \"name\": \"Mon Ami Gabi\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"French\", \"European\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3655 Las Vegas Blvd S Paris Las Vegas, Las Vegas, NV 89109-4345\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::422627.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"422627.0\", \"name\": \"Eiffel Tower Restaurant\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"French\", \"Bar\", \"Contemporary\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"3655 Las Vegas Blvd S Paris Hotel, Las Vegas, NV 89109-4345\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::2325813.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2325813.0\", \"name\": \"Hash House a Go Go\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Breakfast\"], \"cuisines\": [\"Contemporary\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3535 Las Vegas Blvd S Linq Hotel and Casino, Las Vegas, NV 89109-8921\", \"hours\": {\"weekRanges\": [[{\"open\": 450, \"openHours\": \"07:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::481403.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"481403.0\", \"name\": \"Top of the World\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Seafood\", \"International\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2000 Las Vegas Blvd S The STRAT Hotel, Casino & Tower, Las Vegas, NV 89104\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::2405909.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2405909.0\", \"name\": \"The Peppermill Restaurant & Fireside Lounge\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Diner\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2985 Las Vegas Blvd S, Las Vegas, NV 89109-1930\", \"hours\": {\"weekRanges\": [[{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::19944959.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"19944959.0\", \"name\": \"Grand Lux Cafe\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3327 Las Vegas Blvd S, Las Vegas, NV 89109\", \"hours\": {\"weekRanges\": [[{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::444362.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"444362.0\", \"name\": \"PRIME Steakhouse\", \"City\": \"Las Vegas\", \"mealTypes\": [\"Dinner\", \"Late Night\"], \"cuisines\": [\"Steakhouse\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"3600 Las Vegas Blvd S Bellagio Hotel and Casino, Las Vegas, NV 89109-4303\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7adjP\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7adjP\", \"name\": \"Cirque du Soleil: Mystere\", \"city\": \"Las Vegas\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Performance Art\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7adjP\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::104050\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10.28}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10.28}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 40.51}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 40.51}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 46.26}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 46.26}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 157.2}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 157.2}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 164.0}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 164.0}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 210.91}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 210.91}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 215.81}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 215.81}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 218.15}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 218.15}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 270.61}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 270.61}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 310.68}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 310.68}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 318.08}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 370.49}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 370.49}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 375.94}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 375.94}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 380.53}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 380.53}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 413.55}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 455.48}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 462.26}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 529.7}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 529.7}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 539.47}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 539.47}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 618.15}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 618.15}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 622.73}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 622.73}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 628.67}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 643.53}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 643.53}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 659.56}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 666.94}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 666.94}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 668.31}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 748.67}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 748.67}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 791.9}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 791.9}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 802.95}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 819.54}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 846.47}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 846.47}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 855.96}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 855.96}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 876.75}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 876.75}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 886.03}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 925.45}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 948.64}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 974.57}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1084.09}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1163.24}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1185.13}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1208.48}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1208.48}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1304.67}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1355.32}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1420.25}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1420.25}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1438.67}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1438.67}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1442.86}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1553.87}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1553.87}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::17476783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1631.67}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1643.19}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1643.19}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1661.0}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1661.0}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1702.23}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1702.23}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1752.75}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1752.75}, {\"source\": \"Accommodation::45585555.0\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1774.53}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1831.56}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1831.56}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1915.33}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1915.33}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1955.6}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2143.88}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2336.37}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2367.74}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2436.84}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2436.84}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2456.77}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2456.77}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2481.62}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2481.62}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2498.48}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2498.48}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2614.94}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2614.94}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2699.12}, {\"source\": \"Restaurant::2405909.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2699.12}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2721.99}, {\"source\": \"Restaurant::19944959.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2721.99}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2832.25}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3007.69}, {\"source\": \"Attraction::2538527\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3105.1}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::2538527\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3105.1}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3115.7}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3115.7}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3140.16}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3140.16}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3153.23}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3166.39}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3328.06}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3347.41}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3403.04}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3403.04}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3422.05}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3486.9}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3486.9}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3524.86}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3527.38}, {\"source\": \"Restaurant::2325813.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3527.38}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3534.41}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3545.11}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3545.11}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3641.43}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3647.38}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3647.38}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3653.76}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3653.76}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3676.92}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3693.06}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3693.06}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3715.79}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3715.79}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3771.4}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3865.63}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3865.63}, {\"source\": \"Attraction::6509306\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3869.9}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::6509306\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3869.9}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3920.75}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3921.31}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3965.17}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4028.17}, {\"source\": \"Restaurant::21328871.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4028.17}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::17476783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4056.72}, {\"source\": \"Restaurant::17476783.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4056.72}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::422627.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4101.24}, {\"source\": \"Restaurant::422627.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4101.24}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::422629.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4123.22}, {\"source\": \"Restaurant::422629.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4123.22}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4135.51}, {\"source\": \"Attraction::126583\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4148.49}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::126583\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4148.49}, {\"source\": \"Attraction::127002\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4163.38}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::127002\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4163.38}, {\"source\": \"Attraction::104050\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4205.0}, {\"source\": \"Restaurant::444362.0\", \"target\": \"Attraction::104050\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4205.0}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::17476783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4215.47}, {\"source\": \"Restaurant::17476783.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4215.47}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4240.46}, {\"source\": \"Attraction::127003\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4283.45}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::127003\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4283.45}, {\"source\": \"Accommodation::19671609.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4301.12}, {\"source\": \"Attraction::1156204\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4308.3}, {\"source\": \"Restaurant::3906440.0\", \"target\": \"Attraction::1156204\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4308.3}, {\"source\": \"Accommodation::20572701.0\", \"target\": \"Restaurant::21328871.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4311.28}, {\"source\": \"Accommodation::10137144.0\", \"target\": \"Restaurant::17476783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4327.01}, {\"source\": \"Attraction::625114\", \"target\": \"Restaurant::481403.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4366.96}, {\"source\": \"Restaurant::481403.0\", \"target\": \"Attraction::625114\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4366.96}, {\"source\": \"Accommodation::31318395.0\", \"target\": \"Restaurant::3906440.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4467.44}, {\"source\": \"Accommodation::45585555.0\", \"target\": \"Restaurant::19944959.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4488.84}, {\"source\": \"Accommodation::45585555.0\", \"target\": \"Restaurant::2405909.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4539.98}, {\"source\": \"Accommodation::45585555.0\", \"target\": \"Restaurant::444362.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4577.73}, {\"source\": \"Accommodation::45585555.0\", \"target\": \"Restaurant::2325813.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4593.36}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-09\", \"2024-11-10\", \"2024-11-11\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F0706499\", \"dep_time\": \"05:27\", \"arr_time\": \"06:18\", \"local_activity_start_after_arrival_buffer\": \"06:48\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3139599\", \"dep_time\": \"05:57\", \"arr_time\": \"06:44\", \"local_activity_start_after_arrival_buffer\": \"07:14\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F4019791\", \"dep_time\": \"05:31\", \"arr_time\": \"06:35\", \"local_activity_start_after_arrival_buffer\": \"07:05\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2632463\", \"dep_time\": \"05:13\", \"arr_time\": \"06:00\", \"local_activity_start_after_arrival_buffer\": \"06:30\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0088549\", \"dep_time\": \"06:06\", \"arr_time\": \"06:58\", \"local_activity_start_after_arrival_buffer\": \"07:28\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F3945290\", \"dep_time\": \"21:42\", \"arr_time\": \"02:25\", \"latest_local_activity_finish_before_airport_buffer\": \"19:42\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2639544\", \"dep_time\": \"21:33\", \"arr_time\": \"02:13\", \"latest_local_activity_finish_before_airport_buffer\": \"19:33\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2185695\", \"dep_time\": \"21:13\", \"arr_time\": \"01:43\", \"latest_local_activity_finish_before_airport_buffer\": \"19:13\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0014910\", \"dep_time\": \"21:21\", \"arr_time\": \"01:43\", \"latest_local_activity_finish_before_airport_buffer\": \"19:21\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1604092\", \"dep_time\": \"21:16\", \"arr_time\": \"01:46\", \"latest_local_activity_finish_before_airport_buffer\": \"19:16\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::17476783.0\", \"Restaurant::422629.0\", \"Restaurant::2325813.0\", \"Restaurant::2405909.0\", \"Restaurant::19944959.0\"], \"lunch\": [\"Restaurant::17476783.0\", \"Restaurant::422629.0\", \"Restaurant::422627.0\", \"Restaurant::481403.0\", \"Restaurant::2405909.0\", \"Restaurant::19944959.0\"], \"dinner\": [\"Restaurant::21328871.0\", \"Restaurant::3906440.0\", \"Restaurant::422629.0\", \"Restaurant::422627.0\", \"Restaurant::481403.0\", \"Restaurant::2405909.0\", \"Restaurant::19944959.0\", \"Restaurant::444362.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::127003\", \"Attraction::126583\", \"Attraction::103329\", \"Attraction::6509306\", \"Attraction::625114\", \"Attraction::104050\", \"Attraction::1936404\", \"Attraction::2538527\", \"Attraction::127002\", \"Attraction::1156204\"], \"afternoon_attraction\": [\"Attraction::127003\", \"Attraction::126583\", \"Attraction::103329\", \"Attraction::6509306\", \"Attraction::625114\", \"Attraction::104050\", \"Attraction::1936404\", \"Attraction::2538527\", \"Attraction::127002\", \"Attraction::1156204\"]}, \"event_slots_by_date\": {\"2024-11-09\": [], \"2024-11-10\": [], \"2024-11-11\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::17476783.0\", \"name\": \"Eggscellent\"}, {\"node_key\": \"Restaurant::422629.0\", \"name\": \"Mon Ami Gabi\"}, {\"node_key\": \"Restaurant::2325813.0\", \"name\": \"Hash House a Go Go\"}, {\"node_key\": \"Restaurant::2405909.0\", \"name\": \"The Peppermill Restaurant & Fireside Lounge\"}, {\"node_key\": \"Restaurant::19944959.0\", \"name\": \"Grand Lux Cafe\"}], \"lunch\": [{\"node_key\": \"Restaurant::17476783.0\", \"name\": \"Eggscellent\"}, {\"node_key\": \"Restaurant::422629.0\", \"name\": \"Mon Ami Gabi\"}, {\"node_key\": \"Restaurant::422627.0\", \"name\": \"Eiffel Tower Restaurant\"}, {\"node_key\": \"Restaurant::481403.0\", \"name\": \"Top of the World\"}, {\"node_key\": \"Restaurant::2405909.0\", \"name\": \"The Peppermill Restaurant & Fireside Lounge\"}, {\"node_key\": \"Restaurant::19944959.0\", \"name\": \"Grand Lux Cafe\"}], \"dinner\": [{\"node_key\": \"Restaurant::21328871.0\", \"name\": \"Primal Steakhouse\"}, {\"node_key\": \"Restaurant::3906440.0\", \"name\": \"Kabuto\"}, {\"node_key\": \"Restaurant::422629.0\", \"name\": \"Mon Ami Gabi\"}, {\"node_key\": \"Restaurant::422627.0\", \"name\": \"Eiffel Tower Restaurant\"}, {\"node_key\": \"Restaurant::481403.0\", \"name\": \"Top of the World\"}, {\"node_key\": \"Restaurant::2405909.0\", \"name\": \"The Peppermill Restaurant & Fireside Lounge\"}, {\"node_key\": \"Restaurant::19944959.0\", \"name\": \"Grand Lux Cafe\"}, {\"node_key\": \"Restaurant::444362.0\", \"name\": \"PRIME Steakhouse\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-09\": [], \"2024-11-10\": [], \"2024-11-11\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-09\", \"required_slots\": {\"Flight::F0706499\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3139599\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F4019791\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2632463\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0088549\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-10\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-11\", \"required_slots\": {\"Flight::F3945290\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2639544\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2185695\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0014910\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1604092\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-09\": [], \"2024-11-10\": [], \"2024-11-11\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_5",
+    "query_text": "Plan a 3-day trip for 1 person from Kansas City to Las Vegas from November 9th to November 11th, 2024, with a budget of $1,650.",
+    "request": {
+      "org": "Kansas City",
+      "dest": "Las Vegas",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-09', '2024-11-10', '2024-11-11']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 1650,
+      "query": "Plan a 3-day trip for 1 person from Kansas City to Las Vegas from November 9th to November 11th, 2024, with a budget of $1,650.",
+      "level": "easy",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-09",
+      "2024-11-10",
+      "2024-11-11"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Relaxation",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F0706499",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Kansas City",
+          "DestCityName": "Las Vegas",
+          "DepTime": "05:27",
+          "ArrTime": "06:18",
+          "Price": 331
+        }
+      },
+      {
+        "node_key": "Flight::F3139599",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Kansas City",
+          "DestCityName": "Las Vegas",
+          "DepTime": "05:57",
+          "ArrTime": "06:44",
+          "Price": 391
+        }
+      },
+      {
+        "node_key": "Flight::F4019791",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Kansas City",
+          "DestCityName": "Las Vegas",
+          "DepTime": "05:31",
+          "ArrTime": "06:35",
+          "Price": 460
+        }
+      },
+      {
+        "node_key": "Flight::F2632463",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Kansas City",
+          "DestCityName": "Las Vegas",
+          "DepTime": "05:13",
+          "ArrTime": "06:00",
+          "Price": 465
+        }
+      },
+      {
+        "node_key": "Flight::F0088549",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Kansas City",
+          "DestCityName": "Las Vegas",
+          "DepTime": "06:06",
+          "ArrTime": "06:58",
+          "Price": 533
+        }
+      },
+      {
+        "node_key": "Flight::F3945290",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Las Vegas",
+          "DestCityName": "Kansas City",
+          "DepTime": "21:42",
+          "ArrTime": "02:25",
+          "Price": 262
+        }
+      },
+      {
+        "node_key": "Flight::F2639544",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Las Vegas",
+          "DestCityName": "Kansas City",
+          "DepTime": "21:33",
+          "ArrTime": "02:13",
+          "Price": 370
+        }
+      },
+      {
+        "node_key": "Flight::F2185695",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Las Vegas",
+          "DestCityName": "Kansas City",
+          "DepTime": "21:13",
+          "ArrTime": "01:43",
+          "Price": 417
+        }
+      },
+      {
+        "node_key": "Flight::F0014910",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Las Vegas",
+          "DestCityName": "Kansas City",
+          "DepTime": "21:21",
+          "ArrTime": "01:43",
+          "Price": 452
+        }
+      },
+      {
+        "node_key": "Flight::F1604092",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Las Vegas",
+          "DestCityName": "Kansas City",
+          "DepTime": "21:16",
+          "ArrTime": "01:46",
+          "Price": 457
+        }
+      },
+      {
+        "node_key": "Accommodation::49736513.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "49736513.0",
+          "name": "Adorable Sendera Santa",
+          "City": "Las Vegas",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$61 per night",
+            "originalPrice": null,
+            "price": "$61",
+            "qualifier": "night",
+            "total": "$304 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  464 reviews",
+            "localizedLabel": "4.94 (464)",
+            "average": 4.94,
+            "reviewsCount": 464
+          },
+          "coordinates": {
+            "latitude": 36.054283142089844,
+            "longitude": -115.21668243408203
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45514282.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45514282.0",
+          "name": "Clean Cozy Room w/att'd Private Bath",
+          "City": "Las Vegas",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No smoking & No children under 10",
+          "pricing": {
+            "label": "$72 per night",
+            "originalPrice": null,
+            "price": "$72",
+            "qualifier": "night",
+            "total": "$357 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  755 reviews",
+            "localizedLabel": "4.97 (755)",
+            "average": 4.97,
+            "reviewsCount": 755
+          },
+          "coordinates": {
+            "latitude": 36.10082244873047,
+            "longitude": -115.2711410522461
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45585555.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45585555.0",
+          "name": "Super cozy brand new furnished private room! 2",
+          "City": "Las Vegas",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$76 per night",
+            "originalPrice": null,
+            "price": "$76",
+            "qualifier": "night",
+            "total": "$377 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  241 reviews",
+            "localizedLabel": "4.98 (241)",
+            "average": 4.98,
+            "reviewsCount": 241
+          },
+          "coordinates": {
+            "latitude": 36.14235,
+            "longitude": -115.21268
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::10137144.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "10137144.0",
+          "name": "Private Cozy Room with own entrance and pool .",
+          "City": "Las Vegas",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$64 per night",
+            "originalPrice": null,
+            "price": "$64",
+            "qualifier": "night",
+            "total": "$316 total"
+          },
+          "rating": {
+            "label": "4.79 out of 5 average rating,  651 reviews",
+            "localizedLabel": "4.79 (651)",
+            "average": 4.79,
+            "reviewsCount": 651
+          },
+          "coordinates": {
+            "latitude": 36.09756,
+            "longitude": -115.09042
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::19671609.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "19671609.0",
+          "name": "Studio 100% Private-Just 10 min. to Strip",
+          "City": "Las Vegas",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No visitors & No parties",
+          "pricing": {
+            "label": "$101 per night, originally $122",
+            "originalPrice": "$122",
+            "price": "$101",
+            "qualifier": "night",
+            "total": "$502 total"
+          },
+          "rating": {
+            "label": "4.85 out of 5 average rating,  525 reviews",
+            "localizedLabel": "4.85 (525)",
+            "average": 4.85,
+            "reviewsCount": 525
+          },
+          "coordinates": {
+            "latitude": 36.12292,
+            "longitude": -115.13065
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::31318395.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "31318395.0",
+          "name": "Luxury Suite - Balcony & Las Vegas Strip Views!",
+          "City": "Las Vegas",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$144 per night, originally $164",
+            "originalPrice": "$164",
+            "price": "$144",
+            "qualifier": "night",
+            "total": "$719 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  408 reviews",
+            "localizedLabel": "4.95 (408)",
+            "average": 4.95,
+            "reviewsCount": 408
+          },
+          "coordinates": {
+            "latitude": 36.10559,
+            "longitude": -115.16747
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::20572701.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "20572701.0",
+          "name": "Vdara Studio 52nd FL Bellagio Ftns NO RESORT FEES",
+          "City": "Las Vegas",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$235 per night, originally $270",
+            "originalPrice": "$270",
+            "price": "$235",
+            "qualifier": "night",
+            "total": "$1,171 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  446 reviews",
+            "localizedLabel": "4.94 (446)",
+            "average": 4.94,
+            "reviewsCount": 446
+          },
+          "coordinates": {
+            "latitude": 36.10983,
+            "longitude": -115.17891
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::127003",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "127003",
+          "name": "Fountains of Bellagio",
+          "City": "Las Vegas",
+          "subtype": [
+            "Fountains",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#1 of 820 things to do in Las Vegas",
+          "address": "3600 Las Vegas Blvd S Bellagio Hotel & Casino, Las Vegas, NV 89109-4303",
+          "description": "Every night, over 1,000 fountains sway and dance to music and lights on an artificial lake in front of the Bellagio Resort."
+        }
+      },
+      {
+        "node_key": "Attraction::126583",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126583",
+          "name": "The Las Vegas Strip",
+          "City": "Las Vegas",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Historic Walking Areas"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#7 of 820 things to do in Las Vegas",
+          "address": "S Las Vegas Blvd, Las Vegas, NV 89109",
+          "description": "Stretching for over 4.2 miles, the most famous entertainment destination in the U.S. showcases an eclectic collection of mega hotels and resorts, glitzy casinos, lavish shopping malls, and Michelin-starred restaurants. The best way to enjoy the Strip is to stroll down the avenue and marvel at free spectacles like the dancing fountains of Bellagio and the erupting volcanoes of The Mirage. Or rest your legs by joining an open-top bus tour that cruises down the boulevard. For a more adventurous ..."
+        }
+      },
+      {
+        "node_key": "Attraction::103329",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103329",
+          "name": "Red Rock Canyon National Conservation Area",
+          "City": "Las Vegas",
+          "subtype": [
+            "Geologic Formations",
+            "National Parks",
+            "State Parks",
+            "Nature & Wildlife Areas",
+            "Canyons"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#2 of 820 things to do in Las Vegas",
+          "address": "1000 Scenic Loop Dr, Las Vegas, NV 89161",
+          "description": "Visitors can admire colorful rock formations on several hiking trails or on a 13-mile scenic drive."
+        }
+      },
+      {
+        "node_key": "Attraction::6509306",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "6509306",
+          "name": "High Roller",
+          "City": "Las Vegas",
+          "subtype": [
+            "Observation Decks & Towers"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#5 of 820 things to do in Las Vegas",
+          "address": "3545 Las Vegas Blvd South The Linq Promenade, Las Vegas, NV 89109-8978",
+          "description": "Currently the second largest in the world, the 550-foot tall ferris wheel located at the LINQ lets you soar above Las Vegas for panoramic views of the city. Each revolution takes about 30 minutes and each cabin holds up to 40 people. The views are prettiest at night when the city is illuminated, and you can opt for a Happy Hour ticket that comes with an open bar in the cabin. Day tickets are cheaper if you are looking to save, and tickets are also included in several Las Vegas City Passes. – ..."
+        }
+      },
+      {
+        "node_key": "Attraction::625114",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "625114",
+          "name": "Bellagio Conservatory & Botanical Garden",
+          "City": "Las Vegas",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#3 of 820 things to do in Las Vegas",
+          "address": "3600 Las Vegas Blvd. S, Las Vegas, NV 89109",
+          "description": "Brilliance abounds inside our breathtaking Conservatory & Botanical Gardens. The attention to detail is astounding. The passionate display of nature in all its awe-evoking glory - quite simply, sensational! Let your imagination wander as you assume a leisurely stroll amongst rare natural finds selected distinctively for Bellagio from all over the world. Admire the essence of every season recreated with exceptionally gorgeous plants, flowers and trees thoughtfully arranged to inspire full sple..."
+        }
+      },
+      {
+        "node_key": "Attraction::104050",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104050",
+          "name": "Stratosphere Tower",
+          "City": "Las Vegas",
+          "subtype": [
+            "Observation Decks & Towers",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#9 of 820 things to do in Las Vegas",
+          "address": "2000 Las Vegas Blvd S Stratosphere Casino Hotel & Tower, Las Vegas, NV 89104-2507",
+          "description": "The Tower is a unique, iconic fixture in the Vegas skyline with a magnificent 360 degree view of the shimmering Las Vegas Strip and Valley."
+        }
+      },
+      {
+        "node_key": "Attraction::1936404",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1936404",
+          "name": "Hoover Dam Bypass",
+          "City": "Las Vegas",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Bridges",
+            "Canyons"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#4 of 820 things to do in Las Vegas",
+          "address": "U.S. Route 93, Las Vegas, NV",
+          "description": "The 2,000-foot-long bridge spans the Colorado River canyon. As the world's highest concrete arch bridge, it shows off spectacular views of Hoover Dam."
+        }
+      },
+      {
+        "node_key": "Attraction::2538527",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2538527",
+          "name": "The Mob Museum",
+          "City": "Las Vegas",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#15 of 820 things to do in Las Vegas",
+          "address": "300 Stewart Avenue, Las Vegas, NV 89101-2956",
+          "description": "The Mob Museum is a 501(c)3 nonprofit organization with a mission to advance the public understanding of organized crime’s history and impact on American society. The Mob Museum offers a bold and authentic view of organized crime from vintage Las Vegas to the back alleys of American cities and—increasingly—across the borders and networks of the entire world. Explore the real stories and actual events of Mob history through interactive exhibits and one-of-a-kind Mob and law enforcement artifac..."
+        }
+      },
+      {
+        "node_key": "Attraction::127002",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "127002",
+          "name": "Eiffel Tower Viewing Deck",
+          "City": "Las Vegas",
+          "subtype": [
+            "Observation Decks & Towers"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#52 of 820 things to do in Las Vegas",
+          "address": "3655 Las Vegas Blvd. South Paris Las Vegas, Las Vegas, NV 89109-4345",
+          "description": "An icon of the city skyline, this high-altitude attraction is located 46 stories up and is a half scale replica of the world-famous Paris, France landmark. Rise above the frenzy of the Strip at one of Paris Las Vegas’ premier attractions with amazing views. Known as one of the most romantic spots in Las Vegas, this is a must-see attraction."
+        }
+      },
+      {
+        "node_key": "Attraction::1156204",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1156204",
+          "name": "Wynn Las Vegas Casino",
+          "City": "Las Vegas",
+          "subtype": [
+            "Casinos"
+          ],
+          "subcategories": [
+            "Casinos & Gambling",
+            "Fun & Games"
+          ],
+          "visit_duration": "2.0",
+          "rating": "4.5",
+          "rankingString": "#20 of 820 things to do in Las Vegas",
+          "address": "3131 Las Vegas Blvd S, Las Vegas, NV 89109-1967",
+          "description": "Located in one of the world's largest hotels, this casino along the Strip offers new and upcoming games, poolside gaming, and its signature poker room."
+        }
+      },
+      {
+        "node_key": "Restaurant::21328871.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "21328871.0",
+          "name": "Primal Steakhouse",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse"
+          ],
+          "avg_cost": "60.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "3542 S Maryland Pkwy, Las Vegas, NV 89169",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::17476783.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "17476783.0",
+          "name": "Eggscellent",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Grill",
+            "Healthy"
+          ],
+          "avg_cost": "21.77",
+          "rating": "5.0",
+          "priceLevel": "$",
+          "address": "2534 E Desert Inn Rd, Las Vegas, NV 89121-3611",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3906440.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3906440.0",
+          "name": "Kabuto",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Seafood",
+            "Sushi",
+            "Asian"
+          ],
+          "avg_cost": "60.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "5040 Spring Mountain Rd, Las Vegas, NV 89146-8716",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::422629.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "422629.0",
+          "name": "Mon Ami Gabi",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "French",
+            "European"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3655 Las Vegas Blvd S Paris Las Vegas, Las Vegas, NV 89109-4345",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::422627.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "422627.0",
+          "name": "Eiffel Tower Restaurant",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "French",
+            "Bar",
+            "Contemporary"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "3655 Las Vegas Blvd S Paris Hotel, Las Vegas, NV 89109-4345",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2325813.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2325813.0",
+          "name": "Hash House a Go Go",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Breakfast"
+          ],
+          "cuisines": [
+            "Contemporary"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3535 Las Vegas Blvd S Linq Hotel and Casino, Las Vegas, NV 89109-8921",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::481403.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "481403.0",
+          "name": "Top of the World",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Seafood",
+            "International"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2000 Las Vegas Blvd S The STRAT Hotel, Casino & Tower, Las Vegas, NV 89104",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2405909.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2405909.0",
+          "name": "The Peppermill Restaurant & Fireside Lounge",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Diner"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2985 Las Vegas Blvd S, Las Vegas, NV 89109-1930",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 0,
+                  "openHours": "00:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ],
+              [
+                {
+                  "open": 0,
+                  "openHours": "00:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ],
+              [
+                {
+                  "open": 0,
+                  "openHours": "00:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::19944959.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "19944959.0",
+          "name": "Grand Lux Cafe",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3327 Las Vegas Blvd S, Las Vegas, NV 89109",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::444362.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "444362.0",
+          "name": "PRIME Steakhouse",
+          "City": "Las Vegas",
+          "mealTypes": [
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Steakhouse"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "3600 Las Vegas Blvd S Bellagio Hotel and Casino, Las Vegas, NV 89109-4303",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7adjP",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7adjP",
+          "name": "Cirque du Soleil: Mystere",
+          "city": "Las Vegas",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Performance Art",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7adjP",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10.28
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10.28
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 40.51
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 40.51
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 46.26
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 46.26
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 157.2
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 157.2
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 164.0
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 164.0
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 210.91
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 210.91
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 215.81
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 215.81
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 218.15
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 218.15
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 270.61
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 270.61
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 310.68
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 310.68
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 318.08
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 370.49
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 370.49
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 375.94
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 375.94
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 380.53
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 380.53
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 413.55
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 455.48
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 462.26
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 529.7
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 529.7
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 539.47
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 539.47
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 618.15
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 618.15
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 622.73
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 622.73
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 628.67
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 643.53
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 643.53
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 659.56
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 666.94
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 666.94
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 668.31
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 748.67
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 748.67
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 791.9
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 791.9
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 802.95
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 819.54
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 846.47
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 846.47
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 855.96
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 855.96
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 876.75
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 876.75
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 886.03
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 925.45
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 948.64
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 974.57
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1084.09
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1163.24
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1185.13
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1208.48
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1208.48
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1304.67
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1355.32
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1420.25
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1420.25
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1438.67
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1438.67
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1442.86
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1553.87
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1553.87
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::17476783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1631.67
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1643.19
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1643.19
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1661.0
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1661.0
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1702.23
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1702.23
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1752.75
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1752.75
+      },
+      {
+        "source": "Accommodation::45585555.0",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1774.53
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1831.56
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1831.56
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1915.33
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1915.33
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1955.6
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2143.88
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2336.37
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2367.74
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2436.84
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2436.84
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2456.77
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2456.77
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2481.62
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2481.62
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2498.48
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2498.48
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2614.94
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2614.94
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2699.12
+      },
+      {
+        "source": "Restaurant::2405909.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2699.12
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2721.99
+      },
+      {
+        "source": "Restaurant::19944959.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2721.99
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2832.25
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3007.69
+      },
+      {
+        "source": "Attraction::2538527",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3105.1
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::2538527",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3105.1
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3115.7
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3115.7
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3140.16
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3140.16
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3153.23
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3166.39
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3328.06
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3347.41
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3403.04
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3403.04
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3422.05
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3486.9
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3486.9
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3524.86
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3527.38
+      },
+      {
+        "source": "Restaurant::2325813.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3527.38
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3534.41
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3545.11
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3545.11
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3641.43
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3647.38
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3647.38
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3653.76
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3653.76
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3676.92
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3693.06
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3693.06
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3715.79
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3715.79
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3771.4
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3865.63
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3865.63
+      },
+      {
+        "source": "Attraction::6509306",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3869.9
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::6509306",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3869.9
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3920.75
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3921.31
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3965.17
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4028.17
+      },
+      {
+        "source": "Restaurant::21328871.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4028.17
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::17476783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4056.72
+      },
+      {
+        "source": "Restaurant::17476783.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4056.72
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::422627.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4101.24
+      },
+      {
+        "source": "Restaurant::422627.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4101.24
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::422629.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4123.22
+      },
+      {
+        "source": "Restaurant::422629.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4123.22
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4135.51
+      },
+      {
+        "source": "Attraction::126583",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4148.49
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::126583",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4148.49
+      },
+      {
+        "source": "Attraction::127002",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4163.38
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::127002",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4163.38
+      },
+      {
+        "source": "Attraction::104050",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4205.0
+      },
+      {
+        "source": "Restaurant::444362.0",
+        "target": "Attraction::104050",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4205.0
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::17476783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4215.47
+      },
+      {
+        "source": "Restaurant::17476783.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4215.47
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4240.46
+      },
+      {
+        "source": "Attraction::127003",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4283.45
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::127003",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4283.45
+      },
+      {
+        "source": "Accommodation::19671609.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4301.12
+      },
+      {
+        "source": "Attraction::1156204",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4308.3
+      },
+      {
+        "source": "Restaurant::3906440.0",
+        "target": "Attraction::1156204",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4308.3
+      },
+      {
+        "source": "Accommodation::20572701.0",
+        "target": "Restaurant::21328871.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4311.28
+      },
+      {
+        "source": "Accommodation::10137144.0",
+        "target": "Restaurant::17476783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4327.01
+      },
+      {
+        "source": "Attraction::625114",
+        "target": "Restaurant::481403.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4366.96
+      },
+      {
+        "source": "Restaurant::481403.0",
+        "target": "Attraction::625114",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4366.96
+      },
+      {
+        "source": "Accommodation::31318395.0",
+        "target": "Restaurant::3906440.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4467.44
+      },
+      {
+        "source": "Accommodation::45585555.0",
+        "target": "Restaurant::19944959.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4488.84
+      },
+      {
+        "source": "Accommodation::45585555.0",
+        "target": "Restaurant::2405909.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4539.98
+      },
+      {
+        "source": "Accommodation::45585555.0",
+        "target": "Restaurant::444362.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4577.73
+      },
+      {
+        "source": "Accommodation::45585555.0",
+        "target": "Restaurant::2325813.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4593.36
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-09",
+        "2024-11-10",
+        "2024-11-11"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F0706499",
+          "dep_time": "05:27",
+          "arr_time": "06:18",
+          "local_activity_start_after_arrival_buffer": "06:48",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3139599",
+          "dep_time": "05:57",
+          "arr_time": "06:44",
+          "local_activity_start_after_arrival_buffer": "07:14",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F4019791",
+          "dep_time": "05:31",
+          "arr_time": "06:35",
+          "local_activity_start_after_arrival_buffer": "07:05",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2632463",
+          "dep_time": "05:13",
+          "arr_time": "06:00",
+          "local_activity_start_after_arrival_buffer": "06:30",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0088549",
+          "dep_time": "06:06",
+          "arr_time": "06:58",
+          "local_activity_start_after_arrival_buffer": "07:28",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F3945290",
+          "dep_time": "21:42",
+          "arr_time": "02:25",
+          "latest_local_activity_finish_before_airport_buffer": "19:42",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2639544",
+          "dep_time": "21:33",
+          "arr_time": "02:13",
+          "latest_local_activity_finish_before_airport_buffer": "19:33",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2185695",
+          "dep_time": "21:13",
+          "arr_time": "01:43",
+          "latest_local_activity_finish_before_airport_buffer": "19:13",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0014910",
+          "dep_time": "21:21",
+          "arr_time": "01:43",
+          "latest_local_activity_finish_before_airport_buffer": "19:21",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1604092",
+          "dep_time": "21:16",
+          "arr_time": "01:46",
+          "latest_local_activity_finish_before_airport_buffer": "19:16",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::17476783.0",
+          "Restaurant::422629.0",
+          "Restaurant::2325813.0",
+          "Restaurant::2405909.0",
+          "Restaurant::19944959.0"
+        ],
+        "lunch": [
+          "Restaurant::17476783.0",
+          "Restaurant::422629.0",
+          "Restaurant::422627.0",
+          "Restaurant::481403.0",
+          "Restaurant::2405909.0",
+          "Restaurant::19944959.0"
+        ],
+        "dinner": [
+          "Restaurant::21328871.0",
+          "Restaurant::3906440.0",
+          "Restaurant::422629.0",
+          "Restaurant::422627.0",
+          "Restaurant::481403.0",
+          "Restaurant::2405909.0",
+          "Restaurant::19944959.0",
+          "Restaurant::444362.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::127003",
+          "Attraction::126583",
+          "Attraction::103329",
+          "Attraction::6509306",
+          "Attraction::625114",
+          "Attraction::104050",
+          "Attraction::1936404",
+          "Attraction::2538527",
+          "Attraction::127002",
+          "Attraction::1156204"
+        ],
+        "afternoon_attraction": [
+          "Attraction::127003",
+          "Attraction::126583",
+          "Attraction::103329",
+          "Attraction::6509306",
+          "Attraction::625114",
+          "Attraction::104050",
+          "Attraction::1936404",
+          "Attraction::2538527",
+          "Attraction::127002",
+          "Attraction::1156204"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-09": [],
+        "2024-11-10": [],
+        "2024-11-11": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::17476783.0",
+            "name": "Eggscellent"
+          },
+          {
+            "node_key": "Restaurant::422629.0",
+            "name": "Mon Ami Gabi"
+          },
+          {
+            "node_key": "Restaurant::2325813.0",
+            "name": "Hash House a Go Go"
+          },
+          {
+            "node_key": "Restaurant::2405909.0",
+            "name": "The Peppermill Restaurant & Fireside Lounge"
+          },
+          {
+            "node_key": "Restaurant::19944959.0",
+            "name": "Grand Lux Cafe"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::17476783.0",
+            "name": "Eggscellent"
+          },
+          {
+            "node_key": "Restaurant::422629.0",
+            "name": "Mon Ami Gabi"
+          },
+          {
+            "node_key": "Restaurant::422627.0",
+            "name": "Eiffel Tower Restaurant"
+          },
+          {
+            "node_key": "Restaurant::481403.0",
+            "name": "Top of the World"
+          },
+          {
+            "node_key": "Restaurant::2405909.0",
+            "name": "The Peppermill Restaurant & Fireside Lounge"
+          },
+          {
+            "node_key": "Restaurant::19944959.0",
+            "name": "Grand Lux Cafe"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::21328871.0",
+            "name": "Primal Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::3906440.0",
+            "name": "Kabuto"
+          },
+          {
+            "node_key": "Restaurant::422629.0",
+            "name": "Mon Ami Gabi"
+          },
+          {
+            "node_key": "Restaurant::422627.0",
+            "name": "Eiffel Tower Restaurant"
+          },
+          {
+            "node_key": "Restaurant::481403.0",
+            "name": "Top of the World"
+          },
+          {
+            "node_key": "Restaurant::2405909.0",
+            "name": "The Peppermill Restaurant & Fireside Lounge"
+          },
+          {
+            "node_key": "Restaurant::19944959.0",
+            "name": "Grand Lux Cafe"
+          },
+          {
+            "node_key": "Restaurant::444362.0",
+            "name": "PRIME Steakhouse"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-09": [],
+        "2024-11-10": [],
+        "2024-11-11": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-09",
+          "required_slots": {
+            "Flight::F0706499": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3139599": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F4019791": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2632463": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0088549": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-10",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-11",
+          "required_slots": {
+            "Flight::F3945290": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2639544": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2185695": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0014910": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1604092": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-09": [],
+      "2024-11-10": [],
+      "2024-11-11": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

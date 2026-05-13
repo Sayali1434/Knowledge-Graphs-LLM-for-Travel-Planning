@@ -1,0 +1,3231 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_13\", \"query_text\": \"Plan a 3-day trip for 8 people from Dallas to San Luis Obispo from November 13th to November 15th, 2024, with a budget of $13,950. Accommodations should include an entire home.\", \"request\": {\"org\": \"Dallas\", \"dest\": \"San Luis Obispo\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-13', '2024-11-14', '2024-11-15']\", \"people_number\": 8, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': 'entire home', 'event': None, 'attraction': None, 'transportation': None}\", \"budget\": 13950, \"query\": \"Plan a 3-day trip for 8 people from Dallas to San Luis Obispo from November 13th to November 15th, 2024, with a budget of $13,950. Accommodations should include an entire home.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-13\", \"2024-11-14\", \"2024-11-15\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": \"entire home\", \"event\": null, \"attraction\": null, \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F3029855\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"San Luis Obispo\", \"DepTime\": \"11:00\", \"ArrTime\": \"12:30\", \"Price\": 319}}, {\"node_key\": \"Flight::F0402404\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"San Luis Obispo\", \"DepTime\": \"10:46\", \"ArrTime\": \"13:01\", \"Price\": 418}}, {\"node_key\": \"Flight::F2588192\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"San Luis Obispo\", \"DepTime\": \"10:26\", \"ArrTime\": \"11:49\", \"Price\": 635}}, {\"node_key\": \"Flight::F1376878\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"San Luis Obispo\", \"DepTime\": \"10:27\", \"ArrTime\": \"12:04\", \"Price\": 649}}, {\"node_key\": \"Flight::F2134984\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"San Luis Obispo\", \"DepTime\": \"10:15\", \"ArrTime\": \"11:53\", \"Price\": 658}}, {\"node_key\": \"Flight::F2135017\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"San Luis Obispo\", \"DestCityName\": \"Dallas\", \"DepTime\": \"13:04\", \"ArrTime\": \"18:11\", \"Price\": 417}}, {\"node_key\": \"Flight::F1032255\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"San Luis Obispo\", \"DestCityName\": \"Dallas\", \"DepTime\": \"13:35\", \"ArrTime\": \"18:31\", \"Price\": 483}}, {\"node_key\": \"Flight::F0402436\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"San Luis Obispo\", \"DestCityName\": \"Dallas\", \"DepTime\": \"13:29\", \"ArrTime\": \"18:18\", \"Price\": 509}}, {\"node_key\": \"Flight::F3029886\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"San Luis Obispo\", \"DestCityName\": \"Dallas\", \"DepTime\": \"13:31\", \"ArrTime\": \"18:57\", \"Price\": 521}}, {\"node_key\": \"Flight::F3605329\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"San Luis Obispo\", \"DestCityName\": \"Dallas\", \"DepTime\": \"13:39\", \"ArrTime\": \"18:39\", \"Price\": 563}}, {\"node_key\": \"Accommodation::27808609.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"27808609.0\", \"name\": \"SLO Guesthouse - quiet - near downtown - #115545\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$138 per night\", \"originalPrice\": null, \"price\": \"$138\", \"qualifier\": \"night\", \"total\": \"$686 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  523 reviews\", \"localizedLabel\": \"4.98 (523)\", \"average\": 4.98, \"reviewsCount\": 523}, \"coordinates\": {\"latitude\": 35.28664, \"longitude\": -120.66875}}}, {\"node_key\": \"Accommodation::37528080.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"37528080.0\", \"name\": \"Cottage in SLO / Historic Downtown District\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$250 per night\", \"originalPrice\": null, \"price\": \"$250\", \"qualifier\": \"night\", \"total\": \"$1,247 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  572 reviews\", \"localizedLabel\": \"4.98 (572)\", \"average\": 4.98, \"reviewsCount\": 572}, \"coordinates\": {\"latitude\": 35.28023, \"longitude\": -120.65517}}}, {\"node_key\": \"Accommodation::6153985.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"6153985.0\", \"name\": \"Mid-Century Design Close to Downtown & Cal Poly\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$205 per night\", \"originalPrice\": null, \"price\": \"$205\", \"qualifier\": \"night\", \"total\": \"$1,024 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  1133 reviews\", \"localizedLabel\": \"4.93 (1133)\", \"average\": 4.93, \"reviewsCount\": 1133}, \"coordinates\": {\"latitude\": 35.28615, \"longitude\": -120.64881}}}, {\"node_key\": \"Accommodation::16490196.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16490196.0\", \"name\": \"Stylish and Comfortable Lofted Townhouse, Downtown SLO\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10 & No pets\", \"pricing\": {\"label\": \"$260 per night\", \"originalPrice\": null, \"price\": \"$260\", \"qualifier\": \"night\", \"total\": \"$1,299 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  494 reviews\", \"localizedLabel\": \"4.99 (494)\", \"average\": 4.99, \"reviewsCount\": 494}, \"coordinates\": {\"latitude\": 35.27349, \"longitude\": -120.65863}}}, {\"node_key\": \"Accommodation::49451005.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"49451005.0\", \"name\": \"Harris House\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$125 per night\", \"originalPrice\": null, \"price\": \"$125\", \"qualifier\": \"night\", \"total\": \"$624 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  358 reviews\", \"localizedLabel\": \"4.91 (358)\", \"average\": 4.91, \"reviewsCount\": 358}, \"coordinates\": {\"latitude\": 35.26966, \"longitude\": -120.66441}}}, {\"node_key\": \"Accommodation::11669115.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"11669115.0\", \"name\": \"Two Palms Cottage at Beebee St.\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$248 per night\", \"originalPrice\": null, \"price\": \"$248\", \"qualifier\": \"night\", \"total\": \"$1,236 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  411 reviews\", \"localizedLabel\": \"4.95 (411)\", \"average\": 4.95, \"reviewsCount\": 411}, \"coordinates\": {\"latitude\": 35.27077, \"longitude\": -120.66743}}}, {\"node_key\": \"Accommodation::8.58e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"8.58e+17\", \"name\": \"Cozy Studio Close to Downtown SLO\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$161 per night\", \"originalPrice\": null, \"price\": \"$161\", \"qualifier\": \"night\", \"total\": \"$803 total\"}, \"rating\": {\"label\": \"4.82 out of 5 average rating,  108 reviews\", \"localizedLabel\": \"4.82 (108)\", \"average\": 4.82, \"reviewsCount\": 108}, \"coordinates\": {\"latitude\": 35.2708, \"longitude\": -120.66238}}}, {\"node_key\": \"Accommodation::52442101.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"52442101.0\", \"name\": \"Eclectic apartment in the heart of downtown SLO.\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$235 per night\", \"originalPrice\": null, \"price\": \"$235\", \"qualifier\": \"night\", \"total\": \"$1,174 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  237 reviews\", \"localizedLabel\": \"5.0 (237)\", \"average\": 5, \"reviewsCount\": 237}, \"coordinates\": {\"latitude\": 35.276695, \"longitude\": -120.661446}}}, {\"node_key\": \"Accommodation::4182977.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"4182977.0\", \"name\": \"The Corner Nook\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$183 per night\", \"originalPrice\": null, \"price\": \"$183\", \"qualifier\": \"night\", \"total\": \"$915 total\"}, \"rating\": {\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}, \"coordinates\": {\"latitude\": 35.28344, \"longitude\": -120.65856}}}, {\"node_key\": \"Accommodation::16676175.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16676175.0\", \"name\": \"The Downtown House SLO with Private Parking\", \"City\": \"San Luis Obispo\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$286 per night\", \"originalPrice\": null, \"price\": \"$286\", \"qualifier\": \"night\", \"total\": \"$1,430 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  363 reviews\", \"localizedLabel\": \"4.96 (363)\", \"average\": 4.96, \"reviewsCount\": 363}, \"coordinates\": {\"latitude\": 35.28051, \"longitude\": -120.65833}}}, {\"node_key\": \"Attraction::3372296\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3372296\", \"name\": \"Chamisal Vineyards\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Wineries & Vineyards\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 98 things to do in San Luis Obispo\", \"address\": \"7525 Orcutt Rd, San Luis Obispo, CA 93401-8341\", \"description\": \"Chamisal Vineyards is located in a tranquil setting just 10 minutes from downtown San Luis Obispo in the beautiful Edna Valley. Come taste our sustainably produced Chardonnay and Pinot Noir straight from the source.\"}}, {\"node_key\": \"Attraction::12206572\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"12206572\", \"name\": \"Highway 1 Road Trip\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Scenic Drives\"], \"subcategories\": [\"Sights & Landmarks\", \"Outdoor Activities\"], \"visit_duration\": \"3.5\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 98 things to do in San Luis Obispo\", \"address\": \"San Luis Obispo, CA\", \"description\": \"Roam this 101-mile stretch of Highway 1 in San Luis Obispo County (SLO CAL) where you'll find 10 uncrowded beaches, 12 state parks, Hearst Castle, three bountiful wine regions, farm-to-table cuisine, and unique wildlife habitats. Wherever you roam along the Highway 1 Discovery Route, you will find the best of Highway 1!\"}}, {\"node_key\": \"Attraction::279174\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"279174\", \"name\": \"Performing Arts Center San Luis Obispo\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Theaters\"], \"subcategories\": [\"Concerts & Shows\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#12 of 98 things to do in San Luis Obispo\", \"address\": \"1 Grand Ave California Polytechnic State University, San Luis Obispo, CA 93407-0441\", \"description\": \"The Performing Arts Center San Luis Obispo is world-class venue, showcasing sweeping musicals and cutting-edge music. Recently updated with a state-of-art sound system, lighting and seating, the PAC has not only harnessed the transformative power of performance, but has also become the hub of the community. Located on the beautiful Central Coast of California on the Cal Poly campus, the PAC has two main venues. The majestic 1,286-seat Harold Miossi Hall and the nearly 500 seat Alex and Faye S...\"}}, {\"node_key\": \"Attraction::128038\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"128038\", \"name\": \"Mission San Luis Obispo de Tolosa\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Missions\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 98 things to do in San Luis Obispo\", \"address\": \"751 Palm St, San Luis Obispo, CA 93401-3521\", \"description\": \"Founded on September 1, 1772, this is considered one of the most beautiful missions in California and still serves as an active church in the community.\"}}, {\"node_key\": \"Attraction::3332341\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3332341\", \"name\": \"Avila Valley Barn\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Farms\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 98 things to do in San Luis Obispo\", \"address\": \"560 Avila Beach Dr, San Luis Obispo, CA 93405-8047\"}}, {\"node_key\": \"Attraction::273715\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"273715\", \"name\": \"Farmers Market\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Flea & Street Markets\"], \"subcategories\": [\"Shopping\"], \"visit_duration\": \"1.5\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 98 things to do in San Luis Obispo\", \"address\": \"Higuera Street, San Luis Obispo, CA 93401\", \"description\": \"Every Thursday night through out the year, the city hosts a delightful outdoor market/festival where local farmers sell the freshest fruits, vegetables and produce while local musicians and performers entertain the crowds.\"}}, {\"node_key\": \"Attraction::279928\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"279928\", \"name\": \"California Polytechnic University\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Educational sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 98 things to do in San Luis Obispo\", \"address\": \"1 Grand Ave, San Luis Obispo, CA 93407-9000\"}}, {\"node_key\": \"Attraction::279177\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"279177\", \"name\": \"Bishop Peak\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Geologic Formations\", \"Lookouts\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 98 things to do in San Luis Obispo\", \"address\": \"Patricia Drive, San Luis Obispo, CA 93405\", \"description\": \"Named because it resembles a bishop's hat, the highest peak of the Morros range is heavily used by hikers and bicyclists. The climb to the top will take anywhere from one to two hours depending on your fitness level.\"}}, {\"node_key\": \"Attraction::279138\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"279138\", \"name\": \"Mission Plaza\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 98 things to do in San Luis Obispo\", \"address\": \"San Luis Obispo, CA\", \"description\": \"Two-block area of downtown serves as the community's cultural and social center complemented with great shopping, outdoor and indoor dining and nightlife.\"}}, {\"node_key\": \"Attraction::531934\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"531934\", \"name\": \"Edna Valley Vineyard\", \"City\": \"San Luis Obispo\", \"subtype\": [\"Wineries & Vineyards\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 98 things to do in San Luis Obispo\", \"address\": \"2585 Biddle Ranch Rd, San Luis Obispo, CA 93401-8319\"}}, {\"node_key\": \"Restaurant::27995075.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"27995075.0\", \"name\": \"Lure Fish House\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Seafood\"], \"avg_cost\": \"30.0\", \"rating\": \"5.0\", \"address\": \"1101 Monterey Ave, San Luis Obispo, CA 93401\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::582571.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"582571.0\", \"name\": \"Novo Restaurant & Lounge\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"726 Higuera St, San Luis Obispo, CA 93401-3513\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::1991642.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1991642.0\", \"name\": \"Giuseppe’s Cucina Rustica\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Pizza\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"849 Monterey St, San Luis Obispo, CA 93401-3224\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], []], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::339017.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"339017.0\", \"name\": \"Buona Tavola\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1037 Monterey St, San Luis Obispo, CA 93401-3206\", \"hours\": {\"weekRanges\": [[{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::859944.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"859944.0\", \"name\": \"Mama's Meatball\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"570 Higuera St Ste 130 Suite 130, San Luis Obispo, CA 93401\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::817816.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"817816.0\", \"name\": \"High Street Market & Deli\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\"], \"cuisines\": [\"American\", \"Deli\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"350 High St, San Luis Obispo, CA 93401-5153\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::602112.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"602112.0\", \"name\": \"Koberl At Blue\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"998 Monterey St, San Luis Obispo, CA 93401-3205\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::449315.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"449315.0\", \"name\": \"Goshi\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Japanese\", \"Sushi\", \"Asian\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"570 Higuera St, San Luis Obispo, CA 93401-3849\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}], [], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 825, \"closeHours\": \"13:45\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 825, \"closeHours\": \"13:45\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 825, \"closeHours\": \"13:45\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 825, \"closeHours\": \"13:45\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 825, \"closeHours\": \"13:45\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1305, \"closeHours\": \"21:45\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::3982091.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3982091.0\", \"name\": \"Taste Craft Eatery\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Healthy\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2550 Broad St, San Luis Obispo, CA 93401-6792\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::10732821.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"10732821.0\", \"name\": \"Flour House\", \"City\": \"San Luis Obispo\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Italian\", \"Pizza\", \"Neapolitan\", \"Campania\", \"Southern-Italian\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"690 Higuera St, San Luis Obispo, CA 93401-3511\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Event::LvZ18_0aPE5-mzZZvkbOp\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_0aPE5-mzZZvkbOp\", \"name\": \"Dragon Lights Reno\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Cultural\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster\", \"availabilityStarts\": \"2024-07-01T07:00:00Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_0aPE5-mzZZvkbO9\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_0aPE5-mzZZvkbO9\", \"name\": \"Dragon Lights Reno\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Cultural\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster\", \"availabilityStarts\": \"2024-07-01T07:00:00Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_0aPE5-mzZZvkbOb\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_0aPE5-mzZZvkbOb\", \"name\": \"Dragon Lights Reno\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Cultural\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster\", \"availabilityStarts\": \"2024-07-01T07:00:00Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7u68z\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u68z\", \"name\": \"John Hiatt\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u68z\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7GgGs\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7GgGs\", \"name\": \"Psychedelic Furs w/ The Jesus and Mary Chain\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7GgGs\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7Gtvt\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7Gtvt\", \"name\": \"Puffs\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7Gtvt\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7Gtvb\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7Gtvb\", \"name\": \"Puffs\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7Gtvb\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7Cbaz\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7Cbaz\", \"name\": \"Sacramento State Hornets Football vs. Portland State Vikings Football\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7Cbaz\", \"availabilityStarts\": \"1900-01-01T18:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5vYZbCEosIt5\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5vYZbCEosIt5\", \"name\": \"The Fab Four\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/the-fab-four-tickets-872153744327\", \"availabilityStarts\": \"2024-07-09T21:55:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5vYZbFXsxAi7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5vYZbFXsxAi7\", \"name\": \"The Fab Four: USA Meets The Beatles!\", \"city\": \"San Luis Obispo\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/the-fab-four-tickets-872153744327\", \"availabilityStarts\": \"2024-04-19T17:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::273715\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 32.43}, {\"source\": \"Restaurant::10732821.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 32.43}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 54.12}, {\"source\": \"Restaurant::582571.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 54.12}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 62.5}, {\"source\": \"Restaurant::1991642.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 62.5}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 129.45}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 145.05}, {\"source\": \"Restaurant::582571.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 145.05}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 156.13}, {\"source\": \"Restaurant::1991642.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 156.13}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 167.63}, {\"source\": \"Restaurant::582571.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 167.63}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 183.58}, {\"source\": \"Restaurant::10732821.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 183.58}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 194.3}, {\"source\": \"Restaurant::10732821.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 194.3}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 214.18}, {\"source\": \"Restaurant::449315.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 214.18}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 222.15}, {\"source\": \"Restaurant::859944.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 222.15}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 233.03}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 240.04}, {\"source\": \"Restaurant::1991642.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 240.04}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 249.73}, {\"source\": \"Restaurant::602112.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 249.73}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 252.83}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 258.83}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 269.25}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 294.92}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 319.52}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 320.99}, {\"source\": \"Restaurant::449315.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 320.99}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 323.14}, {\"source\": \"Restaurant::602112.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 323.14}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 326.15}, {\"source\": \"Restaurant::859944.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 326.15}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 326.4}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 328.89}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 343.68}, {\"source\": \"Restaurant::339017.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 343.68}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 370.19}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 371.47}, {\"source\": \"Restaurant::449315.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 371.47}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 374.5}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 378.0}, {\"source\": \"Restaurant::859944.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 378.0}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 402.15}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 420.51}, {\"source\": \"Restaurant::339017.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 420.51}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 430.54}, {\"source\": \"Restaurant::602112.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 430.54}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 432.26}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 448.99}, {\"source\": \"Restaurant::27995075.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 448.99}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 461.67}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 468.38}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 478.36}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 492.01}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 516.0}, {\"source\": \"Restaurant::339017.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 516.0}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 516.84}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 517.75}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 524.95}, {\"source\": \"Restaurant::27995075.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 524.95}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 525.27}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 531.48}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 533.57}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 545.22}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 551.22}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 558.92}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 571.54}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 575.71}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 588.35}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 596.26}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 607.7}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 608.25}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 618.43}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 618.88}, {\"source\": \"Restaurant::27995075.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 618.88}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 647.67}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 679.63}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 694.55}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 720.25}, {\"source\": \"Attraction::273715\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 725.39}, {\"source\": \"Restaurant::817816.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 725.39}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 748.2}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 757.96}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 758.32}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 779.26}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 802.49}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 810.43}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 811.96}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 818.38}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 823.16}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 826.59}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 833.08}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 833.4}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 834.13}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 842.8}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 843.46}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 867.25}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 876.17}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 890.61}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 892.3}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 898.35}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 904.09}, {\"source\": \"Attraction::279138\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 908.75}, {\"source\": \"Restaurant::817816.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 908.75}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 912.95}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 915.3}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 918.88}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 919.3}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 921.35}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 921.75}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 924.06}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 924.86}, {\"source\": \"Attraction::128038\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 925.46}, {\"source\": \"Restaurant::817816.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 925.46}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 933.61}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 937.46}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 941.8}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 945.82}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 946.9}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 947.19}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 947.76}, {\"source\": \"Accommodation::27808609.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 948.68}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 949.47}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 949.94}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 952.64}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 965.43}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 972.13}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 974.87}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 980.44}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 981.76}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 983.49}, {\"source\": \"Accommodation::16490196.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1017.61}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Attraction::273715\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1020.32}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::10732821.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1037.21}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1052.16}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1062.1}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1062.69}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1068.0}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::449315.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1080.07}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1081.76}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::859944.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1088.19}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1094.28}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1115.08}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1121.88}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1128.5}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1156.18}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1164.39}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Attraction::279928\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1172.74}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1202.84}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1219.16}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1220.35}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1225.02}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1229.13}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1253.7}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1269.2}, {\"source\": \"Accommodation::8.58e+17\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1337.93}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1340.34}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Restaurant::817816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1348.31}, {\"source\": \"Accommodation::52442101.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1356.53}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1362.67}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::602112.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1378.02}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1407.74}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::339017.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1428.68}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Restaurant::1991642.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1434.45}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Attraction::279138\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1496.24}, {\"source\": \"Accommodation::11669115.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1497.89}, {\"source\": \"Accommodation::4182977.0\", \"target\": \"Attraction::279928\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1503.26}, {\"source\": \"Accommodation::49451005.0\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1505.78}, {\"source\": \"Accommodation::37528080.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1544.54}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Attraction::128038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1576.68}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Restaurant::582571.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1595.13}, {\"source\": \"Accommodation::6153985.0\", \"target\": \"Attraction::279174\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1618.41}, {\"source\": \"Attraction::279928\", \"target\": \"Restaurant::27995075.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1621.85}, {\"source\": \"Restaurant::27995075.0\", \"target\": \"Attraction::279928\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1621.85}, {\"source\": \"Accommodation::16676175.0\", \"target\": \"Restaurant::3982091.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1629.94}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-13\", \"2024-11-14\", \"2024-11-15\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3029855\", \"dep_time\": \"11:00\", \"arr_time\": \"12:30\", \"local_activity_start_after_arrival_buffer\": \"13:00\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F0402404\", \"dep_time\": \"10:46\", \"arr_time\": \"13:01\", \"local_activity_start_after_arrival_buffer\": \"13:31\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2588192\", \"dep_time\": \"10:26\", \"arr_time\": \"11:49\", \"local_activity_start_after_arrival_buffer\": \"12:19\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F1376878\", \"dep_time\": \"10:27\", \"arr_time\": \"12:04\", \"local_activity_start_after_arrival_buffer\": \"12:34\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2134984\", \"dep_time\": \"10:15\", \"arr_time\": \"11:53\", \"local_activity_start_after_arrival_buffer\": \"12:23\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2135017\", \"dep_time\": \"13:04\", \"arr_time\": \"18:11\", \"latest_local_activity_finish_before_airport_buffer\": \"11:04\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F1032255\", \"dep_time\": \"13:35\", \"arr_time\": \"18:31\", \"latest_local_activity_finish_before_airport_buffer\": \"11:35\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F0402436\", \"dep_time\": \"13:29\", \"arr_time\": \"18:18\", \"latest_local_activity_finish_before_airport_buffer\": \"11:29\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F3029886\", \"dep_time\": \"13:31\", \"arr_time\": \"18:57\", \"latest_local_activity_finish_before_airport_buffer\": \"11:31\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F3605329\", \"dep_time\": \"13:39\", \"arr_time\": \"18:39\", \"latest_local_activity_finish_before_airport_buffer\": \"11:39\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [], \"lunch\": [\"Restaurant::27995075.0\", \"Restaurant::582571.0\", \"Restaurant::1991642.0\", \"Restaurant::339017.0\", \"Restaurant::859944.0\", \"Restaurant::817816.0\", \"Restaurant::449315.0\", \"Restaurant::3982091.0\", \"Restaurant::10732821.0\"], \"dinner\": [\"Restaurant::27995075.0\", \"Restaurant::582571.0\", \"Restaurant::1991642.0\", \"Restaurant::339017.0\", \"Restaurant::859944.0\", \"Restaurant::602112.0\", \"Restaurant::449315.0\", \"Restaurant::3982091.0\", \"Restaurant::10732821.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::3372296\", \"Attraction::12206572\", \"Attraction::279174\", \"Attraction::128038\", \"Attraction::3332341\", \"Attraction::273715\", \"Attraction::279928\", \"Attraction::279177\", \"Attraction::279138\", \"Attraction::531934\"], \"afternoon_attraction\": [\"Attraction::3372296\", \"Attraction::12206572\", \"Attraction::279174\", \"Attraction::128038\", \"Attraction::3332341\", \"Attraction::273715\", \"Attraction::279928\", \"Attraction::279177\", \"Attraction::279138\", \"Attraction::531934\"]}, \"event_slots_by_date\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [], \"lunch\": [{\"node_key\": \"Restaurant::27995075.0\", \"name\": \"Lure Fish House\"}, {\"node_key\": \"Restaurant::582571.0\", \"name\": \"Novo Restaurant & Lounge\"}, {\"node_key\": \"Restaurant::1991642.0\", \"name\": \"Giuseppe’s Cucina Rustica\"}, {\"node_key\": \"Restaurant::339017.0\", \"name\": \"Buona Tavola\"}, {\"node_key\": \"Restaurant::859944.0\", \"name\": \"Mama's Meatball\"}, {\"node_key\": \"Restaurant::817816.0\", \"name\": \"High Street Market & Deli\"}, {\"node_key\": \"Restaurant::449315.0\", \"name\": \"Goshi\"}, {\"node_key\": \"Restaurant::3982091.0\", \"name\": \"Taste Craft Eatery\"}, {\"node_key\": \"Restaurant::10732821.0\", \"name\": \"Flour House\"}], \"dinner\": [{\"node_key\": \"Restaurant::27995075.0\", \"name\": \"Lure Fish House\"}, {\"node_key\": \"Restaurant::582571.0\", \"name\": \"Novo Restaurant & Lounge\"}, {\"node_key\": \"Restaurant::1991642.0\", \"name\": \"Giuseppe’s Cucina Rustica\"}, {\"node_key\": \"Restaurant::339017.0\", \"name\": \"Buona Tavola\"}, {\"node_key\": \"Restaurant::859944.0\", \"name\": \"Mama's Meatball\"}, {\"node_key\": \"Restaurant::602112.0\", \"name\": \"Koberl At Blue\"}, {\"node_key\": \"Restaurant::449315.0\", \"name\": \"Goshi\"}, {\"node_key\": \"Restaurant::3982091.0\", \"name\": \"Taste Craft Eatery\"}, {\"node_key\": \"Restaurant::10732821.0\", \"name\": \"Flour House\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-13\", \"required_slots\": {\"Flight::F3029855\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F0402404\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2588192\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F1376878\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2134984\": [\"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-14\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-15\", \"required_slots\": {\"Flight::F2135017\": [\"breakfast\", \"morning_attraction\"], \"Flight::F1032255\": [\"breakfast\", \"morning_attraction\"], \"Flight::F0402436\": [\"breakfast\", \"morning_attraction\"], \"Flight::F3029886\": [\"breakfast\", \"morning_attraction\"], \"Flight::F3605329\": [\"breakfast\", \"morning_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_13",
+    "query_text": "Plan a 3-day trip for 8 people from Dallas to San Luis Obispo from November 13th to November 15th, 2024, with a budget of $13,950. Accommodations should include an entire home.",
+    "request": {
+      "org": "Dallas",
+      "dest": "San Luis Obispo",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-13', '2024-11-14', '2024-11-15']",
+      "people_number": 8,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': 'entire home', 'event': None, 'attraction': None, 'transportation': None}",
+      "budget": 13950,
+      "query": "Plan a 3-day trip for 8 people from Dallas to San Luis Obispo from November 13th to November 15th, 2024, with a budget of $13,950. Accommodations should include an entire home.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-13",
+      "2024-11-14",
+      "2024-11-15"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": "entire home",
+      "event": null,
+      "attraction": null,
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3029855",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Dallas",
+          "DestCityName": "San Luis Obispo",
+          "DepTime": "11:00",
+          "ArrTime": "12:30",
+          "Price": 319
+        }
+      },
+      {
+        "node_key": "Flight::F0402404",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Dallas",
+          "DestCityName": "San Luis Obispo",
+          "DepTime": "10:46",
+          "ArrTime": "13:01",
+          "Price": 418
+        }
+      },
+      {
+        "node_key": "Flight::F2588192",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Dallas",
+          "DestCityName": "San Luis Obispo",
+          "DepTime": "10:26",
+          "ArrTime": "11:49",
+          "Price": 635
+        }
+      },
+      {
+        "node_key": "Flight::F1376878",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Dallas",
+          "DestCityName": "San Luis Obispo",
+          "DepTime": "10:27",
+          "ArrTime": "12:04",
+          "Price": 649
+        }
+      },
+      {
+        "node_key": "Flight::F2134984",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Dallas",
+          "DestCityName": "San Luis Obispo",
+          "DepTime": "10:15",
+          "ArrTime": "11:53",
+          "Price": 658
+        }
+      },
+      {
+        "node_key": "Flight::F2135017",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "San Luis Obispo",
+          "DestCityName": "Dallas",
+          "DepTime": "13:04",
+          "ArrTime": "18:11",
+          "Price": 417
+        }
+      },
+      {
+        "node_key": "Flight::F1032255",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "San Luis Obispo",
+          "DestCityName": "Dallas",
+          "DepTime": "13:35",
+          "ArrTime": "18:31",
+          "Price": 483
+        }
+      },
+      {
+        "node_key": "Flight::F0402436",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "San Luis Obispo",
+          "DestCityName": "Dallas",
+          "DepTime": "13:29",
+          "ArrTime": "18:18",
+          "Price": 509
+        }
+      },
+      {
+        "node_key": "Flight::F3029886",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "San Luis Obispo",
+          "DestCityName": "Dallas",
+          "DepTime": "13:31",
+          "ArrTime": "18:57",
+          "Price": 521
+        }
+      },
+      {
+        "node_key": "Flight::F3605329",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "San Luis Obispo",
+          "DestCityName": "Dallas",
+          "DepTime": "13:39",
+          "ArrTime": "18:39",
+          "Price": 563
+        }
+      },
+      {
+        "node_key": "Accommodation::27808609.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "27808609.0",
+          "name": "SLO Guesthouse - quiet - near downtown - #115545",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$138 per night",
+            "originalPrice": null,
+            "price": "$138",
+            "qualifier": "night",
+            "total": "$686 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  523 reviews",
+            "localizedLabel": "4.98 (523)",
+            "average": 4.98,
+            "reviewsCount": 523
+          },
+          "coordinates": {
+            "latitude": 35.28664,
+            "longitude": -120.66875
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::37528080.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "37528080.0",
+          "name": "Cottage in SLO / Historic Downtown District",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$250 per night",
+            "originalPrice": null,
+            "price": "$250",
+            "qualifier": "night",
+            "total": "$1,247 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  572 reviews",
+            "localizedLabel": "4.98 (572)",
+            "average": 4.98,
+            "reviewsCount": 572
+          },
+          "coordinates": {
+            "latitude": 35.28023,
+            "longitude": -120.65517
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::6153985.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "6153985.0",
+          "name": "Mid-Century Design Close to Downtown & Cal Poly",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$205 per night",
+            "originalPrice": null,
+            "price": "$205",
+            "qualifier": "night",
+            "total": "$1,024 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  1133 reviews",
+            "localizedLabel": "4.93 (1133)",
+            "average": 4.93,
+            "reviewsCount": 1133
+          },
+          "coordinates": {
+            "latitude": 35.28615,
+            "longitude": -120.64881
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16490196.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16490196.0",
+          "name": "Stylish and Comfortable Lofted Townhouse, Downtown SLO",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10 & No pets",
+          "pricing": {
+            "label": "$260 per night",
+            "originalPrice": null,
+            "price": "$260",
+            "qualifier": "night",
+            "total": "$1,299 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  494 reviews",
+            "localizedLabel": "4.99 (494)",
+            "average": 4.99,
+            "reviewsCount": 494
+          },
+          "coordinates": {
+            "latitude": 35.27349,
+            "longitude": -120.65863
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::49451005.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "49451005.0",
+          "name": "Harris House",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$125 per night",
+            "originalPrice": null,
+            "price": "$125",
+            "qualifier": "night",
+            "total": "$624 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  358 reviews",
+            "localizedLabel": "4.91 (358)",
+            "average": 4.91,
+            "reviewsCount": 358
+          },
+          "coordinates": {
+            "latitude": 35.26966,
+            "longitude": -120.66441
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::11669115.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "11669115.0",
+          "name": "Two Palms Cottage at Beebee St.",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$248 per night",
+            "originalPrice": null,
+            "price": "$248",
+            "qualifier": "night",
+            "total": "$1,236 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  411 reviews",
+            "localizedLabel": "4.95 (411)",
+            "average": 4.95,
+            "reviewsCount": 411
+          },
+          "coordinates": {
+            "latitude": 35.27077,
+            "longitude": -120.66743
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::8.58e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "8.58e+17",
+          "name": "Cozy Studio Close to Downtown SLO",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$161 per night",
+            "originalPrice": null,
+            "price": "$161",
+            "qualifier": "night",
+            "total": "$803 total"
+          },
+          "rating": {
+            "label": "4.82 out of 5 average rating,  108 reviews",
+            "localizedLabel": "4.82 (108)",
+            "average": 4.82,
+            "reviewsCount": 108
+          },
+          "coordinates": {
+            "latitude": 35.2708,
+            "longitude": -120.66238
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::52442101.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "52442101.0",
+          "name": "Eclectic apartment in the heart of downtown SLO.",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$235 per night",
+            "originalPrice": null,
+            "price": "$235",
+            "qualifier": "night",
+            "total": "$1,174 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  237 reviews",
+            "localizedLabel": "5.0 (237)",
+            "average": 5,
+            "reviewsCount": 237
+          },
+          "coordinates": {
+            "latitude": 35.276695,
+            "longitude": -120.661446
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::4182977.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "4182977.0",
+          "name": "The Corner Nook",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$183 per night",
+            "originalPrice": null,
+            "price": "$183",
+            "qualifier": "night",
+            "total": "$915 total"
+          },
+          "rating": {
+            "label": "4.8 out of 5 average rating,  604 reviews",
+            "localizedLabel": "4.8 (604)",
+            "average": 4.8,
+            "reviewsCount": 604
+          },
+          "coordinates": {
+            "latitude": 35.28344,
+            "longitude": -120.65856
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16676175.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16676175.0",
+          "name": "The Downtown House SLO with Private Parking",
+          "City": "San Luis Obispo",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$286 per night",
+            "originalPrice": null,
+            "price": "$286",
+            "qualifier": "night",
+            "total": "$1,430 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  363 reviews",
+            "localizedLabel": "4.96 (363)",
+            "average": 4.96,
+            "reviewsCount": 363
+          },
+          "coordinates": {
+            "latitude": 35.28051,
+            "longitude": -120.65833
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::3372296",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3372296",
+          "name": "Chamisal Vineyards",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Wineries & Vineyards"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#1 of 98 things to do in San Luis Obispo",
+          "address": "7525 Orcutt Rd, San Luis Obispo, CA 93401-8341",
+          "description": "Chamisal Vineyards is located in a tranquil setting just 10 minutes from downtown San Luis Obispo in the beautiful Edna Valley. Come taste our sustainably produced Chardonnay and Pinot Noir straight from the source."
+        }
+      },
+      {
+        "node_key": "Attraction::12206572",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "12206572",
+          "name": "Highway 1 Road Trip",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Scenic Drives"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.5",
+          "rating": "5.0",
+          "rankingString": "#2 of 98 things to do in San Luis Obispo",
+          "address": "San Luis Obispo, CA",
+          "description": "Roam this 101-mile stretch of Highway 1 in San Luis Obispo County (SLO CAL) where you'll find 10 uncrowded beaches, 12 state parks, Hearst Castle, three bountiful wine regions, farm-to-table cuisine, and unique wildlife habitats. Wherever you roam along the Highway 1 Discovery Route, you will find the best of Highway 1!"
+        }
+      },
+      {
+        "node_key": "Attraction::279174",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "279174",
+          "name": "Performing Arts Center San Luis Obispo",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Theaters"
+          ],
+          "subcategories": [
+            "Concerts & Shows"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#12 of 98 things to do in San Luis Obispo",
+          "address": "1 Grand Ave California Polytechnic State University, San Luis Obispo, CA 93407-0441",
+          "description": "The Performing Arts Center San Luis Obispo is world-class venue, showcasing sweeping musicals and cutting-edge music. Recently updated with a state-of-art sound system, lighting and seating, the PAC has not only harnessed the transformative power of performance, but has also become the hub of the community. Located on the beautiful Central Coast of California on the Cal Poly campus, the PAC has two main venues. The majestic 1,286-seat Harold Miossi Hall and the nearly 500 seat Alex and Faye S..."
+        }
+      },
+      {
+        "node_key": "Attraction::128038",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "128038",
+          "name": "Mission San Luis Obispo de Tolosa",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Missions"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#6 of 98 things to do in San Luis Obispo",
+          "address": "751 Palm St, San Luis Obispo, CA 93401-3521",
+          "description": "Founded on September 1, 1772, this is considered one of the most beautiful missions in California and still serves as an active church in the community."
+        }
+      },
+      {
+        "node_key": "Attraction::3332341",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3332341",
+          "name": "Avila Valley Barn",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Farms"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 98 things to do in San Luis Obispo",
+          "address": "560 Avila Beach Dr, San Luis Obispo, CA 93405-8047"
+        }
+      },
+      {
+        "node_key": "Attraction::273715",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "273715",
+          "name": "Farmers Market",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Flea & Street Markets"
+          ],
+          "subcategories": [
+            "Shopping"
+          ],
+          "visit_duration": "1.5",
+          "rating": "4.5",
+          "rankingString": "#3 of 98 things to do in San Luis Obispo",
+          "address": "Higuera Street, San Luis Obispo, CA 93401",
+          "description": "Every Thursday night through out the year, the city hosts a delightful outdoor market/festival where local farmers sell the freshest fruits, vegetables and produce while local musicians and performers entertain the crowds."
+        }
+      },
+      {
+        "node_key": "Attraction::279928",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "279928",
+          "name": "California Polytechnic University",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Educational sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#7 of 98 things to do in San Luis Obispo",
+          "address": "1 Grand Ave, San Luis Obispo, CA 93407-9000"
+        }
+      },
+      {
+        "node_key": "Attraction::279177",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "279177",
+          "name": "Bishop Peak",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Geologic Formations",
+            "Lookouts"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#5 of 98 things to do in San Luis Obispo",
+          "address": "Patricia Drive, San Luis Obispo, CA 93405",
+          "description": "Named because it resembles a bishop's hat, the highest peak of the Morros range is heavily used by hikers and bicyclists. The climb to the top will take anywhere from one to two hours depending on your fitness level."
+        }
+      },
+      {
+        "node_key": "Attraction::279138",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "279138",
+          "name": "Mission Plaza",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#10 of 98 things to do in San Luis Obispo",
+          "address": "San Luis Obispo, CA",
+          "description": "Two-block area of downtown serves as the community's cultural and social center complemented with great shopping, outdoor and indoor dining and nightlife."
+        }
+      },
+      {
+        "node_key": "Attraction::531934",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "531934",
+          "name": "Edna Valley Vineyard",
+          "City": "San Luis Obispo",
+          "subtype": [
+            "Wineries & Vineyards"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#15 of 98 things to do in San Luis Obispo",
+          "address": "2585 Biddle Ranch Rd, San Luis Obispo, CA 93401-8319"
+        }
+      },
+      {
+        "node_key": "Restaurant::27995075.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "27995075.0",
+          "name": "Lure Fish House",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Seafood"
+          ],
+          "avg_cost": "30.0",
+          "rating": "5.0",
+          "address": "1101 Monterey Ave, San Luis Obispo, CA 93401",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::582571.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "582571.0",
+          "name": "Novo Restaurant & Lounge",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "726 Higuera St, San Luis Obispo, CA 93401-3513",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1991642.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1991642.0",
+          "name": "Giuseppe’s Cucina Rustica",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "849 Monterey St, San Luis Obispo, CA 93401-3224",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              []
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::339017.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "339017.0",
+          "name": "Buona Tavola",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1037 Monterey St, San Luis Obispo, CA 93401-3206",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::859944.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "859944.0",
+          "name": "Mama's Meatball",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "570 Higuera St Ste 130 Suite 130, San Luis Obispo, CA 93401",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::817816.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "817816.0",
+          "name": "High Street Market & Deli",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch"
+          ],
+          "cuisines": [
+            "American",
+            "Deli"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "350 High St, San Luis Obispo, CA 93401-5153",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1050,
+                  "closeHours": "17:30"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::602112.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "602112.0",
+          "name": "Koberl At Blue",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "998 Monterey St, San Luis Obispo, CA 93401-3205",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::449315.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "449315.0",
+          "name": "Goshi",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Sushi",
+            "Asian"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "570 Higuera St, San Luis Obispo, CA 93401-3849",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 825,
+                  "closeHours": "13:45"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 825,
+                  "closeHours": "13:45"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 825,
+                  "closeHours": "13:45"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 825,
+                  "closeHours": "13:45"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 825,
+                  "closeHours": "13:45"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1305,
+                  "closeHours": "21:45"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3982091.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3982091.0",
+          "name": "Taste Craft Eatery",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Healthy"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2550 Broad St, San Luis Obispo, CA 93401-6792",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::10732821.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "10732821.0",
+          "name": "Flour House",
+          "City": "San Luis Obispo",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza",
+            "Neapolitan",
+            "Campania",
+            "Southern-Italian"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "690 Higuera St, San Luis Obispo, CA 93401-3511",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_0aPE5-mzZZvkbOp",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_0aPE5-mzZZvkbOp",
+          "name": "Dragon Lights Reno",
+          "city": "San Luis Obispo",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Cultural",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster",
+            "availabilityStarts": "2024-07-01T07:00:00Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_0aPE5-mzZZvkbO9",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_0aPE5-mzZZvkbO9",
+          "name": "Dragon Lights Reno",
+          "city": "San Luis Obispo",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Cultural",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster",
+            "availabilityStarts": "2024-07-01T07:00:00Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_0aPE5-mzZZvkbOb",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_0aPE5-mzZZvkbOb",
+          "name": "Dragon Lights Reno",
+          "city": "San Luis Obispo",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Cultural",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/dragon-lights-reno-tickets-ZMT8HK?ref=ticketmaster",
+            "availabilityStarts": "2024-07-01T07:00:00Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u68z",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u68z",
+          "name": "John Hiatt",
+          "city": "San Luis Obispo",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u68z",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7GgGs",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7GgGs",
+          "name": "Psychedelic Furs w/ The Jesus and Mary Chain",
+          "city": "San Luis Obispo",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7GgGs",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7Gtvt",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7Gtvt",
+          "name": "Puffs",
+          "city": "San Luis Obispo",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7Gtvt",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7Gtvb",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7Gtvb",
+          "name": "Puffs",
+          "city": "San Luis Obispo",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7Gtvb",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7Cbaz",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7Cbaz",
+          "name": "Sacramento State Hornets Football vs. Portland State Vikings Football",
+          "city": "San Luis Obispo",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7Cbaz",
+            "availabilityStarts": "1900-01-01T18:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5vYZbCEosIt5",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5vYZbCEosIt5",
+          "name": "The Fab Four",
+          "city": "San Luis Obispo",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/the-fab-four-tickets-872153744327",
+            "availabilityStarts": "2024-07-09T21:55:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5vYZbFXsxAi7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5vYZbFXsxAi7",
+          "name": "The Fab Four: USA Meets The Beatles!",
+          "city": "San Luis Obispo",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/the-fab-four-tickets-872153744327",
+            "availabilityStarts": "2024-04-19T17:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 32.43
+      },
+      {
+        "source": "Restaurant::10732821.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 32.43
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 54.12
+      },
+      {
+        "source": "Restaurant::582571.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 54.12
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 62.5
+      },
+      {
+        "source": "Restaurant::1991642.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 62.5
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 129.45
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 145.05
+      },
+      {
+        "source": "Restaurant::582571.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 145.05
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 156.13
+      },
+      {
+        "source": "Restaurant::1991642.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 156.13
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 167.63
+      },
+      {
+        "source": "Restaurant::582571.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 167.63
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 183.58
+      },
+      {
+        "source": "Restaurant::10732821.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 183.58
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 194.3
+      },
+      {
+        "source": "Restaurant::10732821.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 194.3
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 214.18
+      },
+      {
+        "source": "Restaurant::449315.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 214.18
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 222.15
+      },
+      {
+        "source": "Restaurant::859944.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 222.15
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 233.03
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 240.04
+      },
+      {
+        "source": "Restaurant::1991642.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 240.04
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 249.73
+      },
+      {
+        "source": "Restaurant::602112.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 249.73
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 252.83
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 258.83
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 269.25
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 294.92
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 319.52
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 320.99
+      },
+      {
+        "source": "Restaurant::449315.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 320.99
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 323.14
+      },
+      {
+        "source": "Restaurant::602112.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 323.14
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 326.15
+      },
+      {
+        "source": "Restaurant::859944.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 326.15
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 326.4
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 328.89
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 343.68
+      },
+      {
+        "source": "Restaurant::339017.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 343.68
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 370.19
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 371.47
+      },
+      {
+        "source": "Restaurant::449315.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 371.47
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 374.5
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 378.0
+      },
+      {
+        "source": "Restaurant::859944.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 378.0
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 402.15
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 420.51
+      },
+      {
+        "source": "Restaurant::339017.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 420.51
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 430.54
+      },
+      {
+        "source": "Restaurant::602112.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 430.54
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 432.26
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 448.99
+      },
+      {
+        "source": "Restaurant::27995075.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 448.99
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 461.67
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 468.38
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 478.36
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 492.01
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 516.0
+      },
+      {
+        "source": "Restaurant::339017.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 516.0
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 516.84
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 517.75
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 524.95
+      },
+      {
+        "source": "Restaurant::27995075.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 524.95
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 525.27
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 531.48
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 533.57
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 545.22
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 551.22
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 558.92
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 571.54
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 575.71
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 588.35
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 596.26
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 607.7
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 608.25
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 618.43
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 618.88
+      },
+      {
+        "source": "Restaurant::27995075.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 618.88
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 647.67
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 679.63
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 694.55
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 720.25
+      },
+      {
+        "source": "Attraction::273715",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 725.39
+      },
+      {
+        "source": "Restaurant::817816.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 725.39
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 748.2
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 757.96
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 758.32
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 779.26
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 802.49
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 810.43
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 811.96
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 818.38
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 823.16
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 826.59
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 833.08
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 833.4
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 834.13
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 842.8
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 843.46
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 867.25
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 876.17
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 890.61
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 892.3
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 898.35
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 904.09
+      },
+      {
+        "source": "Attraction::279138",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 908.75
+      },
+      {
+        "source": "Restaurant::817816.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 908.75
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 912.95
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 915.3
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 918.88
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 919.3
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 921.35
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 921.75
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 924.06
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 924.86
+      },
+      {
+        "source": "Attraction::128038",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 925.46
+      },
+      {
+        "source": "Restaurant::817816.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 925.46
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 933.61
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 937.46
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 941.8
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 945.82
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 946.9
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 947.19
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 947.76
+      },
+      {
+        "source": "Accommodation::27808609.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 948.68
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 949.47
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 949.94
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 952.64
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 965.43
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 972.13
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 974.87
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 980.44
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 981.76
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 983.49
+      },
+      {
+        "source": "Accommodation::16490196.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1017.61
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Attraction::273715",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1020.32
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::10732821.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1037.21
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1052.16
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1062.1
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1062.69
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1068.0
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::449315.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1080.07
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1081.76
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::859944.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1088.19
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1094.28
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1115.08
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1121.88
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1128.5
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1156.18
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1164.39
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Attraction::279928",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1172.74
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1202.84
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1219.16
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1220.35
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1225.02
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1229.13
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1253.7
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1269.2
+      },
+      {
+        "source": "Accommodation::8.58e+17",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1337.93
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1340.34
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Restaurant::817816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1348.31
+      },
+      {
+        "source": "Accommodation::52442101.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1356.53
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1362.67
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::602112.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1378.02
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1407.74
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::339017.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1428.68
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Restaurant::1991642.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1434.45
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Attraction::279138",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1496.24
+      },
+      {
+        "source": "Accommodation::11669115.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1497.89
+      },
+      {
+        "source": "Accommodation::4182977.0",
+        "target": "Attraction::279928",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1503.26
+      },
+      {
+        "source": "Accommodation::49451005.0",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1505.78
+      },
+      {
+        "source": "Accommodation::37528080.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1544.54
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Attraction::128038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1576.68
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Restaurant::582571.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1595.13
+      },
+      {
+        "source": "Accommodation::6153985.0",
+        "target": "Attraction::279174",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1618.41
+      },
+      {
+        "source": "Attraction::279928",
+        "target": "Restaurant::27995075.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1621.85
+      },
+      {
+        "source": "Restaurant::27995075.0",
+        "target": "Attraction::279928",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1621.85
+      },
+      {
+        "source": "Accommodation::16676175.0",
+        "target": "Restaurant::3982091.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1629.94
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-13",
+        "2024-11-14",
+        "2024-11-15"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3029855",
+          "dep_time": "11:00",
+          "arr_time": "12:30",
+          "local_activity_start_after_arrival_buffer": "13:00",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F0402404",
+          "dep_time": "10:46",
+          "arr_time": "13:01",
+          "local_activity_start_after_arrival_buffer": "13:31",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2588192",
+          "dep_time": "10:26",
+          "arr_time": "11:49",
+          "local_activity_start_after_arrival_buffer": "12:19",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F1376878",
+          "dep_time": "10:27",
+          "arr_time": "12:04",
+          "local_activity_start_after_arrival_buffer": "12:34",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2134984",
+          "dep_time": "10:15",
+          "arr_time": "11:53",
+          "local_activity_start_after_arrival_buffer": "12:23",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2135017",
+          "dep_time": "13:04",
+          "arr_time": "18:11",
+          "latest_local_activity_finish_before_airport_buffer": "11:04",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F1032255",
+          "dep_time": "13:35",
+          "arr_time": "18:31",
+          "latest_local_activity_finish_before_airport_buffer": "11:35",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F0402436",
+          "dep_time": "13:29",
+          "arr_time": "18:18",
+          "latest_local_activity_finish_before_airport_buffer": "11:29",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F3029886",
+          "dep_time": "13:31",
+          "arr_time": "18:57",
+          "latest_local_activity_finish_before_airport_buffer": "11:31",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F3605329",
+          "dep_time": "13:39",
+          "arr_time": "18:39",
+          "latest_local_activity_finish_before_airport_buffer": "11:39",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [],
+        "lunch": [
+          "Restaurant::27995075.0",
+          "Restaurant::582571.0",
+          "Restaurant::1991642.0",
+          "Restaurant::339017.0",
+          "Restaurant::859944.0",
+          "Restaurant::817816.0",
+          "Restaurant::449315.0",
+          "Restaurant::3982091.0",
+          "Restaurant::10732821.0"
+        ],
+        "dinner": [
+          "Restaurant::27995075.0",
+          "Restaurant::582571.0",
+          "Restaurant::1991642.0",
+          "Restaurant::339017.0",
+          "Restaurant::859944.0",
+          "Restaurant::602112.0",
+          "Restaurant::449315.0",
+          "Restaurant::3982091.0",
+          "Restaurant::10732821.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::3372296",
+          "Attraction::12206572",
+          "Attraction::279174",
+          "Attraction::128038",
+          "Attraction::3332341",
+          "Attraction::273715",
+          "Attraction::279928",
+          "Attraction::279177",
+          "Attraction::279138",
+          "Attraction::531934"
+        ],
+        "afternoon_attraction": [
+          "Attraction::3372296",
+          "Attraction::12206572",
+          "Attraction::279174",
+          "Attraction::128038",
+          "Attraction::3332341",
+          "Attraction::273715",
+          "Attraction::279928",
+          "Attraction::279177",
+          "Attraction::279138",
+          "Attraction::531934"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-13": [],
+        "2024-11-14": [],
+        "2024-11-15": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [],
+        "lunch": [
+          {
+            "node_key": "Restaurant::27995075.0",
+            "name": "Lure Fish House"
+          },
+          {
+            "node_key": "Restaurant::582571.0",
+            "name": "Novo Restaurant & Lounge"
+          },
+          {
+            "node_key": "Restaurant::1991642.0",
+            "name": "Giuseppe’s Cucina Rustica"
+          },
+          {
+            "node_key": "Restaurant::339017.0",
+            "name": "Buona Tavola"
+          },
+          {
+            "node_key": "Restaurant::859944.0",
+            "name": "Mama's Meatball"
+          },
+          {
+            "node_key": "Restaurant::817816.0",
+            "name": "High Street Market & Deli"
+          },
+          {
+            "node_key": "Restaurant::449315.0",
+            "name": "Goshi"
+          },
+          {
+            "node_key": "Restaurant::3982091.0",
+            "name": "Taste Craft Eatery"
+          },
+          {
+            "node_key": "Restaurant::10732821.0",
+            "name": "Flour House"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::27995075.0",
+            "name": "Lure Fish House"
+          },
+          {
+            "node_key": "Restaurant::582571.0",
+            "name": "Novo Restaurant & Lounge"
+          },
+          {
+            "node_key": "Restaurant::1991642.0",
+            "name": "Giuseppe’s Cucina Rustica"
+          },
+          {
+            "node_key": "Restaurant::339017.0",
+            "name": "Buona Tavola"
+          },
+          {
+            "node_key": "Restaurant::859944.0",
+            "name": "Mama's Meatball"
+          },
+          {
+            "node_key": "Restaurant::602112.0",
+            "name": "Koberl At Blue"
+          },
+          {
+            "node_key": "Restaurant::449315.0",
+            "name": "Goshi"
+          },
+          {
+            "node_key": "Restaurant::3982091.0",
+            "name": "Taste Craft Eatery"
+          },
+          {
+            "node_key": "Restaurant::10732821.0",
+            "name": "Flour House"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-13": [],
+        "2024-11-14": [],
+        "2024-11-15": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-13",
+          "required_slots": {
+            "Flight::F3029855": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0402404": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2588192": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1376878": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2134984": [
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-14",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-15",
+          "required_slots": {
+            "Flight::F2135017": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F1032255": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F0402436": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F3029886": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F3605329": [
+              "breakfast",
+              "morning_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-13": [],
+      "2024-11-14": [],
+      "2024-11-15": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

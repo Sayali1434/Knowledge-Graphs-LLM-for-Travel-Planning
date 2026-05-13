@@ -1,0 +1,111 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"Selected the best feasible path based on flight timings, accommodation, and meal/attraction/event compatibility within the given constraints.\",\n  \"stay_node_key\": \"Accommodation::17956285.0\",\n  \"outbound_flight_node_key\": \"Flight::F1126626\",\n  \"return_flight_node_key\": \"Flight::F0671790\",\n  \"estimated_total_cost\": 1050.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-20\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"null\",\n        \"morning_attraction\": \"null\",\n        \"lunch\": \"Restaurant::330972.0\",\n        \"afternoon_attraction\": \"Attraction::105691\",\n        \"event\": \"null\",\n        \"dinner\": \"Restaurant::6481795.0\"\n      },\n      \"notes\": \"First day, flight arrives late, so only lunch and afternoon attraction are feasible.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-21\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::5999779.0\",\n        \"morning_attraction\": \"Attraction::281504\",\n        \"lunch\": \"Restaurant::6481795.0\",\n        \"afternoon_attraction\": \"Attraction::105690\",\n        \"dinner\": \"Restaurant::330972.0\"\n      },\n      \"notes\": \"Full non-travel day, all slots are feasible and filled.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-22\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::5999779.0\",\n        \"morning_attraction\": \"Attraction::274056\",\n        \"lunch\": \"Restaurant::6481795.0\",\n        \"afternoon_attraction\": \"null\",\n        \"event\": \"null\",\n        \"dinner\": \"null\"\n      },\n      \"notes\": \"Return day, dinner is skipped as the flight departs too early. Only morning attraction is feasible.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "Selected the best feasible path based on flight timings, accommodation, and meal/attraction/event compatibility within the given constraints.",
+    "stay_node_key": "Accommodation::17956285.0",
+    "outbound_flight_node_key": "Flight::F1126626",
+    "return_flight_node_key": "Flight::F0671790",
+    "estimated_total_cost": 1050.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-20",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": null,
+          "lunch": "Restaurant::330972.0",
+          "afternoon_attraction": "Attraction::105691",
+          "event": null,
+          "dinner": "Restaurant::6481795.0"
+        },
+        "notes": "First day, flight arrives late, so only lunch and afternoon attraction are feasible."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-21",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::5999779.0",
+          "morning_attraction": "Attraction::281504",
+          "lunch": "Restaurant::6481795.0",
+          "afternoon_attraction": "Attraction::105690",
+          "dinner": "Restaurant::330972.0",
+          "event": null
+        },
+        "notes": "Full non-travel day, all slots are feasible and filled."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-22",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::5999779.0",
+          "morning_attraction": "Attraction::274056",
+          "lunch": "Restaurant::6481795.0",
+          "afternoon_attraction": "Attraction::1154959",
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Return day, dinner is skipped as the flight departs too early. Only morning attraction is feasible."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 688.5,
+      "selected_node_keys": [
+        "Accommodation::17956285.0",
+        "Flight::F1126626",
+        "Flight::F0671790",
+        "Restaurant::330972.0",
+        "Attraction::105691",
+        "Restaurant::6481795.0",
+        "Restaurant::5999779.0",
+        "Attraction::281504",
+        "Restaurant::6481795.0",
+        "Attraction::105690",
+        "Restaurant::330972.0",
+        "Restaurant::5999779.0",
+        "Attraction::274056",
+        "Restaurant::6481795.0",
+        "Attraction::1154959"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 1,
+        "lunch": 7,
+        "dinner": 9
+      },
+      "day_1_local_activity_start": "10:17",
+      "last_day_latest_local_activity_finish": "18:12",
+      "day_1_expected_slots": [
+        "lunch",
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ],
+      "auto_repairs": [
+        "day_3.afternoon_attraction: filled missing required slot with Attraction::1154959"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_16.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_16_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_16_graph.cypher"
+  }
+}

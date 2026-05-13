@@ -1,0 +1,113 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This itinerary balances budget, time, and local constraints, ensuring a laid-back and economical experience in Las Vegas.\",\n  \"stay_node_key\": \"Accommodation::45585555.0\",\n  \"outbound_flight_node_key\": \"Flight::F3139599\",\n  \"return_flight_node_key\": \"Flight::F2639544\",\n  \"estimated_total_cost\": 1650.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-09\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::17476783.0\",\n        \"morning_attraction\": \"Attraction::127003\",\n        \"lunch\": \"Restaurant::422629.0\",\n        \"afternoon_attraction\": \"Attraction::6509306\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::422629.0\"\n      },\n      \"notes\": \"First day includes early arrival, light activities, and meals. Breakfast and dinner are at the same restaurant for convenience.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-10\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::17476783.0\",\n        \"morning_attraction\": \"Attraction::126583\",\n        \"lunch\": \"Restaurant::422627.0\",\n        \"afternoon_attraction\": \"Attraction::625114\",\n        \"dinner\": \"Restaurant::481403.0\",\n        \"event\": null\n      },\n      \"notes\": \"Full day in Las Vegas with diverse attractions and meals. Lunch is near the morning attraction for convenience.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-11\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::19944959.0\",\n        \"morning_attraction\": \"Attraction::1156204\",\n        \"lunch\": \"Restaurant::2405909.0\",\n        \"afternoon_attraction\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Last day focuses on quick morning activities and lunch before the return flight. Dinner is skipped to ensure timely departure.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This itinerary balances budget, time, and local constraints, ensuring a laid-back and economical experience in Las Vegas.",
+    "stay_node_key": "Accommodation::45585555.0",
+    "outbound_flight_node_key": "Flight::F3139599",
+    "return_flight_node_key": "Flight::F2639544",
+    "estimated_total_cost": 1650.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-09",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::17476783.0",
+          "morning_attraction": "Attraction::127003",
+          "lunch": "Restaurant::422629.0",
+          "afternoon_attraction": "Attraction::6509306",
+          "event": null,
+          "dinner": "Restaurant::422629.0"
+        },
+        "notes": "First day includes early arrival, light activities, and meals. Breakfast and dinner are at the same restaurant for convenience."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-10",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::17476783.0",
+          "morning_attraction": "Attraction::126583",
+          "lunch": "Restaurant::422627.0",
+          "afternoon_attraction": "Attraction::625114",
+          "dinner": "Restaurant::481403.0",
+          "event": null
+        },
+        "notes": "Full day in Las Vegas with diverse attractions and meals. Lunch is near the morning attraction for convenience."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-11",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::19944959.0",
+          "morning_attraction": "Attraction::1156204",
+          "lunch": "Restaurant::2405909.0",
+          "afternoon_attraction": "Attraction::103329",
+          "dinner": null,
+          "event": null
+        },
+        "notes": "Last day focuses on quick morning activities and lunch before the return flight. Dinner is skipped to ensure timely departure."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 1226.54,
+      "selected_node_keys": [
+        "Accommodation::45585555.0",
+        "Flight::F3139599",
+        "Flight::F2639544",
+        "Restaurant::17476783.0",
+        "Attraction::127003",
+        "Restaurant::422629.0",
+        "Attraction::6509306",
+        "Restaurant::422629.0",
+        "Restaurant::17476783.0",
+        "Attraction::126583",
+        "Restaurant::422627.0",
+        "Attraction::625114",
+        "Restaurant::481403.0",
+        "Restaurant::19944959.0",
+        "Attraction::1156204",
+        "Restaurant::2405909.0",
+        "Attraction::103329"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 5,
+        "lunch": 6,
+        "dinner": 8
+      },
+      "day_1_local_activity_start": "07:14",
+      "last_day_latest_local_activity_finish": "19:33",
+      "day_1_expected_slots": [
+        "lunch",
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ],
+      "auto_repairs": [
+        "day_3.afternoon_attraction: filled missing required slot with Attraction::103329"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_5.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_5_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_5_graph.cypher"
+  }
+}

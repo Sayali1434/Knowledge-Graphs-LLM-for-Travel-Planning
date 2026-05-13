@@ -1,0 +1,2619 @@
+{
+  "query_id": "idx_16",
+  "query_text": "Plan a 3-day trip for 2 people from Chicago to Cincinnati from November 20th to November 22nd, 2024, with a budget of $1,050. Accommodations should be an entire home, and the house rules must allow children under 10. Include dining options with American, Indian, Chinese, or French cuisine.",
+  "request": {
+    "org": "Chicago",
+    "dest": "Cincinnati",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-20', '2024-11-21', '2024-11-22']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': 'children under 10', 'cuisine': ['American', 'Indian', 'Chinese', 'French'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': None}",
+    "budget": 1050,
+    "query": "Plan a 3-day trip for 2 people from Chicago to Cincinnati from November 20th to November 22nd, 2024, with a budget of $1,050. Accommodations should be an entire home, and the house rules must allow children under 10. Include dining options with American, Indian, Chinese, or French cuisine.",
+    "level": "hard",
+    "persona": "Traveler Type: Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Luxury Traveler; Location Preference: Beaches"
+  },
+  "preferences": {
+    "traveler_type": "Traveler Type: Laidback Traveler",
+    "purpose_of_travel": "Relaxation",
+    "spending_preference": "Luxury Traveler",
+    "location_preference": "Beaches"
+  },
+  "constraints": {
+    "house rule": "children under 10",
+    "cuisine": "American, Indian, Chinese, French",
+    "room type": "entire home",
+    "transportation": null,
+    "event": null,
+    "attraction": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "Selected the best feasible path based on flight timings, accommodation, and meal/attraction/event compatibility within the given constraints.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1050.0,
+    "min_estimated_total_cost": 688.5,
+    "max_estimated_total_cost": 688.5,
+    "best_option_remaining_budget": 361.5
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 688.5,
+      "stay": {
+        "node_key": "Accommodation::17956285.0",
+        "label": "Accommodation",
+        "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+        "id": "17956285.0",
+        "City": "Cincinnati",
+        "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+      },
+      "outbound": {
+        "node_key": "Flight::F1126626",
+        "label": "Flight",
+        "name": "F1126626: Chicago to Cincinnati, 07:31-09:47",
+        "Flight Number": "F1126626",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Chicago",
+        "DestCityName": "Cincinnati",
+        "Price": 125,
+        "DepTime": "07:31",
+        "ArrTime": "09:47"
+      },
+      "return": {
+        "node_key": "Flight::F0671790",
+        "label": "Flight",
+        "name": "F0671790: Cincinnati to Chicago, 20:12-20:13",
+        "Flight Number": "F0671790",
+        "FlightDate": "2024-11-22",
+        "OriginCityName": "Cincinnati",
+        "DestCityName": "Chicago",
+        "Price": 65,
+        "DepTime": "20:12",
+        "ArrTime": "20:13"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-20",
+          "current_city": "Cincinnati",
+          "llm_notes": "First day, flight arrives late, so only lunch and afternoon attraction are feasible.",
+          "outbound_flight": {
+            "node_key": "Flight::F1126626",
+            "label": "Flight",
+            "name": "F1126626: Chicago to Cincinnati, 07:31-09:47",
+            "Flight Number": "F1126626",
+            "FlightDate": "2024-11-20",
+            "OriginCityName": "Chicago",
+            "DestCityName": "Cincinnati",
+            "Price": 125,
+            "DepTime": "07:31",
+            "ArrTime": "09:47"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::17956285.0",
+            "label": "Accommodation",
+            "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+            "id": "17956285.0",
+            "City": "Cincinnati",
+            "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+          },
+          "lunch": {
+            "node_key": "Restaurant::330972.0",
+            "label": "Restaurant",
+            "name": "Ambar India",
+            "id": "330972.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::105691",
+            "label": "Attraction",
+            "name": "Cincinnati Zoo & Botanical Garden",
+            "id": "105691",
+            "City": "Cincinnati",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::6481795.0",
+            "label": "Restaurant",
+            "name": "The Eagle Food and Beer Hall",
+            "id": "6481795.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::17956285.0",
+            "label": "Accommodation",
+            "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+            "id": "17956285.0",
+            "City": "Cincinnati",
+            "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-21",
+          "current_city": "Cincinnati",
+          "llm_notes": "Full non-travel day, all slots are feasible and filled.",
+          "start_accommodation": {
+            "node_key": "Accommodation::17956285.0",
+            "label": "Accommodation",
+            "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+            "id": "17956285.0",
+            "City": "Cincinnati",
+            "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::5999779.0",
+            "label": "Restaurant",
+            "name": "Sleepy Bee Cafe - Oakley",
+            "id": "5999779.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::281504",
+            "label": "Attraction",
+            "name": "Fountain Square",
+            "id": "281504",
+            "City": "Cincinnati",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::6481795.0",
+            "label": "Restaurant",
+            "name": "The Eagle Food and Beer Hall",
+            "id": "6481795.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::105690",
+            "label": "Attraction",
+            "name": "Cincinnati Art Museum",
+            "id": "105690",
+            "City": "Cincinnati",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::330972.0",
+            "label": "Restaurant",
+            "name": "Ambar India",
+            "id": "330972.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::17956285.0",
+            "label": "Accommodation",
+            "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+            "id": "17956285.0",
+            "City": "Cincinnati",
+            "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-22",
+          "current_city": "Cincinnati",
+          "llm_notes": "Return day, dinner is skipped as the flight departs too early. Only morning attraction is feasible.",
+          "start_accommodation": {
+            "node_key": "Accommodation::17956285.0",
+            "label": "Accommodation",
+            "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+            "id": "17956285.0",
+            "City": "Cincinnati",
+            "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::5999779.0",
+            "label": "Restaurant",
+            "name": "Sleepy Bee Cafe - Oakley",
+            "id": "5999779.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::274056",
+            "label": "Attraction",
+            "name": "Great American Ball Park",
+            "id": "274056",
+            "City": "Cincinnati",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::6481795.0",
+            "label": "Restaurant",
+            "name": "The Eagle Food and Beer Hall",
+            "id": "6481795.0",
+            "City": "Cincinnati",
+            "avg_cost": "27.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::1154959",
+            "label": "Attraction",
+            "name": "Spring Grove Cemetery & Arboretum",
+            "id": "1154959",
+            "City": "Cincinnati",
+            "rating": "5.0"
+          },
+          "return_flight": {
+            "node_key": "Flight::F0671790",
+            "label": "Flight",
+            "name": "F0671790: Cincinnati to Chicago, 20:12-20:13",
+            "Flight Number": "F0671790",
+            "FlightDate": "2024-11-22",
+            "OriginCityName": "Cincinnati",
+            "DestCityName": "Chicago",
+            "Price": 65,
+            "DepTime": "20:12",
+            "ArrTime": "20:13"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_16",
+    "node_count": 50,
+    "edge_count": 666,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::17956285.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "6",
+        "house_rules": "No pets",
+        "State": "Ohio",
+        "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+        "coordinates": "{\"latitude\": 39.11319, \"longitude\": -84.50697}",
+        "rating": "{\"label\": \"4.8 out of 5 average rating,  604 reviews\", \"localizedLabel\": \"4.8 (604)\", \"average\": 4.8, \"reviewsCount\": 604}",
+        "id": "17956285.0",
+        "City": "Cincinnati",
+        "title": "Home in Cincinnati",
+        "url": "https://www.airbnb.com/rooms/17956285?locale=en-US&currency=USD&check_in=2024-12-08&check_out=2024-12-13",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$153 per night\", \"originalPrice\": null, \"price\": \"$153\", \"qualifier\": \"night\", \"total\": \"$763 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1642",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::105690",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1113",
+        "latitude": "39.11446",
+        "rating": "4.5",
+        "description": "One of the most prestigious art museums in the country, with over 67,000 works of art, this grandiose building atop an Eden Park hill, is well-known for its 19th-century European and American paintings, but also contains numerous other works including an outstanding pottery gallery.",
+        "visit_duration": "2.75",
+        "addressObj": "{\"street1\": \"953 Eden Park Dr\", \"street2\": null, \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45202-1557\"}",
+        "subtype": [
+          "Art Museums",
+          "Ballets"
+        ],
+        "ratingHistogram": "{\"count1\": 2, \"count2\": 4, \"count3\": 30, \"count4\": 283, \"count5\": 794}",
+        "location_contains_city": "True",
+        "id": "105690",
+        "longitude": "-84.496796",
+        "website": "http://www.cincinnatiartmuseum.org",
+        "rankingPosition": "7.0",
+        "address": "953 Eden Park Dr, Cincinnati, OH 45202-1557",
+        "neighborhoodLocations": "[{\"id\": \"20483798\", \"name\": \"Mount Adams\"}]",
+        "rankingString": "#7 of 405 things to do in Cincinnati",
+        "City": "Cincinnati",
+        "localName": "Cincinnati Art Museum",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60993-d105690-Reviews-Cincinnati_Art_Museum-Cincinnati_Ohio.html",
+        "localAddress": "953 Eden Park Dr, 45202-1557",
+        "rankingDenominator": "405.0",
+        "name": "Cincinnati Art Museum",
+        "locationString": "Cincinnati, Ohio",
+        "subcategories": [
+          "Museums",
+          "Concerts & Shows"
+        ],
+        "rawRanking": "4.163149834"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6611",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::105691",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "4011",
+        "latitude": "39.142677",
+        "rating": "4.5",
+        "description": "This second oldest zoo in the U.S., considered one of the best in the country, is most renowned for its endangered species and birthing programs, particularly for gorillas and white tigers, and has a wonderful collection of felines and a delightful manatees exhibit.",
+        "visit_duration": "3.6666666666666665",
+        "addressObj": "{\"street1\": \"3400 Vine Street\", \"street2\": \"\", \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45220-1333\"}",
+        "subtype": [
+          "Gardens",
+          "Zoos"
+        ],
+        "ratingHistogram": "{\"count1\": 61, \"count2\": 62, \"count3\": 243, \"count4\": 880, \"count5\": 2765}",
+        "location_contains_city": "True",
+        "id": "105691",
+        "longitude": "-84.50929",
+        "website": "http://cincinnatizoo.org/",
+        "rankingPosition": "20.0",
+        "address": "3400 Vine Street, Cincinnati, OH 45220-1333",
+        "neighborhoodLocations": [],
+        "rankingString": "#20 of 405 things to do in Cincinnati",
+        "City": "Cincinnati",
+        "localName": "Cincinnati Zoo & Botanical Garden",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60993-d105691-Reviews-Cincinnati_Zoo_Botanical_Garden-Cincinnati_Ohio.html",
+        "localAddress": "3400 Vine Street, 45220-1333",
+        "rankingDenominator": "405.0",
+        "name": "Cincinnati Zoo & Botanical Garden",
+        "locationString": "Cincinnati, Ohio",
+        "subcategories": [
+          "Zoos & Aquariums",
+          "Nature & Parks",
+          "Outdoor Activities"
+        ],
+        "rawRanking": "3.915869713"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6612",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::1154959",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "759",
+        "latitude": "39.164783",
+        "rating": "5.0",
+        "visit_duration": "3.75",
+        "addressObj": "{\"street1\": \"4521 Spring Grove Ave\", \"street2\": \"\", \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45232-1934\"}",
+        "subtype": [
+          "Nature & Wildlife Areas",
+          "Cemeteries"
+        ],
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 2, \"count3\": 11, \"count4\": 114, \"count5\": 628}",
+        "location_contains_city": "True",
+        "id": "1154959",
+        "longitude": "-84.52314",
+        "website": "https://www.springgrove.org/locations/spring-grove-cemetery-arboretum/",
+        "rankingPosition": "2.0",
+        "address": "4521 Spring Grove Ave, Cincinnati, OH 45232-1934",
+        "neighborhoodLocations": [],
+        "rankingString": "#2 of 405 things to do in Cincinnati",
+        "City": "Cincinnati",
+        "localName": "Spring Grove Cemetery & Arboretum",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60993-d1154959-Reviews-Spring_Grove_Cemetery_Arboretum-Cincinnati_Ohio.html",
+        "localAddress": "4521 Spring Grove Ave, 45232-1934",
+        "rankingDenominator": "405.0",
+        "name": "Spring Grove Cemetery & Arboretum",
+        "locationString": "Cincinnati, Ohio",
+        "subcategories": [
+          "Sights & Landmarks",
+          "Nature & Parks"
+        ],
+        "rawRanking": "4.258079529"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6624",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::274056",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2968",
+        "latitude": "39.09738",
+        "rating": "4.5",
+        "description": "This new home for the Cincinnati Reds, the oldest major league baseball team in the U.S., balances its spiffy new look with nostalgic tributes to the team's history including reminders of Crosley Field, where it all began.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"100 Joe Nuxhall Way\", \"street2\": \"\", \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45202-5108\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.12\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FBest-Bites-and-Sites-Tour-of-Cincinnati%2Fd27186-33551P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=82b4e018690c85f9e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=274056&clt=TD&from=api&nt=true\", \"price\": \"$79.00\", \"roundedUpPrice\": \"$79\", \"offerType\": null, \"title\": \"Top 10 Sites + Top 5 Foods of Cincinnati Morning Tour\", \"productCode\": \"33551P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/a2/ed/71.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FCincinnati-Streetcar-Food-Tour-in-Cincinnati-OH%2Fd27186-33551P3%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=be71bea436191b7be&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=274056&clt=TD&from=api&nt=true\", \"price\": \"$85.00\", \"roundedUpPrice\": \"$85\", \"offerType\": null, \"title\": \"Cincinnati Streetcar Food Tour With Findlay Market \", \"productCode\": \"33551P3\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/6e/d4/4e.jpg\", \"description\": null, \"primaryCategory\": \"Half-day Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FWacky-Lets-Roam-Cincinnati-Scavenger-Hunt-True-America%2Fd27186-104204P98%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cb1e0e824902e8f68&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=274056&clt=TD&from=api&nt=true\", \"price\": \"$12.31\", \"roundedUpPrice\": \"$13\", \"offerType\": null, \"title\": \"Self-Guided Cincinnati Scavenger Hunt: True America\", \"productCode\": \"104204P98\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/69/21/14.jpg\", \"description\": null, \"primaryCategory\": \"Walking Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKentucky%2FCincinnati-History-Tour-Bus%2Fd22325-315204P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=756cbb6eec0ac6d0f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=274056&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Cincinnati History & Sightseeing Bus Tour\", \"productCode\": \"315204P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/03/8e/61.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FDowntown-Cincinnati-Smartphone-Guided-Walking-Tour%2Fd27186-292768P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4fe5a40823d2cc984&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=274056&clt=TD&from=api&nt=true\", \"price\": \"$27.50\", \"roundedUpPrice\": \"$28\", \"offerType\": null, \"title\": \"Smartphone-Guided Walking Tour of Downtown Cincinnati Sights & Stories\", \"productCode\": \"292768P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/7b/a9/83.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}]}",
+        "subtype": [
+          "Arenas & Stadiums"
+        ],
+        "ratingHistogram": "{\"count1\": 13, \"count2\": 21, \"count3\": 117, \"count4\": 791, \"count5\": 2026}",
+        "location_contains_city": "True",
+        "id": "274056",
+        "longitude": "-84.507065",
+        "website": "http://cincinnati.reds.mlb.com/cin/ballpark/index.jsp",
+        "rankingPosition": "11.0",
+        "address": "100 Joe Nuxhall Way, Cincinnati, OH 45202-5108",
+        "neighborhoodLocations": "[{\"id\": \"20483796\", \"name\": \"Central Business District\"}]",
+        "rankingString": "#11 of 405 things to do in Cincinnati",
+        "City": "Cincinnati",
+        "localName": "Great American Ball Park",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60993-d274056-Reviews-Great_American_Ball_Park-Cincinnati_Ohio.html",
+        "localAddress": "100 Joe Nuxhall Way, 45202-5108",
+        "rankingDenominator": "405.0",
+        "name": "Great American Ball Park",
+        "locationString": "Cincinnati, Ohio",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.103277206"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6615",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::281504",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1290",
+        "latitude": "39.101505",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"520 Vine Street\", \"street2\": \"5th and Vine Street\", \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45202\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.12\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FBest-Bites-and-Sites-Tour-of-Cincinnati%2Fd27186-33551P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=82b4e018690c85f9e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=281504&clt=TD&from=api&nt=true\", \"price\": \"$79.00\", \"roundedUpPrice\": \"$79\", \"offerType\": null, \"title\": \"Top 10 Sites + Top 5 Foods of Cincinnati Morning Tour\", \"productCode\": \"33551P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/a2/ed/71.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2F1919-The-year-that-changed-baseball-tour%2Fd27186-86307P6%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9256521549cc87a8d&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=281504&clt=TD&from=api&nt=true\", \"price\": \"$30.77\", \"roundedUpPrice\": \"$31\", \"offerType\": null, \"title\": \"1919: The year that changed baseball tour\", \"productCode\": \"86307P6\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/7a/3f/a5.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FWacky-Lets-Roam-Cincinnati-Scavenger-Hunt-True-America%2Fd27186-104204P98%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cb1e0e824902e8f68&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=281504&clt=TD&from=api&nt=true\", \"price\": \"$12.31\", \"roundedUpPrice\": \"$13\", \"offerType\": null, \"title\": \"Self-Guided Cincinnati Scavenger Hunt: True America\", \"productCode\": \"104204P98\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/69/21/14.jpg\", \"description\": null, \"primaryCategory\": \"Walking Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKentucky%2FCincinnati-History-Tour-Bus%2Fd22325-315204P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=756cbb6eec0ac6d0f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=281504&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Cincinnati History & Sightseeing Bus Tour\", \"productCode\": \"315204P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/03/8e/61.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCincinnati%2FDowntown-Cincinnati-Smartphone-Guided-Walking-Tour%2Fd27186-292768P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4fe5a40823d2cc984&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=281504&clt=TD&from=api&nt=true\", \"price\": \"$27.50\", \"roundedUpPrice\": \"$28\", \"offerType\": null, \"title\": \"Smartphone-Guided Walking Tour of Downtown Cincinnati Sights & Stories\", \"productCode\": \"292768P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/7b/a9/83.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}]}",
+        "subtype": [
+          "Points of Interest & Landmarks"
+        ],
+        "ratingHistogram": "{\"count1\": 14, \"count2\": 20, \"count3\": 143, \"count4\": 469, \"count5\": 644}",
+        "location_contains_city": "True",
+        "id": "281504",
+        "longitude": "-84.51241",
+        "website": "http://www.myfountainsquare.com/",
+        "rankingPosition": "21.0",
+        "address": "520 Vine Street 5th and Vine Street, Cincinnati, OH 45202",
+        "neighborhoodLocations": "[{\"id\": \"20483796\", \"name\": \"Central Business District\"}]",
+        "rankingString": "#21 of 405 things to do in Cincinnati",
+        "City": "Cincinnati",
+        "localName": "Fountain Square",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60993-d281504-Reviews-Fountain_Square-Cincinnati_Ohio.html",
+        "localAddress": "520 Vine Street, 5th and Vine Street, 45202",
+        "rankingDenominator": "405.0",
+        "name": "Fountain Square",
+        "locationString": "Cincinnati, Ohio",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.882038832"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6618",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Chicago",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Chicago"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Cincinnati",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Cincinnati"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F0671790",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F0671790",
+        "Price": 65,
+        "DepTime": "20:12",
+        "ArrTime": "20:13",
+        "ActualElapsedTime": "1 hours 1 minutes",
+        "FlightDate": "2024-11-22",
+        "OriginCityName": "Cincinnati",
+        "DestCityName": "Chicago",
+        "Distance": 249.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F1126626",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F1126626",
+        "Price": 125,
+        "DepTime": "07:31",
+        "ArrTime": "09:47",
+        "ActualElapsedTime": "1 hours 16 minutes",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Chicago",
+        "DestCityName": "Cincinnati",
+        "Distance": 264.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_16::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "current_city": "Cincinnati"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_16::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "current_city": "Cincinnati"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_16::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "current_city": "Cincinnati"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_16::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 688.5,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::17956285.0",
+        "outbound_node_key": "Flight::F1126626",
+        "return_node_key": "Flight::F0671790"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_16",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_16",
+        "query": "Plan a 3-day trip for 2 people from Chicago to Cincinnati from November 20th to November 22nd, 2024, with a budget of $1,050. Accommodations should be an entire home, and the house rules must allow children under 10. Include dining options with American, Indian, Chinese, or French cuisine.",
+        "days": 3,
+        "origin_city": "Chicago",
+        "destination_city": "Cincinnati",
+        "budget": 1050.0,
+        "source_mini_kg_query_id": "idx_16"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::330972.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "188.0",
+        "avg_cost": "27.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"350 Ludlow Ave\", \"street2\": null, \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45220-2019\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/50/34/f2/inside.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/2b/a5/06/ambar-india.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/50/34/c4/entrance.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/6f/36/9e/pharmacy-lab-equipmenthtml.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c6/20190907-125138-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c5/20190907-125307-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c4/20190907-125557-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c3/20190907-131008-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c1/20190907-131012-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c0/20190907-131017-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bf/20190907-133618-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/be/20190907-133621-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bc/20190907-133631-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bb/20190907-133636-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/2b/a4/ed/ambar-india.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/2c/a9/f4/tikka-masala.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/50/34/b5/awesome-food.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/50/34/a4/ice-cold-beer.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/04/73/f4/d0/ambar-india.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bb/20190907-133636-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bc/20190907-133631-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/be/20190907-133621-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/bf/20190907-133618-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c0/20190907-131017-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c1/20190907-131012-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c3/20190907-131008-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c4/20190907-125557-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c5/20190907-125307-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/19/2e/01/c6/20190907-125138-largejpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "330972.0",
+        "longitude": "-84.52145",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0f/2b/a5/06/ambar-india.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "44.00 - 80.00",
+        "rankingString": "#60 of 2,185 places to eat in Cincinnati",
+        "openNowText": "Closed Now",
+        "City": "Cincinnati",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "Indian"
+        ],
+        "localName": "Ambar India",
+        "input": "Cincinnati",
+        "phone": "+1 513-281-7000",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60993-d330972-Reviews-Ambar_India-Cincinnati_Ohio.html",
+        "localAddress": "350 Ludlow Ave, 45220-2019",
+        "Rest-MidRange": "55.0",
+        "name": "Ambar India",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "3.656386375427246",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Grubhub&src=185082714&geo=330972&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=25768&bucket=852508&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311391468&managed=false&capped=false&gosox=I-ADlg7wY8lqEq92hGOCPH9yxKao4fnJtoYdd5TLctoCVK2EaqcCi9rOMrUCyEbymZLm31CJ7iLmr4AWXDIOPpELSZyYR4KiglyBoGKFMUA&cs=10d6b6351079ea074d40d9ba5b5006a85_loV\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/grubhub_05.11.2022.png\", \"provider\": \"Grubhub\", \"providerId\": \"13712\", \"providerDisplayName\": \"Grubhub\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.14411",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g60993-d330972-Ambar_India-Cincinnati_Ohio.html",
+        "photoCount": "19.0",
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 7, \"count3\": 13, \"count4\": 51, \"count5\": 113}",
+        "website": "http://www.ambarindia.com/",
+        "rankingPosition": "60.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "350 Ludlow Ave, Cincinnati, OH 45220-2019",
+        "neighborhoodLocations": "[{\"id\": \"20483797\", \"name\": \"Clifton\"}]",
+        "dishes": [
+          "Curry",
+          "Tikka Masala",
+          "Lamb",
+          "Paneer",
+          "Lamb Curry",
+          "Samosas",
+          "Naan",
+          "Chicken Curry",
+          "Garlic Naan",
+          "Korma"
+        ],
+        "reviewTags": "[{\"text\": \"thali\", \"reviews\": 3}, {\"text\": \"indian restaurant\", \"reviews\": 20}, {\"text\": \"cincinatti\", \"reviews\": 2}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "135",
+        "rankingDenominator": "1316.0",
+        "locationString": "Cincinnati, Ohio",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60993\", \"name\": \"Cincinnati\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28956\", \"name\": \"Ohio\", \"abbreviation\": \"OH\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:10411",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::5999779.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "185.0",
+        "avg_cost": "27.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"3098 Madison Rd\", \"street2\": null, \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45209-1723\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/93/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/97/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/6b/sandy-s-pancakes-aka.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/69/glass-toast.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/67/fresh-warm-ooey-gooey.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/65/greek-bee-omelette.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/39/avi-omelette.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/02/glass-chandeliers-made.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/bb/00/catering-options-too.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/ba/63/new-drink-menu.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/ba/43/warm-coffee.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/ba/37/newly-branded-menus.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/c8/ba/1e/new-coffee-from-carabello.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/a5/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/9d/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/95/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/76/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/d8/b1/d7/from-outside.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/d8/b1/ec/from-outside.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/b3/02/89/bee-happy.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/06/07/bd/sleepy-bee-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/d8/b1/96/menu.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Street Parking",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Free Wifi",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "5999779.0",
+        "longitude": "-84.429924",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/05/62/b5/97/sleepy-bee-cafe.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "44.00 - 80.00",
+        "rankingString": "#34 of 1,871 Restaurants in Cincinnati",
+        "openNowText": "Closed Now",
+        "City": "Cincinnati",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Brunch",
+          "Drinks"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "American",
+          "Cafe",
+          "Healthy"
+        ],
+        "localName": "Sleepy Bee Cafe - Oakley",
+        "input": "Cincinnati",
+        "phone": "+1 513-533-2339",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60993-d5999779-Reviews-Sleepy_Bee_Cafe_Oakley-Cincinnati_Ohio.html",
+        "localAddress": "3098 Madison Rd, 45209-1723",
+        "Rest-MidRange": "55.0",
+        "name": "Sleepy Bee Cafe - Oakley",
+        "subcategories": [
+          "Café"
+        ],
+        "rawRanking": "3.8759007453918457",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.15341",
+        "menuWebUrl": "http://sleepybeecafe.com/sleepy-bee-cafe-oakley/",
+        "description": "Sleepy Bee was founded in 2013 by a doctor, an artist, and a chef. We honor and emulate the bees - our muses - and their role in the wellbeing of diverse, local ecosystems. Sourcing from farms and suppliers nearby, we have created a delicious, wholesome and satisfying menu, served in inspired spaces, surrounded by original, local art and friendly people. Our ingredients and creations highlight the ever-changing seasons and showcase the power that food has to impact our health, our communities and the world we share. By dining at Sleepy Bee, we hope that you will be nourished in body, mind, and spirit. Welcome.",
+        "photoCount": "67.0",
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 3, \"count3\": 18, \"count4\": 66, \"count5\": 95}",
+        "email": "oakley@sleepybeecafe.com",
+        "website": "http://sleepybeecafe.com/",
+        "rankingPosition": "34.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "3098 Madison Rd, Cincinnati, OH 45209-1723",
+        "neighborhoodLocations": "[{\"id\": \"20483799\", \"name\": \"Oakley\"}]",
+        "dishes": [
+          "Burger",
+          "Omelette",
+          "Salad",
+          "Pancakes",
+          "Grilled cheese",
+          "Breakfast Sandwich",
+          "Toasts",
+          "Cakes",
+          "Soup",
+          "Tofu",
+          "Quinoa",
+          "Sausage",
+          "Blueberry Pancakes",
+          "Cake",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"mother's day\", \"reviews\": 2}, {\"text\": \"food was great\", \"reviews\": 4}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "135",
+        "rankingDenominator": "1871.0",
+        "locationString": "Cincinnati, Ohio",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60993\", \"name\": \"Cincinnati\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28956\", \"name\": \"Ohio\", \"abbreviation\": \"OH\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:10433",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::6481795.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "673.0",
+        "avg_cost": "27.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"1342 Vine St\", \"street2\": null, \"city\": \"Cincinnati\", \"state\": \"OH\", \"country\": \"United States\", \"postalcode\": \"45202-7159\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/10/27/4b/68/the-bar-and-its-well.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/af/ba/5b/the-eagle-food-and-beer.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/46/9e/17/p-20181027-134952-pn.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/8c/29/dc/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/8b/1d/ff/food-was-amazing.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/07/1d/ca/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/07/1d/c9/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/07/1d/c8/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/07/1d/c7/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/26/19/b9/59/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/e9/de/c2/half-of-a-fried-chicken.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0a/3e/6e/fried-chicken-sandwich.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0a/3e/6c/mac-cheese.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0a/3e/6b/fried-chicken.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/86/1e/63/outside-of-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/46/photo4jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/45/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/44/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/43/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/42/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/60/72/a2/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/57/02/b6/the-eagle-food-and-beer.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/d8/ab/36/artichoke-and-kale-dip.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/af/ba/67/the-eagle-food-and-beer.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/86/1e/63/outside-of-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/44/65/5a/img-20201101-184155345.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/42/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/43/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/44/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/45/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/7a/70/46/photo4jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Television",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [],
+        "id": "6481795.0",
+        "longitude": "-84.51519",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/05/af/ba/5b/the-eagle-food-and-beer.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "44.00 - 80.00",
+        "rankingString": "#7 of 1,871 Restaurants in Cincinnati",
+        "openNowText": "Closed Now",
+        "City": "Cincinnati",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "American",
+          "Bar"
+        ],
+        "localName": "The Eagle Food and Beer Hall",
+        "input": "Cincinnati",
+        "phone": "+1 513-802-5007",
+        "State": "Ohio",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60993-d6481795-Reviews-The_Eagle_Food_and_Beer_Hall-Cincinnati_Ohio.html",
+        "localAddress": "1342 Vine St, 45202-7159",
+        "Rest-MidRange": "55.0",
+        "name": "The Eagle Food and Beer Hall",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.4595046043396",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232196692&geo=6481795&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311391461&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8_gxR9tCu_iiSqWh7hc6LJqYCYF5p3ls4t3QFkZsZrlY&cs=1a1fe03d06ec41197f1cbee7508b471e3_6B8\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.110695",
+        "menuWebUrl": "http://theeagleotr.com/menu",
+        "photoCount": "159.0",
+        "ratingHistogram": "{\"count1\": 6, \"count2\": 6, \"count3\": 53, \"count4\": 170, \"count5\": 438}",
+        "website": "http://theeagleotr.com",
+        "rankingPosition": "7.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "1342 Vine St, Cincinnati, OH 45202-7159",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Shrimp",
+          "Salad",
+          "Grilled cheese",
+          "Mac and cheese",
+          "Po' Boys",
+          "Chicken Sandwich",
+          "Kale Salad",
+          "French Fries",
+          "Pork",
+          "Bloody Mary",
+          "Coleslaw",
+          "Chopped Salad",
+          "Collard Greens",
+          "Root Beer",
+          "Fried",
+          "Cornbread",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"spoon bread\", \"reviews\": 78}, {\"text\": \"fried chicken\", \"reviews\": 279}, {\"text\": \"cornbread\", \"reviews\": 65}, {\"text\": \"spoonbread\", \"reviews\": 40}, {\"text\": \"mac cheese\", \"reviews\": 86}, {\"text\": \"succotash\", \"reviews\": 26}, {\"text\": \"fries\", \"reviews\": 97}, {\"text\": \"sandwich\", \"reviews\": 34}, {\"text\": \"great chicken\", \"reviews\": 17}, {\"text\": \"dark meat\", \"reviews\": 8}, {\"text\": \"worth the wait\", \"reviews\": 35}, {\"text\": \"hot honey\", \"reviews\": 11}, {\"text\": \"craft beer\", \"reviews\": 7}, {\"text\": \"eagles\", \"reviews\": 185}, {\"text\": \"sides\", \"reviews\": 151}, {\"text\": \"spicy\", \"reviews\": 88}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "135",
+        "rankingDenominator": "1871.0",
+        "locationString": "Cincinnati, Ohio",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60993\", \"name\": \"Cincinnati\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28956\", \"name\": \"Ohio\", \"abbreviation\": \"OH\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:10426",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Attraction::105690",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.010253,
+        "distance_m": 889.05,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Attraction::105691",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.029578,
+        "distance_m": 3284.91,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Attraction::1154959",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.054068,
+        "distance_m": 5903.95,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Attraction::274056",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.01581,
+        "distance_m": 1758.01,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Attraction::281504",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.012889,
+        "distance_m": 1381.5,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::330972.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.034143,
+        "distance_m": 3657.99,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::5999779.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::5999779.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.086912,
+        "distance_m": 8010.1,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::17956285.0",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.00859,
+        "distance_m": 761.54,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105690",
+      "target": "Restaurant::330972.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::105690",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.038561,
+        "distance_m": 3923.27,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105690",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.077388,
+        "distance_m": 7212.84,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105690",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.018775,
+        "distance_m": 1641.27,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105691",
+      "target": "Attraction::1154959",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.078694,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105691",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.012244,
+        "distance_m": 1060.71,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105691",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.080088,
+        "distance_m": 6947.29,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105691",
+      "target": "Restaurant::6481795.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::105691",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.032522,
+        "distance_m": 3592.47,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Attraction::105691",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.078694,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Attraction::274056",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.079292,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Attraction::281504",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.079292,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Flight::F0671790",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.020742,
+        "distance_m": 2303.35,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.093907,
+        "distance_m": 8135.97,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1154959",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.054669,
+        "distance_m": 6053.27,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Attraction::1154959",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.079292,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Attraction::281504",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::281504->Attraction::274056"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.048894,
+        "distance_m": 5342.27,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.095342,
+        "distance_m": 9115.68,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Restaurant::6481795.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::274056",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.015598,
+        "distance_m": 1638.16,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Attraction::1154959",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.079292,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Attraction::274056",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Restaurant::330972.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.043554,
+        "distance_m": 4801.21,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Restaurant::5999779.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.097458,
+        "distance_m": 9161.68,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Restaurant::6481795.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::281504",
+      "target": "Restaurant::6481795.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.009601,
+        "distance_m": 1049.66,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F1126626",
+      "target": "Accommodation::17956285.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Accommodation::17956285.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Accommodation::17956285.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 6,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Attraction::105691",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 4,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Flight::F1126626",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Restaurant::330972.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 3,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::1",
+      "target": "Restaurant::6481795.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 5,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Accommodation::17956285.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Accommodation::17956285.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Attraction::105690",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Attraction::281504",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Restaurant::330972.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Restaurant::5999779.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::2",
+      "target": "Restaurant::6481795.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Accommodation::17956285.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Attraction::1154959",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Attraction::274056",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Flight::F0671790",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 6,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Restaurant::5999779.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_16::option_001::3",
+      "target": "Restaurant::6481795.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "Accommodation::17956285.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "Flight::F0671790",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "Flight::F1126626",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "PlanDay::idx_16::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "PlanDay::idx_16::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_16::option_001",
+      "target": "PlanDay::idx_16::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_16",
+      "target": "PlanOption::idx_16::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 688.5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Accommodation::17956285.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::105690",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.038561,
+        "distance_m": 3923.27,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::105691",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.012244,
+        "distance_m": 1060.71,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::105691",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::1154959",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.020742,
+        "distance_m": 2303.35,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::274056",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.048894,
+        "distance_m": 5342.27,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::330972.0",
+      "target": "Attraction::281504",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.043554,
+        "distance_m": 4801.21,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::105690",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.077388,
+        "distance_m": 7212.84,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::105691",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.080088,
+        "distance_m": 6947.29,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::1154959",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.093907,
+        "distance_m": 8135.97,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::274056",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.095342,
+        "distance_m": 9115.68,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::274056",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::281504",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.097458,
+        "distance_m": 9161.68,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::5999779.0",
+      "target": "Attraction::281504",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Accommodation::17956285.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::105690",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.018775,
+        "distance_m": 1641.27,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::105690",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::105691",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.032522,
+        "distance_m": 3592.47,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::1154959",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.054669,
+        "distance_m": 6053.27,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::1154959",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::274056",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.015598,
+        "distance_m": 1638.16,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6481795.0",
+      "target": "Attraction::281504",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.009601,
+        "distance_m": 1049.66,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F1126626",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::17956285.0",
+      "label": "Accommodation",
+      "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 3,
+      "slot": "lunch",
+      "node_key": "Restaurant::330972.0",
+      "label": "Restaurant",
+      "name": "Ambar India",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 4,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::105691",
+      "label": "Attraction",
+      "name": "Cincinnati Zoo & Botanical Garden",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 5,
+      "slot": "dinner",
+      "node_key": "Restaurant::6481795.0",
+      "label": "Restaurant",
+      "name": "The Eagle Food and Beer Hall",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 6,
+      "slot": "accommodation",
+      "node_key": "Accommodation::17956285.0",
+      "label": "Accommodation",
+      "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::17956285.0",
+      "label": "Accommodation",
+      "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::5999779.0",
+      "label": "Restaurant",
+      "name": "Sleepy Bee Cafe - Oakley",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::281504",
+      "label": "Attraction",
+      "name": "Fountain Square",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::6481795.0",
+      "label": "Restaurant",
+      "name": "The Eagle Food and Beer Hall",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::105690",
+      "label": "Attraction",
+      "name": "Cincinnati Art Museum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::330972.0",
+      "label": "Restaurant",
+      "name": "Ambar India",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::17956285.0",
+      "label": "Accommodation",
+      "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::17956285.0",
+      "label": "Accommodation",
+      "name": "Downtown Full Home w/ Stunning Views -Free Parking",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::5999779.0",
+      "label": "Restaurant",
+      "name": "Sleepy Bee Cafe - Oakley",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::274056",
+      "label": "Attraction",
+      "name": "Great American Ball Park",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::6481795.0",
+      "label": "Restaurant",
+      "name": "The Eagle Food and Beer Hall",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::1154959",
+      "label": "Attraction",
+      "name": "Spring Grove Cemetery & Arboretum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 6,
+      "slot": "return_flight",
+      "node_key": "Flight::F0671790",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

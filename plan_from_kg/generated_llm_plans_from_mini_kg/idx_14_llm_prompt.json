@@ -1,0 +1,3236 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_14\", \"query_text\": \"Plan a 3-day trip for 4 people from Houston to Tucson from November 1st to November 3rd, 2024, with a budget of $3,150. Accommodations should be an entire home, and the house rules should allow parties. Include dining options with American, Mexican, and Italian cuisines.\", \"request\": {\"org\": \"Houston\", \"dest\": \"Tucson\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-01', '2024-11-02', '2024-11-03']\", \"people_number\": 4, \"local_constraint\": \"{'house rule': 'parties', 'cuisine': ['American', 'Mexican', 'Italian'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 3150, \"query\": \"Plan a 3-day trip for 4 people from Houston to Tucson from November 1st to November 3rd, 2024, with a budget of $3,150. Accommodations should be an entire home, and the house rules should allow parties. Include dining options with American, Mexican, and Italian cuisines.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Relaxation\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": \"parties\", \"cuisine\": \"American, Mexican, Italian\", \"room type\": \"entire home\", \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F0634946\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Houston\", \"DestCityName\": \"Tucson\", \"DepTime\": \"09:13\", \"ArrTime\": \"10:59\", \"Price\": 193}}, {\"node_key\": \"Flight::F0109139\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Houston\", \"DestCityName\": \"Tucson\", \"DepTime\": \"09:36\", \"ArrTime\": \"10:17\", \"Price\": 195}}, {\"node_key\": \"Flight::F3936046\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Houston\", \"DestCityName\": \"Tucson\", \"DepTime\": \"09:18\", \"ArrTime\": \"10:52\", \"Price\": 282}}, {\"node_key\": \"Flight::F2351820\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Houston\", \"DestCityName\": \"Tucson\", \"DepTime\": \"09:30\", \"ArrTime\": \"09:56\", \"Price\": 395}}, {\"node_key\": \"Flight::F2280116\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Houston\", \"DestCityName\": \"Tucson\", \"DepTime\": \"09:34\", \"ArrTime\": \"10:19\", \"Price\": 398}}, {\"node_key\": \"Flight::F3478549\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Tucson\", \"DestCityName\": \"Houston\", \"DepTime\": \"15:16\", \"ArrTime\": \"18:53\", \"Price\": 195}}, {\"node_key\": \"Flight::F0108083\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Tucson\", \"DestCityName\": \"Houston\", \"DepTime\": \"13:31\", \"ArrTime\": \"17:37\", \"Price\": 238}}, {\"node_key\": \"Flight::F3906436\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Tucson\", \"DestCityName\": \"Houston\", \"DepTime\": \"15:09\", \"ArrTime\": \"18:35\", \"Price\": 311}}, {\"node_key\": \"Flight::F0989222\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Tucson\", \"DestCityName\": \"Houston\", \"DepTime\": \"15:01\", \"ArrTime\": \"18:34\", \"Price\": 345}}, {\"node_key\": \"Flight::F3481948\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Tucson\", \"DestCityName\": \"Houston\", \"DepTime\": \"18:10\", \"ArrTime\": \"21:11\", \"Price\": 410}}, {\"node_key\": \"Accommodation::51128776.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"51128776.0\", \"name\": \"Accessible Private Studio, Entrance & Parking.\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$58 per night\", \"originalPrice\": null, \"price\": \"$58\", \"qualifier\": \"night\", \"total\": \"$290 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  499 reviews\", \"localizedLabel\": \"4.93 (499)\", \"average\": 4.93, \"reviewsCount\": 499}, \"coordinates\": {\"latitude\": 32.2137, \"longitude\": -110.89162}}}, {\"node_key\": \"Accommodation::39792030.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39792030.0\", \"name\": \"Pet Friendly Casita with striking Mountain View’s\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$103 per night\", \"originalPrice\": null, \"price\": \"$103\", \"qualifier\": \"night\", \"total\": \"$514 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  227 reviews\", \"localizedLabel\": \"4.94 (227)\", \"average\": 4.94, \"reviewsCount\": 227}, \"coordinates\": {\"latitude\": 32.32971, \"longitude\": -110.97168}}}, {\"node_key\": \"Accommodation::30154947.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"30154947.0\", \"name\": \"Private Tucson Desert Solyluna Casita\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No children under 10 & No pets\", \"pricing\": {\"label\": \"$135 per night\", \"originalPrice\": null, \"price\": \"$135\", \"qualifier\": \"night\", \"total\": \"$675 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  20 reviews\", \"localizedLabel\": \"5.0 (20)\", \"average\": 5, \"reviewsCount\": 20}, \"coordinates\": {\"latitude\": 32.25145, \"longitude\": -111.05289}}}, {\"node_key\": \"Accommodation::7.36e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7.36e+17\", \"name\": \"The Coop- Luxury guest house with ideal location\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No parties & No smoking\", \"pricing\": {\"label\": \"$122 per night\", \"originalPrice\": null, \"price\": \"$122\", \"qualifier\": \"night\", \"total\": \"$607 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  106 reviews\", \"localizedLabel\": \"4.98 (106)\", \"average\": 4.98, \"reviewsCount\": 106}, \"coordinates\": {\"latitude\": 32.30146, \"longitude\": -110.99133}}}, {\"node_key\": \"Accommodation::48001345.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"48001345.0\", \"name\": \"Thunderbird: a haven for hikers, birders, artists\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$83 per night\", \"originalPrice\": null, \"price\": \"$83\", \"qualifier\": \"night\", \"total\": \"$413 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  85 reviews\", \"localizedLabel\": \"4.96 (85)\", \"average\": 4.96, \"reviewsCount\": 85}, \"coordinates\": {\"latitude\": 32.14634, \"longitude\": -111.06465}}}, {\"node_key\": \"Accommodation::3867751.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"3867751.0\", \"name\": \"UofA gem. Gorgeous and convenient.\", \"City\": \"Tucson\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$107 per night\", \"originalPrice\": null, \"price\": \"$107\", \"qualifier\": \"night\", \"total\": \"$534 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  354 reviews\", \"localizedLabel\": \"4.98 (354)\", \"average\": 4.98, \"reviewsCount\": 354}, \"coordinates\": {\"latitude\": 32.23932, \"longitude\": -110.94337}}}, {\"node_key\": \"Accommodation::35495728.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"35495728.0\", \"name\": \"Tucson home 1 mile to University of Arizona-Ask ME\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$82 per night, originally $144\", \"originalPrice\": \"$144\", \"price\": \"$82\", \"qualifier\": \"night\", \"total\": \"$410 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  102 reviews\", \"localizedLabel\": \"4.92 (102)\", \"average\": 4.92, \"reviewsCount\": 102}, \"coordinates\": {\"latitude\": 32.25049, \"longitude\": -110.93259}}}, {\"node_key\": \"Accommodation::16225605.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16225605.0\", \"name\": \"Historic 4th Ave Sunshine Suite\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$91 per night, originally $121\", \"originalPrice\": \"$121\", \"price\": \"$91\", \"qualifier\": \"night\", \"total\": \"$451 total\"}, \"rating\": {\"label\": \"4.87 out of 5 average rating,  657 reviews\", \"localizedLabel\": \"4.87 (657)\", \"average\": 4.87, \"reviewsCount\": 657}, \"coordinates\": {\"latitude\": 32.2309, \"longitude\": -110.96526}}}, {\"node_key\": \"Accommodation::7.91e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7.91e+17\", \"name\": \"Cozy Casita Private Entry and Courtyard\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No visitors & No children under 10\", \"pricing\": {\"label\": \"$93 per night, originally $125\", \"originalPrice\": \"$125\", \"price\": \"$93\", \"qualifier\": \"night\", \"total\": \"$461 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  243 reviews\", \"localizedLabel\": \"4.95 (243)\", \"average\": 4.95, \"reviewsCount\": 243}, \"coordinates\": {\"latitude\": 32.2311, \"longitude\": -110.86531}}}, {\"node_key\": \"Accommodation::23436211.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"23436211.0\", \"name\": \"Peaceful Casita in the Foothills\", \"City\": \"Tucson\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$97 per night, originally $107\", \"originalPrice\": \"$107\", \"price\": \"$97\", \"qualifier\": \"night\", \"total\": \"$481 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  643 reviews\", \"localizedLabel\": \"4.96 (643)\", \"average\": 4.96, \"reviewsCount\": 643}, \"coordinates\": {\"latitude\": 32.28945, \"longitude\": -110.87818}}}, {\"node_key\": \"Attraction::108867\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108867\", \"name\": \"Arizona-Sonora Desert Museum\", \"City\": \"Tucson\", \"subtype\": [\"Specialty Museums\", \"Art Galleries\", \"Natural History Museums\"], \"subcategories\": [\"Shopping\", \"Museums\"], \"visit_duration\": \"2.25\", \"rating\": \"5.0\", \"rankingString\": \"#10 of 517 things to do in Tucson\", \"address\": \"2021 N Kinney Rd, Tucson, AZ 85743-9719\", \"description\": \"The renowned Arizona-Sonora Desert Museum is everything you could want in a Sonoran Desert adventure! Mostly outdoors and comprised of an AZA-accredited zoo, extensive botanical garden, two art galleries, and a natural history museum, the Desert Museum sits on 98 acres of pristine desert landscape. The Museum showcases the diverse flora and fauna of the Sonoran Desert region (with over 55,000 plants!) featuring wildlife such as coyotes, javelinas, mountain lions, and bighorn sheep in naturali...\"}}, {\"node_key\": \"Attraction::3665608\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3665608\", \"name\": \"Mt. Lemmon Scenic Byway\", \"City\": \"Tucson\", \"subtype\": [\"Scenic Drives\"], \"subcategories\": [\"Sights & Landmarks\", \"Outdoor Activities\"], \"visit_duration\": \"3.5\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 517 things to do in Tucson\", \"address\": \"Tucson, AZ\"}}, {\"node_key\": \"Attraction::561980\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"561980\", \"name\": \"Mark Sublette Medicine Man Gallery\", \"City\": \"Tucson\", \"subtype\": [\"Art Galleries\", \"Art Museums\"], \"subcategories\": [\"Shopping\", \"Museums\"], \"visit_duration\": \"2.25\", \"rating\": \"5.0\", \"rankingString\": \"#22 of 517 things to do in Tucson\", \"address\": \"6872 E Sunrise Dr Ste 130, Tucson, AZ 85750-0861\", \"description\": \"Mark Sublette Medicine Man Gallery specializes in Antique Native American Art, Old Pawn Jewelry, Navajo Rugs, Baskets, Early 2oth Century Paintings, Taos founders. The gallery houses the Maynard Dixon Museum, a 23 year collection of drawings, illustrations, poetry, oils, and ephemera. Admission is free. The gallery also features nationally acclaimed contemporary southwestern artists and sculptors.\"}}, {\"node_key\": \"Attraction::109172\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109172\", \"name\": \"Pima Air and Space Museum\", \"City\": \"Tucson\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 517 things to do in Tucson\", \"address\": \"6000 E Valencia Rd, Tucson, AZ 85756-9403\", \"description\": \"400+ aircraft, 80 acres, 6 indoor air-cooled hangars... just plane awesome! We’re one of the world's largest aircraft collections including 3 hangars of WWII planes, the SR-71, the world's smallest biplane, and many other unique private, military, and commercial air & spacecraft documenting the evolution of flight. There’s something for the everyone from a “flight simulator” Boeing 720 cockpit, the Women in Flight Gallery, and an all around mecca for the aviation aficionado. We give the only ...\"}}, {\"node_key\": \"Attraction::209268\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"209268\", \"name\": \"Sabino Canyon Recreation Area\", \"City\": \"Tucson\", \"subtype\": [\"Canyons\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 517 things to do in Tucson\", \"address\": \"5700 N Sabino Canyon Rd, Tucson, AZ 85750-0800\", \"description\": \"Located in the Catalina Mountains and part of the Coronado National Forest, this beautiful canyon offers outdoor recreation including hiking, swimming, biking and picnicking. For an overview of the area, take the narrated shuttle bus tour.\"}}, {\"node_key\": \"Attraction::109094\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109094\", \"name\": \"Mission San Xavier del Bac\", \"City\": \"Tucson\", \"subtype\": [\"Missions\", \"Architectural Buildings\", \"Sacred & Religious Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#17 of 517 things to do in Tucson\", \"address\": \"1950 W San Xavier Rd, Tucson, AZ 85746-7409\", \"description\": \"Built in the 1700s, this recently restored white adobe church, representing a wonderful example of Spanish colonial architecture, is beautiful inside and out, with colorful frescoes, sculptures and carvings.\"}}, {\"node_key\": \"Attraction::126842\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126842\", \"name\": \"Tohono Chul\", \"City\": \"Tucson\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#19 of 517 things to do in Tucson\", \"address\": \"7366 N Paseo Del Norte, Tucson, AZ 85704-4415\", \"description\": \"Cultivate your appreciation for the Sonoran Desert’s natural beauty and the impression it makes on everyone who explores our “Desert Corner”. Here, the seasons inspire wondrous events both in nature and culturally; Tohono Chul celebrates every opening, whether for an internationally known artist or an exquisite cactus flower. Wander the natural desert gardens—escape the noise of everyday. Engage in our sincere passion to evolve “The Desert Corner” as an integral crossroads of nature, art and ...\"}}, {\"node_key\": \"Attraction::12704675\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"12704675\", \"name\": \"Saguaro National Park\", \"City\": \"Tucson\", \"subtype\": [\"National Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 517 things to do in Tucson\", \"address\": \"Tucson, AZ\"}}, {\"node_key\": \"Attraction::143936\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"143936\", \"name\": \"Reid Park Zoo\", \"City\": \"Tucson\", \"subtype\": [\"Zoos\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#23 of 517 things to do in Tucson\", \"address\": \"3400 Zoo Court, Tucson, AZ 85716-5872\", \"description\": \"Reid Park Zoo is a hidden gem, nestled in the center of Tucson, and is the perfect place to enjoy time outside while discovering the wonders of wildlife.\"}}, {\"node_key\": \"Attraction::126843\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126843\", \"name\": \"Tucson Botanical Gardens\", \"City\": \"Tucson\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#21 of 517 things to do in Tucson\", \"address\": \"2150 N Alvernon Way, Tucson, AZ 85712-3199\", \"description\": \"Located on the site of the historic Porter property, Tucson Botanical Gardens (TBG) is a five-and-a-half acre collection of more than 20 gardens in the heart of Tucson, Arizona. A true urban oasis, TBG was selected #4 in USA Today’s 10Best Botanical Gardens Readers’ Choice Awards in 2023 and 2024. Gardens include the Cactus & Succulent Garden, Barrio Garden, Children’s Discovery Garden, Herb Garden, and many more that showcase the diversity of plants that can thrive in the Sonoran Desert. Tro...\"}}, {\"node_key\": \"Restaurant::332416.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"332416.0\", \"name\": \"Vivace Restaurant\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"6440 N Campbell Ave, Tucson, AZ 85718-1302\", \"hours\": {\"weekRanges\": [[], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1230, \"closeHours\": \"20:30\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::331625.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"331625.0\", \"name\": \"Wildflower\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"International\", \"Contemporary\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"7037 N Oracle Rd, Tucson, AZ 85704-4329\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::479113.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"479113.0\", \"name\": \"Flying V Bar & Grill\", \"City\": \"Tucson\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Southwestern\", \"Contemporary\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"7000 N Resort Dr, Tucson, AZ 85750-1341\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::4689020.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4689020.0\", \"name\": \"Guadalajara Original Grill\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Mexican\", \"Southwestern\", \"Latin\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1220 E Prince Rd, Tucson, AZ 85719-1835\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::332001.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"332001.0\", \"name\": \"Blue Willow Restaurant & Gift Shop\", \"City\": \"Tucson\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Healthy\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2616 N Campbell Ave, Tucson, AZ 85719-3102\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::518626.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"518626.0\", \"name\": \"Feast\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3719 E Speedway Blvd, Tucson, AZ 85716-4019\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::6453699.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6453699.0\", \"name\": \"Baja Cafe of Tucson\", \"City\": \"Tucson\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Southwestern\", \"Cafe\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"7002 E Broadway Blvd, Tucson, AZ 85710-2827\", \"hours\": {\"weekRanges\": [[{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::615164.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"615164.0\", \"name\": \"Renee's\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Italian\", \"Pizza\", \"Healthy\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"7065 E Tanque Verde Rd, Tucson, AZ 85715-5311\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1215, \"closeHours\": \"20:15\"}], [], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1215, \"closeHours\": \"20:15\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1215, \"closeHours\": \"20:15\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1215, \"closeHours\": \"20:15\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1215, \"closeHours\": \"20:15\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1215, \"closeHours\": \"20:15\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::5994885.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"5994885.0\", \"name\": \"Prep & Pastry\", \"City\": \"Tucson\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2660 North Campbell Avenue, Tucson, AZ 85719\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Restaurant::3192905.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3192905.0\", \"name\": \"Scordato's Pizzeria\", \"City\": \"Tucson\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Pizza\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"4911 N Stone Ave Suite 55, Tucson, AZ 85704\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Phoenix\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::126842\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 571.18}, {\"source\": \"Restaurant::331625.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 571.18}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 866.66}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1122.25}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1174.22}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1358.57}, {\"source\": \"Restaurant::518626.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1358.57}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1436.26}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1681.82}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1807.32}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1952.95}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2178.32}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2249.25}, {\"source\": \"Restaurant::479113.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2249.25}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2371.3}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2420.13}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2773.35}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2836.74}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3063.31}, {\"source\": \"Restaurant::518626.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3063.31}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3069.49}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3261.24}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3267.45}, {\"source\": \"Restaurant::332001.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3267.45}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3274.02}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3292.05}, {\"source\": \"Restaurant::5994885.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3292.05}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3318.89}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3339.43}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3420.74}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3659.56}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3733.9}, {\"source\": \"Attraction::209268\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3780.54}, {\"source\": \"Restaurant::479113.0\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3780.54}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3813.12}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3906.96}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3974.6}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4193.07}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4218.07}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4318.78}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4562.88}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4587.26}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4593.05}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4653.83}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4688.89}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4797.05}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4861.91}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4864.74}, {\"source\": \"Restaurant::4689020.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4864.74}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4922.88}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4968.88}, {\"source\": \"Attraction::126842\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4983.15}, {\"source\": \"Restaurant::3192905.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4983.15}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5368.86}, {\"source\": \"Attraction::126842\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5370.79}, {\"source\": \"Restaurant::332416.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5370.79}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5402.99}, {\"source\": \"Restaurant::332001.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5402.99}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5428.01}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5517.14}, {\"source\": \"Restaurant::5994885.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5517.14}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5591.99}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5725.09}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6024.96}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6097.15}, {\"source\": \"Restaurant::615164.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6097.15}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6209.76}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6384.42}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6413.19}, {\"source\": \"Restaurant::615164.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6413.19}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6494.69}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6663.43}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6663.48}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6735.7}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6747.01}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6787.17}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6798.82}, {\"source\": \"Accommodation::48001345.0\", \"target\": \"Attraction::109094\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6844.32}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6891.4}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6997.52}, {\"source\": \"Restaurant::6453699.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6997.52}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7200.54}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7207.28}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7276.49}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7327.64}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7366.36}, {\"source\": \"Restaurant::6453699.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7366.36}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7390.95}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7541.06}, {\"source\": \"Restaurant::4689020.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7541.06}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7804.52}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7843.94}, {\"source\": \"Restaurant::3192905.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7843.94}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7844.03}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7947.85}, {\"source\": \"Restaurant::332416.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7947.85}, {\"source\": \"Attraction::126842\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7978.7}, {\"source\": \"Restaurant::4689020.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7978.7}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8186.88}, {\"source\": \"Attraction::209268\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8320.67}, {\"source\": \"Restaurant::615164.0\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8320.67}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8410.78}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Attraction::109172\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8564.0}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8567.02}, {\"source\": \"Restaurant::332416.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8567.02}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8567.34}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8657.76}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8663.87}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8684.86}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8776.39}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8826.83}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8829.31}, {\"source\": \"Restaurant::615164.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8829.31}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9055.16}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9063.01}, {\"source\": \"Attraction::109172\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9107.64}, {\"source\": \"Restaurant::6453699.0\", \"target\": \"Attraction::109172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9107.64}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9432.31}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9531.76}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9635.65}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9657.33}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 9686.68}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9689.3}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 9713.8}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9718.33}, {\"source\": \"Restaurant::6453699.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9718.33}, {\"source\": \"Attraction::126842\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9993.04}, {\"source\": \"Restaurant::5994885.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9993.04}, {\"source\": \"Attraction::126842\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10109.14}, {\"source\": \"Restaurant::332001.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10109.14}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10114.21}, {\"source\": \"Restaurant::518626.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10114.21}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Attraction::109172\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10129.86}, {\"source\": \"Accommodation::7.36e+17\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10276.28}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10285.58}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10293.63}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10341.93}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10360.1}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10396.86}, {\"source\": \"Restaurant::479113.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10396.86}, {\"source\": \"Attraction::143936\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10657.83}, {\"source\": \"Restaurant::3192905.0\", \"target\": \"Attraction::143936\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10657.83}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10681.39}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Attraction::108867\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10713.88}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10756.95}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10772.67}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::5994885.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10866.4}, {\"source\": \"Restaurant::5994885.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10866.4}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::4689020.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10878.76}, {\"source\": \"Restaurant::4689020.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10878.76}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10916.42}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::332001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10936.02}, {\"source\": \"Restaurant::332001.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10936.02}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10941.22}, {\"source\": \"Attraction::209268\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11066.52}, {\"source\": \"Restaurant::332416.0\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11066.52}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11166.95}, {\"source\": \"Accommodation::23436211.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11206.89}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11266.56}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11404.39}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11469.61}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11535.85}, {\"source\": \"Accommodation::35495728.0\", \"target\": \"Restaurant::479113.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11545.48}, {\"source\": \"Attraction::126843\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11610.47}, {\"source\": \"Restaurant::331625.0\", \"target\": \"Attraction::126843\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11610.47}, {\"source\": \"Attraction::109172\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11667.67}, {\"source\": \"Restaurant::518626.0\", \"target\": \"Attraction::109172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11667.67}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11679.69}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Restaurant::331625.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11689.84}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11702.54}, {\"source\": \"Accommodation::39792030.0\", \"target\": \"Restaurant::518626.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11706.35}, {\"source\": \"Accommodation::51128776.0\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11808.63}, {\"source\": \"Attraction::209268\", \"target\": \"Restaurant::6453699.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11826.35}, {\"source\": \"Restaurant::6453699.0\", \"target\": \"Attraction::209268\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11826.35}, {\"source\": \"Accommodation::30154947.0\", \"target\": \"Attraction::126842\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11852.05}, {\"source\": \"Accommodation::7.91e+17\", \"target\": \"Restaurant::332416.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11872.45}, {\"source\": \"Accommodation::16225605.0\", \"target\": \"Restaurant::615164.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11881.9}, {\"source\": \"Accommodation::3867751.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11908.46}, {\"source\": \"Attraction::561980\", \"target\": \"Restaurant::3192905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11956.34}, {\"source\": \"Restaurant::3192905.0\", \"target\": \"Attraction::561980\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11956.34}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F0634946\", \"dep_time\": \"09:13\", \"arr_time\": \"10:59\", \"local_activity_start_after_arrival_buffer\": \"11:29\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F0109139\", \"dep_time\": \"09:36\", \"arr_time\": \"10:17\", \"local_activity_start_after_arrival_buffer\": \"10:47\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3936046\", \"dep_time\": \"09:18\", \"arr_time\": \"10:52\", \"local_activity_start_after_arrival_buffer\": \"11:22\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2351820\", \"dep_time\": \"09:30\", \"arr_time\": \"09:56\", \"local_activity_start_after_arrival_buffer\": \"10:26\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2280116\", \"dep_time\": \"09:34\", \"arr_time\": \"10:19\", \"local_activity_start_after_arrival_buffer\": \"10:49\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F3478549\", \"dep_time\": \"15:16\", \"arr_time\": \"18:53\", \"latest_local_activity_finish_before_airport_buffer\": \"13:16\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F0108083\", \"dep_time\": \"13:31\", \"arr_time\": \"17:37\", \"latest_local_activity_finish_before_airport_buffer\": \"11:31\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F3906436\", \"dep_time\": \"15:09\", \"arr_time\": \"18:35\", \"latest_local_activity_finish_before_airport_buffer\": \"13:09\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F0989222\", \"dep_time\": \"15:01\", \"arr_time\": \"18:34\", \"latest_local_activity_finish_before_airport_buffer\": \"13:01\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F3481948\", \"dep_time\": \"18:10\", \"arr_time\": \"21:11\", \"latest_local_activity_finish_before_airport_buffer\": \"16:10\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::332001.0\", \"Restaurant::6453699.0\", \"Restaurant::5994885.0\"], \"lunch\": [\"Restaurant::332416.0\", \"Restaurant::331625.0\", \"Restaurant::4689020.0\", \"Restaurant::332001.0\", \"Restaurant::518626.0\", \"Restaurant::6453699.0\", \"Restaurant::615164.0\", \"Restaurant::5994885.0\", \"Restaurant::3192905.0\"], \"dinner\": [\"Restaurant::332416.0\", \"Restaurant::331625.0\", \"Restaurant::479113.0\", \"Restaurant::4689020.0\", \"Restaurant::332001.0\", \"Restaurant::518626.0\", \"Restaurant::615164.0\", \"Restaurant::3192905.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::108867\", \"Attraction::3665608\", \"Attraction::561980\", \"Attraction::109172\", \"Attraction::209268\", \"Attraction::109094\", \"Attraction::126842\", \"Attraction::12704675\", \"Attraction::143936\", \"Attraction::126843\"], \"afternoon_attraction\": [\"Attraction::108867\", \"Attraction::3665608\", \"Attraction::561980\", \"Attraction::109172\", \"Attraction::209268\", \"Attraction::109094\", \"Attraction::126842\", \"Attraction::12704675\", \"Attraction::143936\", \"Attraction::126843\"]}, \"event_slots_by_date\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::332001.0\", \"name\": \"Blue Willow Restaurant & Gift Shop\"}, {\"node_key\": \"Restaurant::6453699.0\", \"name\": \"Baja Cafe of Tucson\"}, {\"node_key\": \"Restaurant::5994885.0\", \"name\": \"Prep & Pastry\"}], \"lunch\": [{\"node_key\": \"Restaurant::332416.0\", \"name\": \"Vivace Restaurant\"}, {\"node_key\": \"Restaurant::331625.0\", \"name\": \"Wildflower\"}, {\"node_key\": \"Restaurant::4689020.0\", \"name\": \"Guadalajara Original Grill\"}, {\"node_key\": \"Restaurant::332001.0\", \"name\": \"Blue Willow Restaurant & Gift Shop\"}, {\"node_key\": \"Restaurant::518626.0\", \"name\": \"Feast\"}, {\"node_key\": \"Restaurant::6453699.0\", \"name\": \"Baja Cafe of Tucson\"}, {\"node_key\": \"Restaurant::615164.0\", \"name\": \"Renee's\"}, {\"node_key\": \"Restaurant::5994885.0\", \"name\": \"Prep & Pastry\"}, {\"node_key\": \"Restaurant::3192905.0\", \"name\": \"Scordato's Pizzeria\"}], \"dinner\": [{\"node_key\": \"Restaurant::332416.0\", \"name\": \"Vivace Restaurant\"}, {\"node_key\": \"Restaurant::331625.0\", \"name\": \"Wildflower\"}, {\"node_key\": \"Restaurant::479113.0\", \"name\": \"Flying V Bar & Grill\"}, {\"node_key\": \"Restaurant::4689020.0\", \"name\": \"Guadalajara Original Grill\"}, {\"node_key\": \"Restaurant::332001.0\", \"name\": \"Blue Willow Restaurant & Gift Shop\"}, {\"node_key\": \"Restaurant::518626.0\", \"name\": \"Feast\"}, {\"node_key\": \"Restaurant::615164.0\", \"name\": \"Renee's\"}, {\"node_key\": \"Restaurant::3192905.0\", \"name\": \"Scordato's Pizzeria\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-01\": [{\"node_key\": \"Event::vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\"}], \"2024-11-02\": [], \"2024-11-03\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-01\", \"required_slots\": {\"Flight::F0634946\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F0109139\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3936046\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2351820\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2280116\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [\"Event::vvG1zZb49KDdSL\"], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-02\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-03\", \"required_slots\": {\"Flight::F3478549\": [\"breakfast\", \"morning_attraction\"], \"Flight::F0108083\": [\"breakfast\", \"morning_attraction\"], \"Flight::F3906436\": [\"breakfast\", \"morning_attraction\"], \"Flight::F0989222\": [\"breakfast\", \"morning_attraction\"], \"Flight::F3481948\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_14",
+    "query_text": "Plan a 3-day trip for 4 people from Houston to Tucson from November 1st to November 3rd, 2024, with a budget of $3,150. Accommodations should be an entire home, and the house rules should allow parties. Include dining options with American, Mexican, and Italian cuisines.",
+    "request": {
+      "org": "Houston",
+      "dest": "Tucson",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-01', '2024-11-02', '2024-11-03']",
+      "people_number": 4,
+      "local_constraint": "{'house rule': 'parties', 'cuisine': ['American', 'Mexican', 'Italian'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 3150,
+      "query": "Plan a 3-day trip for 4 people from Houston to Tucson from November 1st to November 3rd, 2024, with a budget of $3,150. Accommodations should be an entire home, and the house rules should allow parties. Include dining options with American, Mexican, and Italian cuisines.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-01",
+      "2024-11-02",
+      "2024-11-03"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Relaxation",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": "parties",
+      "cuisine": "American, Mexican, Italian",
+      "room type": "entire home",
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F0634946",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Houston",
+          "DestCityName": "Tucson",
+          "DepTime": "09:13",
+          "ArrTime": "10:59",
+          "Price": 193
+        }
+      },
+      {
+        "node_key": "Flight::F0109139",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Houston",
+          "DestCityName": "Tucson",
+          "DepTime": "09:36",
+          "ArrTime": "10:17",
+          "Price": 195
+        }
+      },
+      {
+        "node_key": "Flight::F3936046",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Houston",
+          "DestCityName": "Tucson",
+          "DepTime": "09:18",
+          "ArrTime": "10:52",
+          "Price": 282
+        }
+      },
+      {
+        "node_key": "Flight::F2351820",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Houston",
+          "DestCityName": "Tucson",
+          "DepTime": "09:30",
+          "ArrTime": "09:56",
+          "Price": 395
+        }
+      },
+      {
+        "node_key": "Flight::F2280116",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Houston",
+          "DestCityName": "Tucson",
+          "DepTime": "09:34",
+          "ArrTime": "10:19",
+          "Price": 398
+        }
+      },
+      {
+        "node_key": "Flight::F3478549",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Tucson",
+          "DestCityName": "Houston",
+          "DepTime": "15:16",
+          "ArrTime": "18:53",
+          "Price": 195
+        }
+      },
+      {
+        "node_key": "Flight::F0108083",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Tucson",
+          "DestCityName": "Houston",
+          "DepTime": "13:31",
+          "ArrTime": "17:37",
+          "Price": 238
+        }
+      },
+      {
+        "node_key": "Flight::F3906436",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Tucson",
+          "DestCityName": "Houston",
+          "DepTime": "15:09",
+          "ArrTime": "18:35",
+          "Price": 311
+        }
+      },
+      {
+        "node_key": "Flight::F0989222",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Tucson",
+          "DestCityName": "Houston",
+          "DepTime": "15:01",
+          "ArrTime": "18:34",
+          "Price": 345
+        }
+      },
+      {
+        "node_key": "Flight::F3481948",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Tucson",
+          "DestCityName": "Houston",
+          "DepTime": "18:10",
+          "ArrTime": "21:11",
+          "Price": 410
+        }
+      },
+      {
+        "node_key": "Accommodation::51128776.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "51128776.0",
+          "name": "Accessible Private Studio, Entrance & Parking.",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$58 per night",
+            "originalPrice": null,
+            "price": "$58",
+            "qualifier": "night",
+            "total": "$290 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  499 reviews",
+            "localizedLabel": "4.93 (499)",
+            "average": 4.93,
+            "reviewsCount": 499
+          },
+          "coordinates": {
+            "latitude": 32.2137,
+            "longitude": -110.89162
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::39792030.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39792030.0",
+          "name": "Pet Friendly Casita with striking Mountain View’s",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$103 per night",
+            "originalPrice": null,
+            "price": "$103",
+            "qualifier": "night",
+            "total": "$514 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  227 reviews",
+            "localizedLabel": "4.94 (227)",
+            "average": 4.94,
+            "reviewsCount": 227
+          },
+          "coordinates": {
+            "latitude": 32.32971,
+            "longitude": -110.97168
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::30154947.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "30154947.0",
+          "name": "Private Tucson Desert Solyluna Casita",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No children under 10 & No pets",
+          "pricing": {
+            "label": "$135 per night",
+            "originalPrice": null,
+            "price": "$135",
+            "qualifier": "night",
+            "total": "$675 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  20 reviews",
+            "localizedLabel": "5.0 (20)",
+            "average": 5,
+            "reviewsCount": 20
+          },
+          "coordinates": {
+            "latitude": 32.25145,
+            "longitude": -111.05289
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7.36e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7.36e+17",
+          "name": "The Coop- Luxury guest house with ideal location",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No parties & No smoking",
+          "pricing": {
+            "label": "$122 per night",
+            "originalPrice": null,
+            "price": "$122",
+            "qualifier": "night",
+            "total": "$607 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  106 reviews",
+            "localizedLabel": "4.98 (106)",
+            "average": 4.98,
+            "reviewsCount": 106
+          },
+          "coordinates": {
+            "latitude": 32.30146,
+            "longitude": -110.99133
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::48001345.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "48001345.0",
+          "name": "Thunderbird: a haven for hikers, birders, artists",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$83 per night",
+            "originalPrice": null,
+            "price": "$83",
+            "qualifier": "night",
+            "total": "$413 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  85 reviews",
+            "localizedLabel": "4.96 (85)",
+            "average": 4.96,
+            "reviewsCount": 85
+          },
+          "coordinates": {
+            "latitude": 32.14634,
+            "longitude": -111.06465
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::3867751.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "3867751.0",
+          "name": "UofA gem. Gorgeous and convenient.",
+          "City": "Tucson",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$107 per night",
+            "originalPrice": null,
+            "price": "$107",
+            "qualifier": "night",
+            "total": "$534 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  354 reviews",
+            "localizedLabel": "4.98 (354)",
+            "average": 4.98,
+            "reviewsCount": 354
+          },
+          "coordinates": {
+            "latitude": 32.23932,
+            "longitude": -110.94337
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::35495728.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "35495728.0",
+          "name": "Tucson home 1 mile to University of Arizona-Ask ME",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$82 per night, originally $144",
+            "originalPrice": "$144",
+            "price": "$82",
+            "qualifier": "night",
+            "total": "$410 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  102 reviews",
+            "localizedLabel": "4.92 (102)",
+            "average": 4.92,
+            "reviewsCount": 102
+          },
+          "coordinates": {
+            "latitude": 32.25049,
+            "longitude": -110.93259
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16225605.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16225605.0",
+          "name": "Historic 4th Ave Sunshine Suite",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$91 per night, originally $121",
+            "originalPrice": "$121",
+            "price": "$91",
+            "qualifier": "night",
+            "total": "$451 total"
+          },
+          "rating": {
+            "label": "4.87 out of 5 average rating,  657 reviews",
+            "localizedLabel": "4.87 (657)",
+            "average": 4.87,
+            "reviewsCount": 657
+          },
+          "coordinates": {
+            "latitude": 32.2309,
+            "longitude": -110.96526
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7.91e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7.91e+17",
+          "name": "Cozy Casita Private Entry and Courtyard",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No visitors & No children under 10",
+          "pricing": {
+            "label": "$93 per night, originally $125",
+            "originalPrice": "$125",
+            "price": "$93",
+            "qualifier": "night",
+            "total": "$461 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  243 reviews",
+            "localizedLabel": "4.95 (243)",
+            "average": 4.95,
+            "reviewsCount": 243
+          },
+          "coordinates": {
+            "latitude": 32.2311,
+            "longitude": -110.86531
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::23436211.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "23436211.0",
+          "name": "Peaceful Casita in the Foothills",
+          "City": "Tucson",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$97 per night, originally $107",
+            "originalPrice": "$107",
+            "price": "$97",
+            "qualifier": "night",
+            "total": "$481 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  643 reviews",
+            "localizedLabel": "4.96 (643)",
+            "average": 4.96,
+            "reviewsCount": 643
+          },
+          "coordinates": {
+            "latitude": 32.28945,
+            "longitude": -110.87818
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::108867",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108867",
+          "name": "Arizona-Sonora Desert Museum",
+          "City": "Tucson",
+          "subtype": [
+            "Specialty Museums",
+            "Art Galleries",
+            "Natural History Museums"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Museums"
+          ],
+          "visit_duration": "2.25",
+          "rating": "5.0",
+          "rankingString": "#10 of 517 things to do in Tucson",
+          "address": "2021 N Kinney Rd, Tucson, AZ 85743-9719",
+          "description": "The renowned Arizona-Sonora Desert Museum is everything you could want in a Sonoran Desert adventure! Mostly outdoors and comprised of an AZA-accredited zoo, extensive botanical garden, two art galleries, and a natural history museum, the Desert Museum sits on 98 acres of pristine desert landscape. The Museum showcases the diverse flora and fauna of the Sonoran Desert region (with over 55,000 plants!) featuring wildlife such as coyotes, javelinas, mountain lions, and bighorn sheep in naturali..."
+        }
+      },
+      {
+        "node_key": "Attraction::3665608",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3665608",
+          "name": "Mt. Lemmon Scenic Byway",
+          "City": "Tucson",
+          "subtype": [
+            "Scenic Drives"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.5",
+          "rating": "5.0",
+          "rankingString": "#2 of 517 things to do in Tucson",
+          "address": "Tucson, AZ"
+        }
+      },
+      {
+        "node_key": "Attraction::561980",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "561980",
+          "name": "Mark Sublette Medicine Man Gallery",
+          "City": "Tucson",
+          "subtype": [
+            "Art Galleries",
+            "Art Museums"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Museums"
+          ],
+          "visit_duration": "2.25",
+          "rating": "5.0",
+          "rankingString": "#22 of 517 things to do in Tucson",
+          "address": "6872 E Sunrise Dr Ste 130, Tucson, AZ 85750-0861",
+          "description": "Mark Sublette Medicine Man Gallery specializes in Antique Native American Art, Old Pawn Jewelry, Navajo Rugs, Baskets, Early 2oth Century Paintings, Taos founders. The gallery houses the Maynard Dixon Museum, a 23 year collection of drawings, illustrations, poetry, oils, and ephemera. Admission is free. The gallery also features nationally acclaimed contemporary southwestern artists and sculptors."
+        }
+      },
+      {
+        "node_key": "Attraction::109172",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109172",
+          "name": "Pima Air and Space Museum",
+          "City": "Tucson",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#5 of 517 things to do in Tucson",
+          "address": "6000 E Valencia Rd, Tucson, AZ 85756-9403",
+          "description": "400+ aircraft, 80 acres, 6 indoor air-cooled hangars... just plane awesome! We’re one of the world's largest aircraft collections including 3 hangars of WWII planes, the SR-71, the world's smallest biplane, and many other unique private, military, and commercial air & spacecraft documenting the evolution of flight. There’s something for the everyone from a “flight simulator” Boeing 720 cockpit, the Women in Flight Gallery, and an all around mecca for the aviation aficionado. We give the only ..."
+        }
+      },
+      {
+        "node_key": "Attraction::209268",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "209268",
+          "name": "Sabino Canyon Recreation Area",
+          "City": "Tucson",
+          "subtype": [
+            "Canyons"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#4 of 517 things to do in Tucson",
+          "address": "5700 N Sabino Canyon Rd, Tucson, AZ 85750-0800",
+          "description": "Located in the Catalina Mountains and part of the Coronado National Forest, this beautiful canyon offers outdoor recreation including hiking, swimming, biking and picnicking. For an overview of the area, take the narrated shuttle bus tour."
+        }
+      },
+      {
+        "node_key": "Attraction::109094",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109094",
+          "name": "Mission San Xavier del Bac",
+          "City": "Tucson",
+          "subtype": [
+            "Missions",
+            "Architectural Buildings",
+            "Sacred & Religious Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#17 of 517 things to do in Tucson",
+          "address": "1950 W San Xavier Rd, Tucson, AZ 85746-7409",
+          "description": "Built in the 1700s, this recently restored white adobe church, representing a wonderful example of Spanish colonial architecture, is beautiful inside and out, with colorful frescoes, sculptures and carvings."
+        }
+      },
+      {
+        "node_key": "Attraction::126842",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126842",
+          "name": "Tohono Chul",
+          "City": "Tucson",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#19 of 517 things to do in Tucson",
+          "address": "7366 N Paseo Del Norte, Tucson, AZ 85704-4415",
+          "description": "Cultivate your appreciation for the Sonoran Desert’s natural beauty and the impression it makes on everyone who explores our “Desert Corner”. Here, the seasons inspire wondrous events both in nature and culturally; Tohono Chul celebrates every opening, whether for an internationally known artist or an exquisite cactus flower. Wander the natural desert gardens—escape the noise of everyday. Engage in our sincere passion to evolve “The Desert Corner” as an integral crossroads of nature, art and ..."
+        }
+      },
+      {
+        "node_key": "Attraction::12704675",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "12704675",
+          "name": "Saguaro National Park",
+          "City": "Tucson",
+          "subtype": [
+            "National Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#7 of 517 things to do in Tucson",
+          "address": "Tucson, AZ"
+        }
+      },
+      {
+        "node_key": "Attraction::143936",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "143936",
+          "name": "Reid Park Zoo",
+          "City": "Tucson",
+          "subtype": [
+            "Zoos"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#23 of 517 things to do in Tucson",
+          "address": "3400 Zoo Court, Tucson, AZ 85716-5872",
+          "description": "Reid Park Zoo is a hidden gem, nestled in the center of Tucson, and is the perfect place to enjoy time outside while discovering the wonders of wildlife."
+        }
+      },
+      {
+        "node_key": "Attraction::126843",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126843",
+          "name": "Tucson Botanical Gardens",
+          "City": "Tucson",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#21 of 517 things to do in Tucson",
+          "address": "2150 N Alvernon Way, Tucson, AZ 85712-3199",
+          "description": "Located on the site of the historic Porter property, Tucson Botanical Gardens (TBG) is a five-and-a-half acre collection of more than 20 gardens in the heart of Tucson, Arizona. A true urban oasis, TBG was selected #4 in USA Today’s 10Best Botanical Gardens Readers’ Choice Awards in 2023 and 2024. Gardens include the Cactus & Succulent Garden, Barrio Garden, Children’s Discovery Garden, Herb Garden, and many more that showcase the diversity of plants that can thrive in the Sonoran Desert. Tro..."
+        }
+      },
+      {
+        "node_key": "Restaurant::332416.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "332416.0",
+          "name": "Vivace Restaurant",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "6440 N Campbell Ave, Tucson, AZ 85718-1302",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::331625.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "331625.0",
+          "name": "Wildflower",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "International",
+            "Contemporary"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "7037 N Oracle Rd, Tucson, AZ 85704-4329",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::479113.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "479113.0",
+          "name": "Flying V Bar & Grill",
+          "City": "Tucson",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Southwestern",
+            "Contemporary"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "7000 N Resort Dr, Tucson, AZ 85750-1341",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4689020.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4689020.0",
+          "name": "Guadalajara Original Grill",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern",
+            "Latin"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1220 E Prince Rd, Tucson, AZ 85719-1835",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::332001.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "332001.0",
+          "name": "Blue Willow Restaurant & Gift Shop",
+          "City": "Tucson",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Healthy"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2616 N Campbell Ave, Tucson, AZ 85719-3102",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::518626.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "518626.0",
+          "name": "Feast",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3719 E Speedway Blvd, Tucson, AZ 85716-4019",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6453699.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6453699.0",
+          "name": "Baja Cafe of Tucson",
+          "City": "Tucson",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Southwestern",
+            "Cafe"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "7002 E Broadway Blvd, Tucson, AZ 85710-2827",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::615164.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "615164.0",
+          "name": "Renee's",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza",
+            "Healthy"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "7065 E Tanque Verde Rd, Tucson, AZ 85715-5311",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1215,
+                  "closeHours": "20:15"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::5994885.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "5994885.0",
+          "name": "Prep & Pastry",
+          "City": "Tucson",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2660 North Campbell Avenue, Tucson, AZ 85719",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3192905.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3192905.0",
+          "name": "Scordato's Pizzeria",
+          "City": "Tucson",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "4911 N Stone Ave Suite 55, Tucson, AZ 85704",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Phoenix"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 571.18
+      },
+      {
+        "source": "Restaurant::331625.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 571.18
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 866.66
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1122.25
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1174.22
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1358.57
+      },
+      {
+        "source": "Restaurant::518626.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1358.57
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1436.26
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1681.82
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1807.32
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1952.95
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2178.32
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2249.25
+      },
+      {
+        "source": "Restaurant::479113.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2249.25
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2371.3
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2420.13
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2773.35
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2836.74
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3063.31
+      },
+      {
+        "source": "Restaurant::518626.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3063.31
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3069.49
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3261.24
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3267.45
+      },
+      {
+        "source": "Restaurant::332001.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3267.45
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3274.02
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3292.05
+      },
+      {
+        "source": "Restaurant::5994885.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3292.05
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3318.89
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3339.43
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3420.74
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3659.56
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3733.9
+      },
+      {
+        "source": "Attraction::209268",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3780.54
+      },
+      {
+        "source": "Restaurant::479113.0",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3780.54
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3813.12
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3906.96
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3974.6
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4193.07
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4218.07
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4318.78
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4562.88
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4587.26
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4593.05
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4653.83
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4688.89
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4797.05
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4861.91
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4864.74
+      },
+      {
+        "source": "Restaurant::4689020.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4864.74
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4922.88
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4968.88
+      },
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4983.15
+      },
+      {
+        "source": "Restaurant::3192905.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4983.15
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5368.86
+      },
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5370.79
+      },
+      {
+        "source": "Restaurant::332416.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5370.79
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5402.99
+      },
+      {
+        "source": "Restaurant::332001.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5402.99
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5428.01
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5517.14
+      },
+      {
+        "source": "Restaurant::5994885.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5517.14
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5591.99
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5725.09
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6024.96
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6097.15
+      },
+      {
+        "source": "Restaurant::615164.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6097.15
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6209.76
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6384.42
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6413.19
+      },
+      {
+        "source": "Restaurant::615164.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6413.19
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6494.69
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6663.43
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6663.48
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6735.7
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6747.01
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6787.17
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6798.82
+      },
+      {
+        "source": "Accommodation::48001345.0",
+        "target": "Attraction::109094",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6844.32
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6891.4
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6997.52
+      },
+      {
+        "source": "Restaurant::6453699.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6997.52
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7200.54
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7207.28
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7276.49
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7327.64
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7366.36
+      },
+      {
+        "source": "Restaurant::6453699.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7366.36
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7390.95
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7541.06
+      },
+      {
+        "source": "Restaurant::4689020.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7541.06
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7804.52
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7843.94
+      },
+      {
+        "source": "Restaurant::3192905.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7843.94
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7844.03
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7947.85
+      },
+      {
+        "source": "Restaurant::332416.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7947.85
+      },
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7978.7
+      },
+      {
+        "source": "Restaurant::4689020.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7978.7
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8186.88
+      },
+      {
+        "source": "Attraction::209268",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8320.67
+      },
+      {
+        "source": "Restaurant::615164.0",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8320.67
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8410.78
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Attraction::109172",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8564.0
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8567.02
+      },
+      {
+        "source": "Restaurant::332416.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8567.02
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8567.34
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8657.76
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8663.87
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8684.86
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8776.39
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8826.83
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8829.31
+      },
+      {
+        "source": "Restaurant::615164.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8829.31
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9055.16
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9063.01
+      },
+      {
+        "source": "Attraction::109172",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9107.64
+      },
+      {
+        "source": "Restaurant::6453699.0",
+        "target": "Attraction::109172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9107.64
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9432.31
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9531.76
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9635.65
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9657.33
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 9686.68
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9689.3
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 9713.8
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9718.33
+      },
+      {
+        "source": "Restaurant::6453699.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9718.33
+      },
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9993.04
+      },
+      {
+        "source": "Restaurant::5994885.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9993.04
+      },
+      {
+        "source": "Attraction::126842",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10109.14
+      },
+      {
+        "source": "Restaurant::332001.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10109.14
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10114.21
+      },
+      {
+        "source": "Restaurant::518626.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10114.21
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Attraction::109172",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10129.86
+      },
+      {
+        "source": "Accommodation::7.36e+17",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10276.28
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10285.58
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10293.63
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10341.93
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10360.1
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10396.86
+      },
+      {
+        "source": "Restaurant::479113.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10396.86
+      },
+      {
+        "source": "Attraction::143936",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10657.83
+      },
+      {
+        "source": "Restaurant::3192905.0",
+        "target": "Attraction::143936",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10657.83
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10681.39
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Attraction::108867",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10713.88
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10756.95
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10772.67
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::5994885.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10866.4
+      },
+      {
+        "source": "Restaurant::5994885.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10866.4
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::4689020.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10878.76
+      },
+      {
+        "source": "Restaurant::4689020.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10878.76
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10916.42
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::332001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10936.02
+      },
+      {
+        "source": "Restaurant::332001.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10936.02
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10941.22
+      },
+      {
+        "source": "Attraction::209268",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11066.52
+      },
+      {
+        "source": "Restaurant::332416.0",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11066.52
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11166.95
+      },
+      {
+        "source": "Accommodation::23436211.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11206.89
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11266.56
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11404.39
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11469.61
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11535.85
+      },
+      {
+        "source": "Accommodation::35495728.0",
+        "target": "Restaurant::479113.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11545.48
+      },
+      {
+        "source": "Attraction::126843",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11610.47
+      },
+      {
+        "source": "Restaurant::331625.0",
+        "target": "Attraction::126843",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11610.47
+      },
+      {
+        "source": "Attraction::109172",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11667.67
+      },
+      {
+        "source": "Restaurant::518626.0",
+        "target": "Attraction::109172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11667.67
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11679.69
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Restaurant::331625.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11689.84
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11702.54
+      },
+      {
+        "source": "Accommodation::39792030.0",
+        "target": "Restaurant::518626.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11706.35
+      },
+      {
+        "source": "Accommodation::51128776.0",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11808.63
+      },
+      {
+        "source": "Attraction::209268",
+        "target": "Restaurant::6453699.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11826.35
+      },
+      {
+        "source": "Restaurant::6453699.0",
+        "target": "Attraction::209268",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11826.35
+      },
+      {
+        "source": "Accommodation::30154947.0",
+        "target": "Attraction::126842",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11852.05
+      },
+      {
+        "source": "Accommodation::7.91e+17",
+        "target": "Restaurant::332416.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11872.45
+      },
+      {
+        "source": "Accommodation::16225605.0",
+        "target": "Restaurant::615164.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11881.9
+      },
+      {
+        "source": "Accommodation::3867751.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11908.46
+      },
+      {
+        "source": "Attraction::561980",
+        "target": "Restaurant::3192905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11956.34
+      },
+      {
+        "source": "Restaurant::3192905.0",
+        "target": "Attraction::561980",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11956.34
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-01",
+        "2024-11-02",
+        "2024-11-03"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F0634946",
+          "dep_time": "09:13",
+          "arr_time": "10:59",
+          "local_activity_start_after_arrival_buffer": "11:29",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F0109139",
+          "dep_time": "09:36",
+          "arr_time": "10:17",
+          "local_activity_start_after_arrival_buffer": "10:47",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3936046",
+          "dep_time": "09:18",
+          "arr_time": "10:52",
+          "local_activity_start_after_arrival_buffer": "11:22",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2351820",
+          "dep_time": "09:30",
+          "arr_time": "09:56",
+          "local_activity_start_after_arrival_buffer": "10:26",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2280116",
+          "dep_time": "09:34",
+          "arr_time": "10:19",
+          "local_activity_start_after_arrival_buffer": "10:49",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F3478549",
+          "dep_time": "15:16",
+          "arr_time": "18:53",
+          "latest_local_activity_finish_before_airport_buffer": "13:16",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F0108083",
+          "dep_time": "13:31",
+          "arr_time": "17:37",
+          "latest_local_activity_finish_before_airport_buffer": "11:31",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F3906436",
+          "dep_time": "15:09",
+          "arr_time": "18:35",
+          "latest_local_activity_finish_before_airport_buffer": "13:09",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F0989222",
+          "dep_time": "15:01",
+          "arr_time": "18:34",
+          "latest_local_activity_finish_before_airport_buffer": "13:01",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F3481948",
+          "dep_time": "18:10",
+          "arr_time": "21:11",
+          "latest_local_activity_finish_before_airport_buffer": "16:10",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::332001.0",
+          "Restaurant::6453699.0",
+          "Restaurant::5994885.0"
+        ],
+        "lunch": [
+          "Restaurant::332416.0",
+          "Restaurant::331625.0",
+          "Restaurant::4689020.0",
+          "Restaurant::332001.0",
+          "Restaurant::518626.0",
+          "Restaurant::6453699.0",
+          "Restaurant::615164.0",
+          "Restaurant::5994885.0",
+          "Restaurant::3192905.0"
+        ],
+        "dinner": [
+          "Restaurant::332416.0",
+          "Restaurant::331625.0",
+          "Restaurant::479113.0",
+          "Restaurant::4689020.0",
+          "Restaurant::332001.0",
+          "Restaurant::518626.0",
+          "Restaurant::615164.0",
+          "Restaurant::3192905.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::108867",
+          "Attraction::3665608",
+          "Attraction::561980",
+          "Attraction::109172",
+          "Attraction::209268",
+          "Attraction::109094",
+          "Attraction::126842",
+          "Attraction::12704675",
+          "Attraction::143936",
+          "Attraction::126843"
+        ],
+        "afternoon_attraction": [
+          "Attraction::108867",
+          "Attraction::3665608",
+          "Attraction::561980",
+          "Attraction::109172",
+          "Attraction::209268",
+          "Attraction::109094",
+          "Attraction::126842",
+          "Attraction::12704675",
+          "Attraction::143936",
+          "Attraction::126843"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-01": [
+          "Event::vvG1zZb49KDdSL"
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::332001.0",
+            "name": "Blue Willow Restaurant & Gift Shop"
+          },
+          {
+            "node_key": "Restaurant::6453699.0",
+            "name": "Baja Cafe of Tucson"
+          },
+          {
+            "node_key": "Restaurant::5994885.0",
+            "name": "Prep & Pastry"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::332416.0",
+            "name": "Vivace Restaurant"
+          },
+          {
+            "node_key": "Restaurant::331625.0",
+            "name": "Wildflower"
+          },
+          {
+            "node_key": "Restaurant::4689020.0",
+            "name": "Guadalajara Original Grill"
+          },
+          {
+            "node_key": "Restaurant::332001.0",
+            "name": "Blue Willow Restaurant & Gift Shop"
+          },
+          {
+            "node_key": "Restaurant::518626.0",
+            "name": "Feast"
+          },
+          {
+            "node_key": "Restaurant::6453699.0",
+            "name": "Baja Cafe of Tucson"
+          },
+          {
+            "node_key": "Restaurant::615164.0",
+            "name": "Renee's"
+          },
+          {
+            "node_key": "Restaurant::5994885.0",
+            "name": "Prep & Pastry"
+          },
+          {
+            "node_key": "Restaurant::3192905.0",
+            "name": "Scordato's Pizzeria"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::332416.0",
+            "name": "Vivace Restaurant"
+          },
+          {
+            "node_key": "Restaurant::331625.0",
+            "name": "Wildflower"
+          },
+          {
+            "node_key": "Restaurant::479113.0",
+            "name": "Flying V Bar & Grill"
+          },
+          {
+            "node_key": "Restaurant::4689020.0",
+            "name": "Guadalajara Original Grill"
+          },
+          {
+            "node_key": "Restaurant::332001.0",
+            "name": "Blue Willow Restaurant & Gift Shop"
+          },
+          {
+            "node_key": "Restaurant::518626.0",
+            "name": "Feast"
+          },
+          {
+            "node_key": "Restaurant::615164.0",
+            "name": "Renee's"
+          },
+          {
+            "node_key": "Restaurant::3192905.0",
+            "name": "Scordato's Pizzeria"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-01": [
+          {
+            "node_key": "Event::vvG1zZb49KDdSL",
+            "name": "A Beautiful Noise"
+          }
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-01",
+          "required_slots": {
+            "Flight::F0634946": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0109139": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3936046": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2351820": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2280116": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [
+            "Event::vvG1zZb49KDdSL"
+          ],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-02",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-03",
+          "required_slots": {
+            "Flight::F3478549": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F0108083": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F3906436": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F0989222": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F3481948": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-01": [
+        "Event::vvG1zZb49KDdSL"
+      ],
+      "2024-11-02": [],
+      "2024-11-03": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}
