@@ -1,0 +1,4067 @@
+{
+  "query_id": "idx_80",
+  "query_text": "Plan a 3-day trip for 2 people from Cleveland to Houston from November 26th to November 28th, 2024, with a budget of $2,550.",
+  "request": {
+    "org": "Cleveland",
+    "dest": "Houston",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-26', '2024-11-27', '2024-11-28']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}",
+    "budget": 2550,
+    "query": "Plan a 3-day trip for 2 people from Cleveland to Houston from November 26th to November 28th, 2024, with a budget of $2,550.",
+    "level": "medium",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Mountains"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Cultural Exploration",
+    "spending_preference": "Luxury Traveler",
+    "location_preference": "Mountains"
+  },
+  "constraints": {
+    "house rule": null,
+    "cuisine": null,
+    "room type": null,
+    "event": null,
+    "attraction": null,
+    "transportation": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This plan optimizes the trip by selecting the earliest outbound flight, a central accommodation, and a balanced itinerary with diverse activities and meals.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 2550.0,
+    "min_estimated_total_cost": 1216.0,
+    "max_estimated_total_cost": 1216.0,
+    "best_option_remaining_budget": 1334.0
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 1216.0,
+      "stay": {
+        "node_key": "Accommodation::7.44e+17",
+        "label": "Accommodation",
+        "name": "Modern Guesthouse in the Heart of the Heights",
+        "id": "7.44e+17",
+        "City": "Houston",
+        "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+      },
+      "outbound": {
+        "node_key": "Flight::F1044508",
+        "label": "Flight",
+        "name": "F1044508: Cleveland to Houston, 06:14-08:38",
+        "Flight Number": "F1044508",
+        "FlightDate": "2024-11-26",
+        "OriginCityName": "Cleveland",
+        "DestCityName": "Houston",
+        "Price": 299,
+        "DepTime": "06:14",
+        "ArrTime": "08:38"
+      },
+      "return": {
+        "node_key": "Flight::F3871971",
+        "label": "Flight",
+        "name": "F3871971: Houston to Cleveland, 18:24-22:04",
+        "Flight Number": "F3871971",
+        "FlightDate": "2024-11-28",
+        "OriginCityName": "Houston",
+        "DestCityName": "Cleveland",
+        "Price": 245,
+        "DepTime": "18:24",
+        "ArrTime": "22:04"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-26",
+          "current_city": "Houston",
+          "llm_notes": "Selected the earliest outbound flight, allowing for a balanced first day with breakfast, morning attraction, lunch, afternoon attraction, and dinner.",
+          "outbound_flight": {
+            "node_key": "Flight::F1044508",
+            "label": "Flight",
+            "name": "F1044508: Cleveland to Houston, 06:14-08:38",
+            "Flight Number": "F1044508",
+            "FlightDate": "2024-11-26",
+            "OriginCityName": "Cleveland",
+            "DestCityName": "Houston",
+            "Price": 299,
+            "DepTime": "06:14",
+            "ArrTime": "08:38"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::7.44e+17",
+            "label": "Accommodation",
+            "name": "Modern Guesthouse in the Heart of the Heights",
+            "id": "7.44e+17",
+            "City": "Houston",
+            "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::3213761.0",
+            "label": "Restaurant",
+            "name": "Phoenicia Specialty Foods",
+            "id": "3213761.0",
+            "City": "Houston",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::105911",
+            "label": "Attraction",
+            "name": "The Houston Museum of Natural Science",
+            "id": "105911",
+            "City": "Houston",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::484555.0",
+            "label": "Restaurant",
+            "name": "Taste of Texas",
+            "id": "484555.0",
+            "City": "Houston",
+            "avg_cost": "60.0",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::265524",
+            "label": "Attraction",
+            "name": "Minute Maid Park",
+            "id": "265524",
+            "City": "Houston",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::484925.0",
+            "label": "Restaurant",
+            "name": "Pappas Bros. Steakhouse",
+            "id": "484925.0",
+            "City": "Houston",
+            "avg_cost": "60.0",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::7.44e+17",
+            "label": "Accommodation",
+            "name": "Modern Guesthouse in the Heart of the Heights",
+            "id": "7.44e+17",
+            "City": "Houston",
+            "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-27",
+          "current_city": "Houston",
+          "llm_notes": "Full non-travel day with breakfast, morning attraction, lunch, afternoon attraction, and dinner, all within the accommodation vicinity.",
+          "start_accommodation": {
+            "node_key": "Accommodation::7.44e+17",
+            "label": "Accommodation",
+            "name": "Modern Guesthouse in the Heart of the Heights",
+            "id": "7.44e+17",
+            "City": "Houston",
+            "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::470211.0",
+            "label": "Restaurant",
+            "name": "The Breakfast Klub",
+            "id": "470211.0",
+            "City": "Houston",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::144355",
+            "label": "Attraction",
+            "name": "Museum of Fine Arts, Houston",
+            "id": "144355",
+            "City": "Houston",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::442217.0",
+            "label": "Restaurant",
+            "name": "Brennan's of Houston",
+            "id": "442217.0",
+            "City": "Houston",
+            "avg_cost": "60.0",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::269830",
+            "label": "Attraction",
+            "name": "Children's Museum Houston",
+            "id": "269830",
+            "City": "Houston",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::442320.0",
+            "label": "Restaurant",
+            "name": "Hugo's",
+            "id": "442320.0",
+            "City": "Houston",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::7.44e+17",
+            "label": "Accommodation",
+            "name": "Modern Guesthouse in the Heart of the Heights",
+            "id": "7.44e+17",
+            "City": "Houston",
+            "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-28",
+          "current_city": "Houston",
+          "llm_notes": "Return travel day with breakfast, morning attraction, and lunch, as the afternoon and dinner slots are constrained by the return flight time.",
+          "start_accommodation": {
+            "node_key": "Accommodation::7.44e+17",
+            "label": "Accommodation",
+            "name": "Modern Guesthouse in the Heart of the Heights",
+            "id": "7.44e+17",
+            "City": "Houston",
+            "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::470211.0",
+            "label": "Restaurant",
+            "name": "The Breakfast Klub",
+            "id": "470211.0",
+            "City": "Houston",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::106121",
+            "label": "Attraction",
+            "name": "The Menil Collection",
+            "id": "106121",
+            "City": "Houston",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::442217.0",
+            "label": "Restaurant",
+            "name": "Brennan's of Houston",
+            "id": "442217.0",
+            "City": "Houston",
+            "avg_cost": "60.0",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F3871971",
+            "label": "Flight",
+            "name": "F3871971: Houston to Cleveland, 18:24-22:04",
+            "Flight Number": "F3871971",
+            "FlightDate": "2024-11-28",
+            "OriginCityName": "Houston",
+            "DestCityName": "Cleveland",
+            "Price": 245,
+            "DepTime": "18:24",
+            "ArrTime": "22:04"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_80",
+    "node_count": 50,
+    "edge_count": 670,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::7.44e+17",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "11",
+        "house_rules": "No visitors",
+        "State": "Texas",
+        "name": "Modern Guesthouse in the Heart of the Heights",
+        "coordinates": "{\"latitude\": 29.7986779, \"longitude\": -95.401686}",
+        "rating": "{\"label\": \"5.0 out of 5 average rating,  137 reviews\", \"localizedLabel\": \"5.0 (137)\", \"average\": 5, \"reviewsCount\": 137}",
+        "id": "7.44e+17",
+        "City": "Houston",
+        "title": "Guesthouse in Houston",
+        "url": "https://www.airbnb.com/rooms/744353980867041545?locale=en-US&currency=USD&check_in=2025-01-20&check_out=2025-01-25",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$141 per night\", \"originalPrice\": null, \"price\": \"$141\", \"qualifier\": \"night\", \"total\": \"$704 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:674",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::105911",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "5346",
+        "latitude": "29.72207",
+        "rating": "4.5",
+        "description": "This outstanding science museum has a spectacular collection of mineral specimens, a dinosaur skeleton, space-station models, a planetarium, IMAX theater and a six-story butterfly center in which these beautiful creatures land delicately on outstretched arms.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"5555 Hermann Park Dr\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77030-1718\"}",
+        "offerGroup": "{\"lowestPrice\": \"$9.00\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FPermanent-Exhibit-Hall-Ticket%2Fd5186-40629P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=15d2bbf3418def279&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=105911&clt=TD&from=api&nt=true\", \"price\": \"$25.00\", \"roundedUpPrice\": \"$25\", \"offerType\": null, \"title\": \"Houston Museum of Natural Science General Admission\", \"productCode\": \"40629P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/a4/2b/9d.jpg\", \"description\": null, \"primaryCategory\": \"Museum Tickets & Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-CityPass%2Fd5186-2640HOU%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1df6a84186fc90be4&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=105911&clt=TD&from=api&nt=true\", \"price\": \"$76.00\", \"roundedUpPrice\": \"$76\", \"offerType\": null, \"title\": \"Houston CityPASS\\u00ae\", \"productCode\": \"2640HOU\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/e6/ab/10.jpg\", \"description\": null, \"primaryCategory\": \"Sightseeing Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Cockrell-Butterfly-Center-Admission-in-Houston%2Fd5186-40629P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=234c7d5348a7ca407&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=105911&clt=TD&from=api&nt=true\", \"price\": \"$34.00\", \"roundedUpPrice\": \"$34\", \"offerType\": null, \"title\": \"Houston Museum of Natural Science and Cockrell Butterfly Center\", \"productCode\": \"40629P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/63/06/38.jpg\", \"description\": null, \"primaryCategory\": \"Museum Tickets & Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2F2-hour-Houston-orientation-sightseeing-tour%2Fd5186-37391P17%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=52181c1d039cb043f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=105911&clt=TD&from=api&nt=true\", \"price\": \"$64.00\", \"roundedUpPrice\": \"$64\", \"offerType\": null, \"title\": \"Houston Sightseeing Tour 2.5-hour Air-Conditioned Van Tour\", \"productCode\": \"37391P17\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/93/e5/13.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Houston-city-sightseeing-tour%2Fd5186-37391P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=0c5651fb0ad2c0e2b&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=105911&clt=TD&from=api&nt=true\", \"price\": \"$395.00\", \"roundedUpPrice\": \"$395\", \"offerType\": null, \"title\": \"Private Houston Sightseeing Tour with Murals 3-hr\", \"productCode\": \"37391P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/5c/e3/86.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Specialty Museums",
+          "Science Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 46, \"count2\": 61, \"count3\": 256, \"count4\": 1195, \"count5\": 3788}",
+        "location_contains_city": "True",
+        "id": "105911",
+        "longitude": "-95.389565",
+        "website": "http://www.hmns.org",
+        "rankingPosition": "16.0",
+        "address": "5555 Hermann Park Dr, Houston, TX 77030-1718",
+        "neighborhoodLocations": "[{\"id\": \"20483836\", \"name\": \"The Museum District\"}]",
+        "rankingString": "#16 of 945 things to do in Houston",
+        "City": "Houston",
+        "localName": "The Houston Museum of Natural Science",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g56003-d105911-Reviews-The_Houston_Museum_of_Natural_Science-Houston_Texas.html",
+        "localAddress": "5555 Hermann Park Dr, 77030-1718",
+        "rankingDenominator": "945.0",
+        "name": "The Houston Museum of Natural Science",
+        "locationString": "Houston, Texas",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "3.997828007"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3646",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::106121",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "972",
+        "latitude": "29.737324",
+        "rating": "4.5",
+        "description": "Houston philanthropists and art patrons John and Dominique de Menil established the Menil Foundation in 1954 to foster greater public understanding and appreciation of art, architecture, culture, religion, and philosophy. In 1987, the Menil Collection’s main museum building opened to the public. Today, the Menil Collection consists of a group of five art buildings and green spaces located within a residential neighborhood. The Menil remains committed to its founders’ belief that art is essential to human experience and fosters direct personal encounters with works of art. The museum welcomes all visitors free of charge to its buildings and surrounding green spaces.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1533 Sul Ross St\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77006-4729\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.22\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-Museum-Pass%2Fd5186-325471P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=82afae492e0f59579&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=106121&clt=TD&from=api&nt=true\", \"price\": \"$39.95\", \"roundedUpPrice\": \"$40\", \"offerType\": null, \"title\": \"Houston Museum Pass\", \"productCode\": \"325471P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0c/03/b7/51.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Houston-Hustle-Scavenger-Hunt%2Fd5186-200006P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=93d12ecd04fcd6c80&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=106121&clt=TD&from=api&nt=true\", \"price\": \"$22.00\", \"roundedUpPrice\": \"$22\", \"offerType\": null, \"title\": \"The Houston Hustle Scavenger Hunt\", \"productCode\": \"200006P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/87/1a/30.jpg\", \"description\": null, \"primaryCategory\": \"Self-guided Tours & Rentals\"}]}",
+        "subtype": [
+          "Art Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 10, \"count2\": 15, \"count3\": 65, \"count4\": 226, \"count5\": 656}",
+        "location_contains_city": "True",
+        "id": "106121",
+        "longitude": "-95.39835",
+        "website": "http://www.menil.org/",
+        "rankingPosition": "15.0",
+        "address": "1533 Sul Ross St, Houston, TX 77006-4729",
+        "neighborhoodLocations": "[{\"id\": \"21001947\", \"name\": \"Neartown/ Montrose\"}]",
+        "rankingString": "#15 of 945 things to do in Houston",
+        "City": "Houston",
+        "localName": "The Menil Collection",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g56003-d106121-Reviews-The_Menil_Collection-Houston_Texas.html",
+        "localAddress": "1533 Sul Ross St, 77006-4729",
+        "rankingDenominator": "945.0",
+        "name": "The Menil Collection",
+        "locationString": "Houston, Texas",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.003335476"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3652",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::144355",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2774",
+        "latitude": "29.725351",
+        "rating": "4.5",
+        "description": "The Museum of Fine Arts, Houston, is the largest cultural institution in the southwest region of the United States. The Museum’s encyclopedic collections of nearly 70,000 objects cover world cultures dating from antiquity to the present and include in-depth holdings of American art, European paintings, Pre-Columbian and African gold, decorative arts and design, photography, prints and drawings, 20th- and 21st-century painting and sculpture, and Latin American art.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1001 Bissonnet St\", \"street2\": null, \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77005-1803\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.09\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-CityPass%2Fd5186-2640HOU%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1df6a84186fc90be4&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=144355&clt=TD&from=api&nt=true\", \"price\": \"$76.00\", \"roundedUpPrice\": \"$76\", \"offerType\": null, \"title\": \"Houston CityPASS\\u00ae\", \"productCode\": \"2640HOU\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/e6/ab/10.jpg\", \"description\": null, \"primaryCategory\": \"Sightseeing Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FWacky-Lets-Roam-Houston-Scavenger-Hunt-Houstons-Museum-District%2Fd5186-104204P95%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=bcc945ae702b19f41&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=144355&clt=TD&from=api&nt=true\", \"price\": \"$12.31\", \"roundedUpPrice\": \"$13\", \"offerType\": null, \"title\": \"Self-Guided Scavenger Hunt: Houston's Museum District\", \"productCode\": \"104204P95\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/26/4a/d8.jpg\", \"description\": null, \"primaryCategory\": \"Walking Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Ultimate-Self-Guided-Driving-Tour-of-Houston%2Fd5186-259428P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=5ca22fe37c14d82b3&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=144355&clt=TD&from=api&nt=true\", \"price\": \"$16.99\", \"roundedUpPrice\": \"$17\", \"offerType\": null, \"title\": \"The Best of Houston Self-Guided Driving Audio Tour\", \"productCode\": \"259428P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/9b/e8/84.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FVisit-Top-3-Local-Restaurants-of-Chennai%2Fd5186-18568P58%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=7c00a5c2b522bc93a&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=144355&clt=TD&from=api&nt=true\", \"price\": \"$9.00\", \"roundedUpPrice\": \"$9\", \"offerType\": null, \"title\": \"Houston Self-Guided Audio Tour \", \"productCode\": \"18568P58\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/24/22/d7.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Houston-city-sightseeing-tour%2Fd5186-37391P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=0c5651fb0ad2c0e2b&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=144355&clt=TD&from=api&nt=true\", \"price\": \"$395.00\", \"roundedUpPrice\": \"$395\", \"offerType\": null, \"title\": \"Private Houston Sightseeing Tour with Murals 3-hr\", \"productCode\": \"37391P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/5c/e3/86.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Art Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 11, \"count2\": 21, \"count3\": 118, \"count4\": 649, \"count5\": 1975}",
+        "location_contains_city": "True",
+        "id": "144355",
+        "longitude": "-95.390564",
+        "website": "http://www.mfah.org/",
+        "rankingPosition": "6.0",
+        "address": "1001 Bissonnet St, Houston, TX 77005-1803",
+        "neighborhoodLocations": "[{\"id\": \"20483836\", \"name\": \"The Museum District\"}]",
+        "rankingString": "#6 of 945 things to do in Houston",
+        "City": "Houston",
+        "localName": "Museum of Fine Arts, Houston",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g56003-d144355-Reviews-Museum_of_Fine_Arts_Houston-Houston_Texas.html",
+        "localAddress": "1001 Bissonnet St, 77005-1803",
+        "rankingDenominator": "945.0",
+        "name": "Museum of Fine Arts, Houston",
+        "locationString": "Houston, Texas",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.166353703"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3647",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::265524",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "3230",
+        "latitude": "29.757202",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"501 Crawford St\", \"street2\": null, \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77002-2113\"}",
+        "offerGroup": "{\"lowestPrice\": \"$13.08\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FNASAs-Space-Center-Houston-and-City-Sightseeing-Tour%2Fd5186-5920SPACE%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=7eb5b7c6f70a8c64e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=265524&clt=TD&from=api&nt=true\", \"price\": \"$98.95\", \"roundedUpPrice\": \"$99\", \"offerType\": null, \"title\": \"NASA's Space Center Admission Plus Houston City Tour\", \"productCode\": \"5920SPACE\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/12/08/97.jpg\", \"description\": null, \"primaryCategory\": \"Bus & Minivan Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2F2-hour-Houston-orientation-sightseeing-tour%2Fd5186-37391P17%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=52181c1d039cb043f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=265524&clt=TD&from=api&nt=true\", \"price\": \"$64.00\", \"roundedUpPrice\": \"$64\", \"offerType\": null, \"title\": \"Houston Sightseeing Tour 2.5-hour Air-Conditioned Van Tour\", \"productCode\": \"37391P17\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/93/e5/13.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-Hop-On-Hop-Off-Tour%2Fd5186-5920CITY%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=8b6c4dc55a622d434&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=265524&clt=TD&from=api&nt=true\", \"price\": \"$39.95\", \"roundedUpPrice\": \"$40\", \"offerType\": null, \"title\": \"Houston's Official City Tour\", \"productCode\": \"5920CITY\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/e4/67/98.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-City-Tour-and-Admisson-to-Downtown-Aquarium%2Fd5186-5920P8%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=6e895270320e6b55e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=265524&clt=TD&from=api&nt=true\", \"price\": \"$64.95\", \"roundedUpPrice\": \"$65\", \"offerType\": null, \"title\": \"Houston City Tour and Downtown Aquarium All Rides Pass\", \"productCode\": \"5920P8\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/c5/4a/ea.jpg\", \"description\": null, \"primaryCategory\": \"City Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FCity-Tour-and-Holocaust-Museum-ticket%2Fd5186-5920P10%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=93174772c37b03d6f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=265524&clt=TD&from=api&nt=true\", \"price\": \"$61.49\", \"roundedUpPrice\": \"$62\", \"offerType\": null, \"title\": \"Houston City Tour Plus Holocaust Museum Ticket\", \"productCode\": \"5920P10\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/b1/92/81.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}]}",
+        "subtype": [
+          "Arenas & Stadiums"
+        ],
+        "ratingHistogram": "{\"count1\": 38, \"count2\": 52, \"count3\": 177, \"count4\": 942, \"count5\": 2021}",
+        "location_contains_city": "True",
+        "id": "265524",
+        "longitude": "-95.35525",
+        "website": "https://www.mlb.com/astros",
+        "rankingPosition": "17.0",
+        "address": "501 Crawford St, Houston, TX 77002-2113",
+        "neighborhoodLocations": [],
+        "rankingString": "#17 of 945 things to do in Houston",
+        "City": "Houston",
+        "localName": "Minute Maid Park",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g56003-d265524-Reviews-Minute_Maid_Park-Houston_Texas.html",
+        "localAddress": "501 Crawford St, 77002-2113",
+        "rankingDenominator": "945.0",
+        "name": "Minute Maid Park",
+        "locationString": "Houston, Texas",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.987609386"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3645",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::269830",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1680",
+        "latitude": "29.722631",
+        "rating": "4.5",
+        "description": "Hands-on interactive exhibits in the areas of science and technology, history and culture, health and human development, and the arts.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1500 Binz St\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77004-7112\"}",
+        "offerGroup": "{\"lowestPrice\": \"$9.00\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-CityPass%2Fd5186-2640HOU%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1df6a84186fc90be4&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=269830&clt=TD&from=api&nt=true\", \"price\": \"$76.00\", \"roundedUpPrice\": \"$76\", \"offerType\": null, \"title\": \"Houston CityPASS\\u00ae\", \"productCode\": \"2640HOU\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/e6/ab/10.jpg\", \"description\": null, \"primaryCategory\": \"Sightseeing Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FChildrens-Museum-Houston-Discount-on-Admission%2Fd5186-69728P3%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=c49d68b94e09a52fc&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=269830&clt=TD&from=api&nt=true\", \"price\": \"$19.95\", \"roundedUpPrice\": \"$20\", \"offerType\": null, \"title\": \"Children's Museum Houston Admission\", \"productCode\": \"69728P3\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/87/9c/c8.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-Museum-Pass%2Fd5186-325471P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=82afae492e0f59579&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=269830&clt=TD&from=api&nt=true\", \"price\": \"$39.95\", \"roundedUpPrice\": \"$40\", \"offerType\": null, \"title\": \"Houston Museum Pass\", \"productCode\": \"325471P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0c/03/b7/51.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FHouston-Kids-Choice-Museum-Pass%2Fd5186-325471P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9247dca817df6370d&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=269830&clt=TD&from=api&nt=true\", \"price\": \"$50.00\", \"roundedUpPrice\": \"$50\", \"offerType\": null, \"title\": \"Houston Kid's Choice Museum Pass\", \"productCode\": \"325471P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0c/03/b7/4f.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHouston%2FThe-Ultimate-Self-Guided-Driving-Tour-of-Houston%2Fd5186-259428P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=5ca22fe37c14d82b3&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=269830&clt=TD&from=api&nt=true\", \"price\": \"$16.99\", \"roundedUpPrice\": \"$17\", \"offerType\": null, \"title\": \"The Best of Houston Self-Guided Driving Audio Tour\", \"productCode\": \"259428P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/9b/e8/84.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Children's Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 17, \"count2\": 27, \"count3\": 89, \"count4\": 326, \"count5\": 1221}",
+        "location_contains_city": "True",
+        "id": "269830",
+        "longitude": "-95.38525",
+        "website": "https://www.cmhouston.org",
+        "rankingPosition": "10.0",
+        "address": "1500 Binz St, Houston, TX 77004-7112",
+        "neighborhoodLocations": "[{\"id\": \"20483836\", \"name\": \"The Museum District\"}]",
+        "rankingString": "#10 of 945 things to do in Houston",
+        "City": "Houston",
+        "localName": "Children's Museum Houston",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g56003-d269830-Reviews-Children_s_Museum_Houston-Houston_Texas.html",
+        "localAddress": "1500 Binz St, 77004-7112",
+        "rankingDenominator": "945.0",
+        "name": "Children's Museum Houston",
+        "locationString": "Houston, Texas",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.111145496"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3655",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Cleveland",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Cleveland"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Houston",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Houston"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F1044508",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F1044508",
+        "Price": 299,
+        "DepTime": "06:14",
+        "ArrTime": "08:38",
+        "ActualElapsedTime": "3 hours 24 minutes",
+        "FlightDate": "2024-11-26",
+        "OriginCityName": "Cleveland",
+        "DestCityName": "Houston",
+        "Distance": 1091.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F3871971",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F3871971",
+        "Price": 245,
+        "DepTime": "18:24",
+        "ArrTime": "22:04",
+        "ActualElapsedTime": "2 hours 40 minutes",
+        "FlightDate": "2024-11-28",
+        "OriginCityName": "Houston",
+        "DestCityName": "Cleveland",
+        "Distance": 1091.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_80::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "current_city": "Houston"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_80::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "current_city": "Houston"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_80::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "current_city": "Houston"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_80::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1216.0,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::7.44e+17",
+        "outbound_node_key": "Flight::F1044508",
+        "return_node_key": "Flight::F3871971"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_80",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_80",
+        "query": "Plan a 3-day trip for 2 people from Cleveland to Houston from November 26th to November 28th, 2024, with a budget of $2,550.",
+        "days": 3,
+        "origin_city": "Cleveland",
+        "destination_city": "Houston",
+        "budget": 2550.0,
+        "source_mini_kg_query_id": "idx_80"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::3213761.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1500.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"12141 Westheimer Road\", \"street2\": null, \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77010-3005\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/7b/e6/ae/phoenicia-specialty-foods.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/da/e1/d6/meats-cheeses-and-pita.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/e9/55/91/homemade-pastries.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/e7/4c/65/excelente-comida.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/56/be/41/img-20180314-wa0015-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/56/be/40/img-20180314-wa0018-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/49/12/c1/20171115-175843-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/5a/78/6c/phoenicia-specialty-foods.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/e3/eb/76/phoenicia-market-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/6c/f6/96/20201211-152934-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/fc/8a/34/20200114-132746-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/fc/8a/33/20200114-132752-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/b5/db/62/phoenicia-specialty-foods.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/29/31/47/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/25/0c/2a/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/97/20/69/bayou-sliders-at-mkt.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/ce/5b/36/dsc-0249-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/ce/5b/35/dsc-0246-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/ce/5b/34/dsc-0247-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/ce/5b/33/dsc-0248-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/e9/65/99/phoenicia-specialty-foods.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/e9/65/94/phoenicia-specialty-foods.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/05/05/5b/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/6c/f6/96/20201211-152934-largejpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Street Parking",
+          "Free off-street parking",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Wine and Beer",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Live Music",
+          "Non-smoking restaurants",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Halal",
+          "Gluten free options"
+        ],
+        "id": "3213761.0",
+        "longitude": "-95.36177",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0c/da/e1/d6/meats-cheeses-and-pita.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#1 of 11 Specialty Food Markets in Houston",
+        "openNowText": "Open Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "Mediterranean",
+          "Healthy",
+          "Middle Eastern"
+        ],
+        "localName": "Phoenicia Specialty Foods",
+        "input": "Houston",
+        "phone": "+1 832-360-2222",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d3213761-Reviews-Phoenicia_Specialty_Foods-Houston_Texas.html",
+        "localAddress": "12141 Westheimer Road, 77010-3005",
+        "Rest-MidRange": "75.0",
+        "name": "Phoenicia Specialty Foods",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.574888706",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Specialty Food Market"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.754131",
+        "menuWebUrl": "http://www.phoeniciafoods.com/wp-content/uploads/2013/12/Phoenicia-Catering-Menu.pdf",
+        "description": "Our Downtown market is a one-stop YUMMY! shop, carrying all of our staple gourmet foods, along with household basics for Downtown residents and employees. Offering quality produce, fresh meats and seafood, artisan breads and rustic-style pizza, boutique wines and craft beers, premium meats and cheeses, a signature coffee and gelato bar, floral and housewares sections, a comfortable dining area and a designated cooking demonstration kitchen, Phoenicia Specialty Foods Downtown is a one-of-a-kind destination for Houstonians and visitors alike. Prepared foods and catering services are available to the businesses and residents of Downtown Houston and its neighboring areas.",
+        "photoCount": "112.0",
+        "ratingHistogram": "{\"count1\": 7, \"count2\": 4, \"count3\": 49, \"count4\": 377, \"count5\": 1063}",
+        "email": "info@phoeniciafoods.com",
+        "website": "http://www.phoeniciafoods.com",
+        "rankingPosition": "1.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1140, \"closeHours\": \"19:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "12141 Westheimer Road, Houston, TX 77010-3005",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Sandwiches",
+          "Pasta",
+          "Cheesecake",
+          "Falafel",
+          "Gyros",
+          "Shawarma",
+          "Salad",
+          "Hummus",
+          "Beef",
+          "Lamb",
+          "Pesto",
+          "Cakes",
+          "Fish",
+          "Pitta",
+          "Soup",
+          "Baklava",
+          "Cake",
+          "Pita Bread",
+          "Pastries",
+          "Cookies"
+        ],
+        "reviewTags": "[{\"text\": \"bread\", \"reviews\": 116}, {\"text\": \"falafel\", \"reviews\": 25}, {\"text\": \"salad\", \"reviews\": 105}, {\"text\": \"sandwiches\", \"reviews\": 43}, {\"text\": \"pizza\", \"reviews\": 57}, {\"text\": \"steak\", \"reviews\": 15}, {\"text\": \"grocery store\", \"reviews\": 136}, {\"text\": \"downtown houston\", \"reviews\": 91}, {\"text\": \"convention center\", \"reviews\": 38}, {\"text\": \"phoenician\", \"reviews\": 331}, {\"text\": \"deli\", \"reviews\": 151}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "11.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8277",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::442217.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1013.0",
+        "avg_cost": "60.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"3300 Smith St\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77006-6692\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d6/a6/meat-pie.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/d3/d3/72/front-of-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/26/soft-shell-crab-over.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9e/61/wine-room.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/4f/bb/62/fire-grilled-redfish.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/d3/d3/74/brennan-s-of-houston.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/d3/d3/75/brennan-s-of-houston.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d7/02/praline-tres-leches.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d6/df/muffuletta-salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d6/b0/stuffed-flounder.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d6/7e/stuffed-quail.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/68/d6/5f/chicken-fried-quail.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/62/brunch.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/53/kitchen-table-located.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/4c/marcus-gausepohl-wine.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/44/celebrating-rodeo-time.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/12/joe-cervantez-executive.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9f/08/harris-ranch-filet-with.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9e/fa/exterior-of-the-building.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/a3/9e/d5/special-children-s-events.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/0f/22/08/brennan-s-of-houston.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/69/ad/33/brennan-s-of-houston.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/33/2c/8f/menu.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/05/b0/46/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/05/b0/45/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/05/b0/44/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/05/b0/43/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/8e/photo6jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/8d/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/8c/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/8b/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/89/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/88/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/ca/1b/87/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/cb/8c/2d/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/62/2d/b8/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/62/2d/b7/photo0jpg.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Outdoor Seating",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Valet Parking",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Free Wifi",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "442217.0",
+        "longitude": "-95.38138",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/1a/68/d6/a6/meat-pie.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#20 of 8,307 Restaurants in Houston",
+        "openNowText": "Closed Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Brunch"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Cajun & Creole",
+          "Seafood"
+        ],
+        "localName": "Brennan's of Houston",
+        "input": "Houston",
+        "phone": "+1 713-522-9711",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d442217-Reviews-Brennan_s_of_Houston-Houston_Texas.html",
+        "localAddress": "3300 Smith St, 77006-6692",
+        "Rest-MidRange": "75.0",
+        "name": "Brennan's of Houston",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.417487621",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.74302",
+        "description": "Since our 1967 opening as a sister restaurant to the world-famous Commander's Palace in New Orleans, Brennan's of Houston has evolved into the city's premier destination for memorable dining served with true Southern hospitality. From the reservationist to the waiters, chefs and every associate behind the scenes, our team is focused on the highest standard of excellence and equally dedicated to creating enduring memories of snapshots in time: the sealing of business deals, wedding proposals, joyful celebrations, and the marking of significant milestones along life's way. And the proof is in the (bread) pudding, with loyal patrons returning time and again to create new memories.Reflecting the same warmth as our friendly greeting, each farewell concludes with Brennan's signature lagniappe: an abundance of unforgettably fresh pecan pralines.",
+        "photoCount": "278.0",
+        "ratingHistogram": "{\"count1\": 12, \"count2\": 22, \"count3\": 82, \"count4\": 188, \"count5\": 709}",
+        "email": "info@brennanshouston.com",
+        "website": "http://www.brennanshouston.com/",
+        "rankingPosition": "20.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "3300 Smith St, Houston, TX 77006-6692",
+        "neighborhoodLocations": "[{\"id\": \"21001946\", \"name\": \"Midtown\"}]",
+        "dishes": [
+          "Crab",
+          "Crab Cake",
+          "Filet Mignon",
+          "Oyster",
+          "Shrimp",
+          "Salad",
+          "Eggs Benedict",
+          "Bananas Foster",
+          "Beignets",
+          "Crawfish",
+          "Shrimp and Grits",
+          "Bread Pudding",
+          "Meringue",
+          "Salmon",
+          "Catfish",
+          "Quail",
+          "Beef",
+          "Duck",
+          "Lamb",
+          "Fish",
+          "Pork",
+          "Bisque",
+          "Pecan Pie",
+          "Soup",
+          "Snapper",
+          "Puddings",
+          "Cake",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 170}, {\"text\": \"turtle soup\", \"reviews\": 173}, {\"text\": \"bananas foster\", \"reviews\": 191}, {\"text\": \"banana fosters\", \"reviews\": 10}, {\"text\": \"shrimp remoulade\", \"reviews\": 10}, {\"text\": \"crab cakes\", \"reviews\": 51}, {\"text\": \"bread pudding\", \"reviews\": 33}, {\"text\": \"eggs benedict\", \"reviews\": 33}, {\"text\": \"beignets\", \"reviews\": 23}, {\"text\": \"soups\", \"reviews\": 35}, {\"text\": \"filet\", \"reviews\": 29}, {\"text\": \"salad\", \"reviews\": 43}, {\"text\": \"new orleans style\", \"reviews\": 13}, {\"text\": \"table side\", \"reviews\": 20}, {\"text\": \"our waiter\", \"reviews\": 45}, {\"text\": \"favorite restaurants\", \"reviews\": 14}, {\"text\": \"gulf\", \"reviews\": 27}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "8307.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8307",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::442320.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "926.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"1600 Westheimer Rd\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77006\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/1a/cb/f7/bar-and-dining-room.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/bc/10/5a/carne-asada-a-la-tampiquena.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/fc/21/2f/carne-brava-wood-grilled.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/bc/10/61/red-snapper-special.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a0/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/99/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/98/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/97/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/96/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/95/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/94/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/93/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/88/59/e3/can-t-wait-to-come-back.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/67/33/5b/watermelon-avocado-salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/08/cf/0c/c9/flower-dishes.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/86/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/87/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/88/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/89/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8e/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/8f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/90/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/91/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/92/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/93/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/94/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/95/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/96/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/97/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/98/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/99/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9e/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/9f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a0/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/6b/35/a2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2d/b0/84/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2d/b0/85/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2d/b0/86/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2d/b0/87/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2d/b0/89/photo4jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Private Dining",
+          "Seating",
+          "Street Parking",
+          "Valet Parking",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music",
+          "Dog Friendly",
+          "Non-smoking restaurants",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "442320.0",
+        "longitude": "-95.39962",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/12/1a/cb/f7/bar-and-dining-room.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#27 of 8,307 Restaurants in Houston",
+        "openNowText": "Closed Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Drinks"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "Mexican",
+          "Latin",
+          "Contemporary"
+        ],
+        "localName": "Hugo's",
+        "input": "Houston",
+        "phone": "+1 713-524-7744",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d442320-Reviews-Hugo_s-Houston_Texas.html",
+        "localAddress": "1600 Westheimer Rd, 77006",
+        "Rest-MidRange": "75.0",
+        "name": "Hugo's",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.369097233",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.742868",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g56003-d442320-Hugo_s-Houston_Texas.html",
+        "photoCount": "412.0",
+        "ratingHistogram": "{\"count1\": 21, \"count2\": 19, \"count3\": 74, \"count4\": 251, \"count5\": 561}",
+        "email": "hugos@htownrestaurantgroup.com",
+        "website": "http://www.hugosrestaurant.net/?y_source=1_MTAzMTYxNjcyOC03NjktbG9jYXRpb24ud2Vic2l0ZQ%3D%3D",
+        "rankingPosition": "27.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "1600 Westheimer Rd, Houston, TX 77006",
+        "neighborhoodLocations": "[{\"id\": \"21001947\", \"name\": \"Neartown/ Montrose\"}]",
+        "dishes": [
+          "Burrito",
+          "Ceviche",
+          "Cheesecake",
+          "Lobster",
+          "Ribs",
+          "Shrimp",
+          "Tortillas",
+          "Salad",
+          "Tacos",
+          "Chili",
+          "Fajitas",
+          "Lechon",
+          "Queso",
+          "Tres Leches",
+          "Crepes",
+          "Suckling Pig",
+          "Scallops",
+          "Tuna",
+          "Quail",
+          "Octopus",
+          "Beef",
+          "Duck",
+          "Lamb",
+          "Squash blossom",
+          "Fish",
+          "Pork",
+          "Goat",
+          "Enchiladas",
+          "Poached Eggs",
+          "Tamales",
+          "Soup",
+          "Snapper",
+          "Rabbit",
+          "Tamale",
+          "Flan",
+          "Empanadas",
+          "Red Snapper",
+          "Chips and Salsa",
+          "Carnitas",
+          "Brisket",
+          "Mole",
+          "Puddings",
+          "Empanada",
+          "Cake",
+          "Guacamole",
+          "Cornbread"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 147}, {\"text\": \"churros\", \"reviews\": 48}, {\"text\": \"ceviche\", \"reviews\": 61}, {\"text\": \"pollo al\", \"reviews\": 10}, {\"text\": \"lamb\", \"reviews\": 39}, {\"text\": \"taquitos\", \"reviews\": 15}, {\"text\": \"tortillas\", \"reviews\": 34}, {\"text\": \"tres leches\", \"reviews\": 16}, {\"text\": \"beans\", \"reviews\": 15}, {\"text\": \"taco\", \"reviews\": 12}, {\"text\": \"cake\", \"reviews\": 10}, {\"text\": \"mexican food\", \"reviews\": 97}, {\"text\": \"roasted goat\", \"reviews\": 9}, {\"text\": \"dessert table\", \"reviews\": 11}, {\"text\": \"mole sauce\", \"reviews\": 10}, {\"text\": \"margaritas\", \"reviews\": 97}, {\"text\": \"grasshopper\", \"reviews\": 44}, {\"text\": \"appetizers\", \"reviews\": 103}, {\"text\": \"valet\", \"reviews\": 40}, {\"text\": \"avocado\", \"reviews\": 13}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "8307.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8273",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::470211.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "921.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"3711 Travis St\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77002-9505\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/54/5a/5e/the-breakfast-klub.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/57/04/98/green-eggs-ham-de-lish.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/27/73/85/img-20181025-wa0001-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/0f/fe/54/the-breakfast-klub.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/10/eb/62/2d/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/53/04/cf/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/eb/87/9d/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/94/d8/8c/brunch-at-the-breakfast.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/56/04/d6/really-lovely-american.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/1a/c8/d6/the-breakfast-klub.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/15/9d/6c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/15/9d/6b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/8a/40/68/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/10/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/8d/0a/0a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/d1/6d/dc/desayunando-con-mi-amiga.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/6b/25/44/the-breakfast-klub.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ab/17/b0/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ab/1a/7b/my-daughter-all-of-her.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/23/5d/be/86/catfish.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/23/5d/be/85/wings.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/d0/bd/69/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/d0/bd/6a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/d0/bd/6b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/d0/bd/6c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/ea/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/eb/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/ec/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/ed/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/ee/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/ef/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/d6/69/f0/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/27/73/f1/6d/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Gluten free options"
+        ],
+        "id": "470211.0",
+        "longitude": "-95.38055",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/02/57/04/98/green-eggs-ham-de-lish.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#13 of 8,307 Restaurants in Houston",
+        "openNowText": "Open Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Brunch"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "The Breakfast Klub",
+        "input": "Houston",
+        "phone": "+1 713-528-8561",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d470211-Reviews-The_Breakfast_Klub-Houston_Texas.html",
+        "localAddress": "3711 Travis St, 77002-9505",
+        "Rest-MidRange": "75.0",
+        "name": "The Breakfast Klub",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.54056406",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.738544",
+        "photoCount": "391.0",
+        "ratingHistogram": "{\"count1\": 13, \"count2\": 20, \"count3\": 73, \"count4\": 197, \"count5\": 618}",
+        "email": "info@thebreakfastklub.com",
+        "website": "http://www.thebreakfastklub.com/",
+        "rankingPosition": "13.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "3711 Travis St, Houston, TX 77002-9505",
+        "neighborhoodLocations": "[{\"id\": \"21001946\", \"name\": \"Midtown\"}]",
+        "dishes": [
+          "Chicken And Waffles",
+          "Chicken Wings",
+          "French Toast",
+          "Omelette",
+          "Pancakes",
+          "Wings",
+          "Eggs Benedict",
+          "Biscuits and gravy",
+          "Crawfish",
+          "Waffles",
+          "Catfish",
+          "Toasts",
+          "Cakes",
+          "Fish",
+          "Pork",
+          "Scrambled Eggs",
+          "Sausage",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"chicken and waffles\", \"reviews\": 126}, {\"text\": \"wings\", \"reviews\": 176}, {\"text\": \"catfish\", \"reviews\": 151}, {\"text\": \"french toast\", \"reviews\": 55}, {\"text\": \"fries\", \"reviews\": 262}, {\"text\": \"potatoes\", \"reviews\": 41}, {\"text\": \"pork chop\", \"reviews\": 15}, {\"text\": \"worth the wait\", \"reviews\": 91}, {\"text\": \"southern breakfast\", \"reviews\": 22}, {\"text\": \"long wait\", \"reviews\": 13}, {\"text\": \"the food is great\", \"reviews\": 13}, {\"text\": \"specialties\", \"reviews\": 9}, {\"text\": \"butter\", \"reviews\": 28}, {\"text\": \"lemonade\", \"reviews\": 15}, {\"text\": \"cashier\", \"reviews\": 17}, {\"text\": \"texas\", \"reviews\": 16}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "8307.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8274",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::484555.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "3958.0",
+        "avg_cost": "60.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"10505 Katy Fwy\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77024\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/af/e1/af/filet-oscar-tender-and.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/7b/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/47/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/af/e1/c1/center-cut-filet.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/4f/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/4c/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/af/e1/ca/taste-of-texas-online.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/af/e1/b5/signature-of-david-crockett.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/af/de/51/new-york-strip.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/d1/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/86/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/81/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/80/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1e/4b/7e/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/52/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/4b/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1a/8b/43/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/cc/5f/a5/my-most-favorite-prime.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/87/ec/ea/salad-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/1c/52/63/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/35/f9/6d/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/35/f9/63/taste-of-texas-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/a5/69/8e/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ea/60/c4/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ea/60/af/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ea/60/bb/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/70/ae/22/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9f/87/3f/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9f/87/3e/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9f/87/3d/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/2a/24/a7/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/2a/24/c2/taste-of-texas-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/32/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/23/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/31/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/2e/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/2b/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/89/d6/19/taste-of-texas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/99/6a/c0/photo0jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Street Parking",
+          "Free off-street parking",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Gluten free options"
+        ],
+        "id": "484555.0",
+        "longitude": "-95.5569",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/12/af/e1/af/filet-oscar-tender-and.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#16 of 8,307 Restaurants in Houston",
+        "openNowText": "Closed Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Steakhouse"
+        ],
+        "localName": "Taste of Texas",
+        "input": "Houston",
+        "phone": "+1 713-932-6901",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d484555-Reviews-Taste_of_Texas-Houston_Texas.html",
+        "localAddress": "10505 Katy Fwy, 77024",
+        "Rest-MidRange": "75.0",
+        "name": "Taste of Texas",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.483304024",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Delivery_ChowNow&src=237170220&geo=484555&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=38060&bucket=934910&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311336593&managed=false&capped=false&gosox=6E4khh0HtNXAL0epq-JuBJi9Hu4KwZkBcTYaPAKPcvyzRzJ-mgpAaP0IUqC44bubNGi9I6nuBPmXmunT2F7Y2R-xtj6Kfu-6BGy5vd56LoM&cs=1b887b5ea9be4740ad97567e3a3805fc7_aPN\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/chownow_v2_05.11.2020.png\", \"provider\": \"Delivery_ChowNow\", \"providerId\": \"15772\", \"providerDisplayName\": \"ChowNow\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.78283",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g56003-d484555-Taste_of_Texas-Houston_Texas.html",
+        "description": "A Houston landmark famous for our perfectly-aged steaks and an award-winning wine list. Our dining room is open, and we have taken extra steps to ensure a wonderful and safe dining experience for our precious customers and staff. Voted Houston Chronicle's Best of the Best All Around Restaurant, Steakhouse, and Dining Experience 2020.",
+        "photoCount": "924.0",
+        "ratingHistogram": "{\"count1\": 46, \"count2\": 58, \"count3\": 204, \"count4\": 704, \"count5\": 2946}",
+        "email": "support@tasteoftexas.com",
+        "website": "https://www.tasteoftexas.com/",
+        "rankingPosition": "16.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "10505 Katy Fwy, Houston, TX 77024",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Filet Mignon",
+          "Burger",
+          "Shrimp",
+          "Salad",
+          "Quail",
+          "Beef",
+          "Cakes",
+          "Pecan Pie",
+          "Soup",
+          "Chips and Salsa",
+          "Baked Potato",
+          "Cake",
+          "Cornbread"
+        ],
+        "reviewTags": "[{\"text\": \"steak\", \"reviews\": 2037}, {\"text\": \"bread\", \"reviews\": 307}, {\"text\": \"prime rib\", \"reviews\": 118}, {\"text\": \"salad\", \"reviews\": 269}, {\"text\": \"chicken\", \"reviews\": 41}, {\"text\": \"pick your own\", \"reviews\": 69}, {\"text\": \"cooked to perfection\", \"reviews\": 129}, {\"text\": \"cheese\", \"reviews\": 205}, {\"text\": \"sides\", \"reviews\": 145}]",
+        "travelerChoiceAward": "REGULAR_AWARD",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "8307.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8293",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::484925.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2284.0",
+        "avg_cost": "60.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"5839 Westheimer Rd\", \"street2\": \"\", \"city\": \"Houston\", \"state\": \"TX\", \"country\": \"United States\", \"postalcode\": \"77057\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/98/56/strip-steak.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/99/c0/colorado-lamb.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/98/59/filet.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/98/57/filet.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/99/c8/meatcase.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/99/c5/lobster-deviled-eggs.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/99/b5/chefs-table.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/09/98/58/wine.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/a7/82/6e/pappas-bros-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/ed/b0/32/prime-rib-eye-16-0z.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/26/a5/dd/by-me.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/8a/35/18/img-20191225-wa0006-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/8a/35/14/img-20191225-wa0003-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/71/0f/7c/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/6e/67/66/img-20190131-201425-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/14/e9/fc/76/pappas-bros-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/a9/34/c2/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/df/34/c0/10-oz-filet-mignon-rare.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/df/34/b2/small-seafood-tower.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/c6/c3/3d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/db/2a/70/pappas-bros-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/67/da/a8/pappas-bros-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/82/13/16/pappas-bros-steakhouse.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/7b/09/84/cheesecake-portion.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/36/06/55/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/36/06/54/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/36/06/53/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/36/06/52/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/36/06/51/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/ca/60/d2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/ca/60/d1/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Validated Parking",
+          "Valet Parking",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Gluten free options"
+        ],
+        "id": "484925.0",
+        "longitude": "-95.48163",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/14/09/98/56/strip-steak.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "18.0",
+        "Range.1": "50.00 - 150.00",
+        "rankingString": "#6 of 8,307 Restaurants in Houston",
+        "openNowText": "Closed Now",
+        "City": "Houston",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "12.00 - 40.00",
+        "cuisines": [
+          "Steakhouse"
+        ],
+        "localName": "Pappas Bros. Steakhouse",
+        "input": "Houston",
+        "phone": "+1 713-780-7352",
+        "State": "Texas",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g56003-d484925-Reviews-Pappas_Bros_Steakhouse-Houston_Texas.html",
+        "localAddress": "5839 Westheimer Rd, 77057",
+        "Rest-MidRange": "75.0",
+        "name": "Pappas Bros. Steakhouse",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.604149342",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232183068&geo=484925&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311336604&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8-ztbbZ8sJn49wUpT3hOTJ9U--p9aLMBJzMstHhvU7Ak&cs=19466d8fcf7bc8e7f2a932311083e8b75_iMl\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "29.737278",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g56003-d484925-Pappas_Bros_Steakhouse-Houston_Texas.html",
+        "description": "Elegant, award-winning steakhouse serving dry-aged prime beef, seafood & exceptional wines.",
+        "photoCount": "474.0",
+        "ratingHistogram": "{\"count1\": 18, \"count2\": 30, \"count3\": 108, \"count4\": 370, \"count5\": 1758}",
+        "website": "http://pappasbros.com",
+        "rankingPosition": "6.0",
+        "hours": "{\"weekRanges\": [[], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "5839 Westheimer Rd, Houston, TX 77057",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Cheesecake",
+          "Crab",
+          "Crab Cake",
+          "Filet Mignon",
+          "Lobster",
+          "Oyster",
+          "Porterhouse Steak",
+          "Shrimp",
+          "Surf And Turf",
+          "Salad",
+          "Mac and cheese",
+          "Scallops",
+          "Salmon",
+          "Beef",
+          "Cakes",
+          "Fish",
+          "Soup",
+          "Wedge Salad",
+          "Cake",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"steak\", \"reviews\": 1088}, {\"text\": \"cheesecake\", \"reviews\": 51}, {\"text\": \"mashed potatoes\", \"reviews\": 24}, {\"text\": \"salad\", \"reviews\": 77}, {\"text\": \"crab\", \"reviews\": 23}, {\"text\": \"cooked to perfection\", \"reviews\": 98}, {\"text\": \"wine list\", \"reviews\": 71}, {\"text\": \"special occasion\", \"reviews\": 57}, {\"text\": \"business dinner\", \"reviews\": 36}, {\"text\": \"sides\", \"reviews\": 237}, {\"text\": \"sommelier\", \"reviews\": 57}, {\"text\": \"appetizers\", \"reviews\": 109}, {\"text\": \"texas\", \"reviews\": 97}, {\"text\": \"oz\", \"reviews\": 33}, {\"text\": \"tender\", \"reviews\": 62}, {\"text\": \"booth\", \"reviews\": 23}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "49",
+        "rankingDenominator": "8307.0",
+        "locationString": "Houston, Texas",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"56003\", \"name\": \"Houston\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"1438846\", \"name\": \"Texas Gulf Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28964\", \"name\": \"Texas\", \"abbreviation\": \"TX\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8306",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.077561,
+        "distance_m": 8598.39,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.061445,
+        "distance_m": 6829.84,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.074166,
+        "distance_m": 8223.95,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.062262,
+        "distance_m": 6430.78,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.077803,
+        "distance_m": 8603.58,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::3213761.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.059814,
+        "distance_m": 6275.14,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.059246,
+        "distance_m": 6491.8,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.055848,
+        "distance_m": 6208.98,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::470211.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::470211.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.06374,
+        "distance_m": 6990.87,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.156021,
+        "distance_m": 15081.46,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::7.44e+17",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.100802,
+        "distance_m": 10303.15,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Attraction::106121",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Attraction::144355",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Attraction::269830",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::269830->Attraction::105911"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.042432,
+        "distance_m": 4462.2,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.022492,
+        "distance_m": 2459.94,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.023101,
+        "distance_m": 2508.16,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.018779,
+        "distance_m": 2028.13,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::484555.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.178025,
+        "distance_m": 17509.95,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::105911",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.093313,
+        "distance_m": 9049.1,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Attraction::105911",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Attraction::144355",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Attraction::144355",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "antique stores",
+          "aquariums",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "beer tastings & tours",
+          "breweries",
+          "canyons",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "cultural tours",
+          "disney parks & activities",
+          "exhibitions",
+          "game & entertainment centers",
+          "gardens",
+          "gear rentals",
+          "gift & specialty shops",
+          "golf courses",
+          "hiking & camping tours",
+          "hiking trails",
+          "historical & heritage tours",
+          "history museums",
+          "jogging paths & tracks",
+          "kayaking & canoeing",
+          "lookouts",
+          "marinas",
+          "military museums",
+          "monuments & statues",
+          "movie theaters",
+          "national parks",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "parks",
+          "playgrounds",
+          "room escape games",
+          "science museums",
+          "shopping malls",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "sports complexes",
+          "state parks",
+          "theaters",
+          "theme parks",
+          "tramways",
+          "water parks",
+          "wine tours & tastings",
+          "zoos"
+        ],
+        "reciprocal_of": "Attraction::144355->Attraction::106121"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Attraction::269830",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::269830->Attraction::106121"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.040256,
+        "distance_m": 3995.56,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::442217.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.0179,
+        "distance_m": 1756.59,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.005688,
+        "distance_m": 628.54,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.017842,
+        "distance_m": 1723.95,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.164951,
+        "distance_m": 16119.55,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::106121",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.08328,
+        "distance_m": 8040.81,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Attraction::105911",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Attraction::106121",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Attraction::106121",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "antique stores",
+          "aquariums",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "beer tastings & tours",
+          "breweries",
+          "canyons",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "cultural tours",
+          "disney parks & activities",
+          "exhibitions",
+          "game & entertainment centers",
+          "gardens",
+          "gear rentals",
+          "gift & specialty shops",
+          "golf courses",
+          "hiking & camping tours",
+          "hiking trails",
+          "historical & heritage tours",
+          "history museums",
+          "jogging paths & tracks",
+          "kayaking & canoeing",
+          "lookouts",
+          "marinas",
+          "military museums",
+          "monuments & statues",
+          "movie theaters",
+          "national parks",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "parks",
+          "playgrounds",
+          "room escape games",
+          "science museums",
+          "shopping malls",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "sports complexes",
+          "state parks",
+          "theaters",
+          "theme parks",
+          "tramways",
+          "water parks",
+          "wine tours & tastings",
+          "zoos"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Attraction::269830",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::269830->Attraction::144355"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.040711,
+        "distance_m": 4239.08,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::442217.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.019913,
+        "distance_m": 2155.55,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.019719,
+        "distance_m": 2135.07,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.016563,
+        "distance_m": 1756.99,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.175987,
+        "distance_m": 17282.55,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::144355",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.091844,
+        "distance_m": 8892.54,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.007207,
+        "distance_m": 716.07,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.029731,
+        "distance_m": 2974.92,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.046628,
+        "distance_m": 4570.38,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.031436,
+        "distance_m": 3204.69,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.203272,
+        "distance_m": 19670.77,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::484925.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::265524",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.127941,
+        "distance_m": 12400.48,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Attraction::105911",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Attraction::106121",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Attraction::144355",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::3213761.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.039288,
+        "distance_m": 4172.27,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::442217.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.020753,
+        "distance_m": 2297.74,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::442320.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::442320.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.02482,
+        "distance_m": 2643.64,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::470211.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.016593,
+        "distance_m": 1826.72,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::484555.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.1819,
+        "distance_m": 17871.47,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::269830",
+      "target": "Restaurant::484925.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.097487,
+        "distance_m": 9447.76,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F1044508",
+      "target": "Accommodation::7.44e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Accommodation::7.44e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Accommodation::7.44e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 8,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Attraction::105911",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 4,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Attraction::265524",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 6,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Flight::F1044508",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Restaurant::3213761.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 3,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Restaurant::484555.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 5,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::1",
+      "target": "Restaurant::484925.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "order": 7,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Accommodation::7.44e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Accommodation::7.44e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Attraction::144355",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Attraction::269830",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Restaurant::442217.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Restaurant::442320.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::2",
+      "target": "Restaurant::470211.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::3",
+      "target": "Accommodation::7.44e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::3",
+      "target": "Attraction::106121",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::3",
+      "target": "Flight::F3871971",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::3",
+      "target": "Restaurant::442217.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_80::option_001::3",
+      "target": "Restaurant::470211.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "Accommodation::7.44e+17",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "Flight::F1044508",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "Flight::F3871971",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "PlanDay::idx_80::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "PlanDay::idx_80::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_80::option_001",
+      "target": "PlanDay::idx_80::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_80",
+      "target": "PlanOption::idx_80::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1216.0
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.042432,
+        "distance_m": 4462.2,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::105911",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.040256,
+        "distance_m": 3995.56,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.040711,
+        "distance_m": 4239.08,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.007207,
+        "distance_m": 716.07,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3213761.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.039288,
+        "distance_m": 4172.27,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.022492,
+        "distance_m": 2459.94,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.0179,
+        "distance_m": 1756.59,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.019913,
+        "distance_m": 2155.55,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.029731,
+        "distance_m": 2974.92,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.020753,
+        "distance_m": 2297.74,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Attraction::269830",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::442217.0",
+      "target": "Flight::F3871971",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Accommodation::7.44e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.023101,
+        "distance_m": 2508.16,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.005688,
+        "distance_m": 628.54,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.019719,
+        "distance_m": 2135.07,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.046628,
+        "distance_m": 4570.38,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::442320.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.02482,
+        "distance_m": 2643.64,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.018779,
+        "distance_m": 2028.13,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.017842,
+        "distance_m": 1723.95,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::106121",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-28",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.016563,
+        "distance_m": 1756.99,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::144355",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-27",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.031436,
+        "distance_m": 3204.69,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.016593,
+        "distance_m": 1826.72,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::470211.0",
+      "target": "Restaurant::484555.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "brazilian",
+          "cajun & creole",
+          "contemporary",
+          "deli",
+          "healthy",
+          "japanese",
+          "latin",
+          "mediterranean",
+          "mexican",
+          "middle eastern",
+          "seafood",
+          "steakhouse"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.178025,
+        "distance_m": 17509.95,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.164951,
+        "distance_m": 16119.55,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.175987,
+        "distance_m": 17282.55,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.203272,
+        "distance_m": 19670.77,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::265524",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.1819,
+        "distance_m": 17871.47,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Restaurant::470211.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "brazilian",
+          "cajun & creole",
+          "contemporary",
+          "deli",
+          "healthy",
+          "japanese",
+          "latin",
+          "mediterranean",
+          "mexican",
+          "middle eastern",
+          "seafood",
+          "steakhouse"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484555.0",
+      "target": "Restaurant::484925.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "brazilian",
+          "cajun & creole",
+          "contemporary",
+          "deli",
+          "healthy",
+          "japanese",
+          "latin",
+          "mediterranean",
+          "mexican",
+          "middle eastern",
+          "seafood",
+          "steakhouse"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Accommodation::7.44e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-26",
+        "from_order": 7,
+        "to_order": 8
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Attraction::105911",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.093313,
+        "distance_m": 9049.1,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Attraction::106121",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.08328,
+        "distance_m": 8040.81,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Attraction::144355",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.091844,
+        "distance_m": 8892.54,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Attraction::265524",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.127941,
+        "distance_m": 12400.48,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Attraction::269830",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.097487,
+        "distance_m": 9447.76,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::484925.0",
+      "target": "Restaurant::484555.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "brazilian",
+          "cajun & creole",
+          "contemporary",
+          "deli",
+          "healthy",
+          "japanese",
+          "latin",
+          "mediterranean",
+          "mexican",
+          "middle eastern",
+          "seafood",
+          "steakhouse"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F1044508",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::7.44e+17",
+      "label": "Accommodation",
+      "name": "Modern Guesthouse in the Heart of the Heights",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 3,
+      "slot": "breakfast",
+      "node_key": "Restaurant::3213761.0",
+      "label": "Restaurant",
+      "name": "Phoenicia Specialty Foods",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 4,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::105911",
+      "label": "Attraction",
+      "name": "The Houston Museum of Natural Science",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 5,
+      "slot": "lunch",
+      "node_key": "Restaurant::484555.0",
+      "label": "Restaurant",
+      "name": "Taste of Texas",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 6,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::265524",
+      "label": "Attraction",
+      "name": "Minute Maid Park",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 7,
+      "slot": "dinner",
+      "node_key": "Restaurant::484925.0",
+      "label": "Restaurant",
+      "name": "Pappas Bros. Steakhouse",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-26",
+      "order": 8,
+      "slot": "accommodation",
+      "node_key": "Accommodation::7.44e+17",
+      "label": "Accommodation",
+      "name": "Modern Guesthouse in the Heart of the Heights",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::7.44e+17",
+      "label": "Accommodation",
+      "name": "Modern Guesthouse in the Heart of the Heights",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::470211.0",
+      "label": "Restaurant",
+      "name": "The Breakfast Klub",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::144355",
+      "label": "Attraction",
+      "name": "Museum of Fine Arts, Houston",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::442217.0",
+      "label": "Restaurant",
+      "name": "Brennan's of Houston",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::269830",
+      "label": "Attraction",
+      "name": "Children's Museum Houston",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::442320.0",
+      "label": "Restaurant",
+      "name": "Hugo's",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-27",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::7.44e+17",
+      "label": "Accommodation",
+      "name": "Modern Guesthouse in the Heart of the Heights",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-28",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::7.44e+17",
+      "label": "Accommodation",
+      "name": "Modern Guesthouse in the Heart of the Heights",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-28",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::470211.0",
+      "label": "Restaurant",
+      "name": "The Breakfast Klub",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-28",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::106121",
+      "label": "Attraction",
+      "name": "The Menil Collection",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-28",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::442217.0",
+      "label": "Restaurant",
+      "name": "Brennan's of Houston",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-28",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F3871971",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

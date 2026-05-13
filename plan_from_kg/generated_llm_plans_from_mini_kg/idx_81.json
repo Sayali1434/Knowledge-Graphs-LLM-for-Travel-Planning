@@ -1,0 +1,2460 @@
+{
+  "query_id": "idx_81",
+  "query_text": "Plan a 3-day trip for 2 people from Dallas to Fort Wayne from November 20th to November 22nd, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. The trip should also adhere to house rules allowing pets.",
+  "request": {
+    "org": "Dallas",
+    "dest": "Fort Wayne",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-20', '2024-11-21', '2024-11-22']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': 'pets', 'cuisine': None, 'room type': 'not shared room', 'transportation': 'no self-driving', 'event': None, 'attraction': None}",
+    "budget": 1500,
+    "query": "Plan a 3-day trip for 2 people from Dallas to Fort Wayne from November 20th to November 22nd, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. The trip should also adhere to house rules allowing pets.",
+    "level": "hard",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Economical Traveler; Location Preference: Mountains"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Adventure",
+    "spending_preference": "Economical Traveler",
+    "location_preference": "Mountains"
+  },
+  "constraints": {
+    "house rule": "pets",
+    "cuisine": null,
+    "room type": "not shared room",
+    "transportation": "no self-driving",
+    "event": null,
+    "attraction": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This plan optimizes the trip by selecting flights that fit the required slots, choosing an accommodation close to attractions, and scheduling meals and activities based on proximity and time windows.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1500.0,
+    "min_estimated_total_cost": 1126.5,
+    "max_estimated_total_cost": 1126.5,
+    "best_option_remaining_budget": 373.5
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 1126.5,
+      "stay": {
+        "node_key": "Accommodation::46951073.0",
+        "label": "Accommodation",
+        "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+        "id": "46951073.0",
+        "City": "Fort Wayne",
+        "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+      },
+      "outbound": {
+        "node_key": "Flight::F0966424",
+        "label": "Flight",
+        "name": "F0966424: Dallas to Fort Wayne, 12:04-15:19",
+        "Flight Number": "F0966424",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Dallas",
+        "DestCityName": "Fort Wayne",
+        "Price": 249,
+        "DepTime": "12:04",
+        "ArrTime": "15:19"
+      },
+      "return": {
+        "node_key": "Flight::F1727319",
+        "label": "Flight",
+        "name": "F1727319: Fort Wayne to Dallas, 13:03-14:52",
+        "Flight Number": "F1727319",
+        "FlightDate": "2024-11-22",
+        "OriginCityName": "Fort Wayne",
+        "DestCityName": "Dallas",
+        "Price": 334,
+        "DepTime": "13:03",
+        "ArrTime": "14:52"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-20",
+          "current_city": "Fort Wayne",
+          "llm_notes": "Due to late arrival, dinner is the only feasible slot on the first day.",
+          "outbound_flight": {
+            "node_key": "Flight::F0966424",
+            "label": "Flight",
+            "name": "F0966424: Dallas to Fort Wayne, 12:04-15:19",
+            "Flight Number": "F0966424",
+            "FlightDate": "2024-11-20",
+            "OriginCityName": "Dallas",
+            "DestCityName": "Fort Wayne",
+            "Price": 249,
+            "DepTime": "12:04",
+            "ArrTime": "15:19"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::46951073.0",
+            "label": "Accommodation",
+            "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+            "id": "46951073.0",
+            "City": "Fort Wayne",
+            "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+          },
+          "dinner": {
+            "node_key": "Restaurant::609248.0",
+            "label": "Restaurant",
+            "name": "Oyster Bar",
+            "id": "609248.0",
+            "City": "Fort Wayne",
+            "avg_cost": "46.0",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::46951073.0",
+            "label": "Accommodation",
+            "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+            "id": "46951073.0",
+            "City": "Fort Wayne",
+            "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-21",
+          "current_city": "Fort Wayne",
+          "llm_notes": "A balanced day with breakfast, morning attraction, lunch, afternoon attraction, and dinner.",
+          "start_accommodation": {
+            "node_key": "Accommodation::46951073.0",
+            "label": "Accommodation",
+            "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+            "id": "46951073.0",
+            "City": "Fort Wayne",
+            "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::609240.0",
+            "label": "Restaurant",
+            "name": "Sara's Family Restaurant",
+            "id": "609240.0",
+            "City": "Fort Wayne",
+            "avg_cost": "28.75",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::12182194",
+            "label": "Attraction",
+            "name": "Fort Wayne Food Tours",
+            "id": "12182194",
+            "City": "Fort Wayne",
+            "rating": "5.0"
+          },
+          "lunch": {
+            "node_key": "Restaurant::538877.0",
+            "label": "Restaurant",
+            "name": "Cork 'N Cleaver Steak & Seafood",
+            "id": "538877.0",
+            "City": "Fort Wayne",
+            "avg_cost": "46.0",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::2292596",
+            "label": "Attraction",
+            "name": "Embassy Theatre",
+            "id": "2292596",
+            "City": "Fort Wayne",
+            "rating": "5.0"
+          },
+          "dinner": {
+            "node_key": "Restaurant::606910.0",
+            "label": "Restaurant",
+            "name": "Paula's On Main",
+            "id": "606910.0",
+            "City": "Fort Wayne",
+            "avg_cost": "46.0",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::46951073.0",
+            "label": "Accommodation",
+            "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+            "id": "46951073.0",
+            "City": "Fort Wayne",
+            "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-22",
+          "current_city": "Fort Wayne",
+          "llm_notes": "The return flight is early, so we focus on a morning-only plan with breakfast, morning attraction, and lunch.",
+          "start_accommodation": {
+            "node_key": "Accommodation::46951073.0",
+            "label": "Accommodation",
+            "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+            "id": "46951073.0",
+            "City": "Fort Wayne",
+            "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::609240.0",
+            "label": "Restaurant",
+            "name": "Sara's Family Restaurant",
+            "id": "609240.0",
+            "City": "Fort Wayne",
+            "avg_cost": "28.75",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::2708325",
+            "label": "Attraction",
+            "name": "Parkview Field",
+            "id": "2708325",
+            "City": "Fort Wayne",
+            "rating": "5.0"
+          },
+          "lunch": {
+            "node_key": "Restaurant::538877.0",
+            "label": "Restaurant",
+            "name": "Cork 'N Cleaver Steak & Seafood",
+            "id": "538877.0",
+            "City": "Fort Wayne",
+            "avg_cost": "46.0",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F1727319",
+            "label": "Flight",
+            "name": "F1727319: Fort Wayne to Dallas, 13:03-14:52",
+            "Flight Number": "F1727319",
+            "FlightDate": "2024-11-22",
+            "OriginCityName": "Fort Wayne",
+            "DestCityName": "Dallas",
+            "Price": 334,
+            "DepTime": "13:03",
+            "ArrTime": "14:52"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_81",
+    "node_count": 48,
+    "edge_count": 650,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::46951073.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "8",
+        "house_rules": "No children under 10",
+        "State": "Indiana",
+        "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+        "coordinates": "{\"latitude\": 41.0823, \"longitude\": -85.13157}",
+        "rating": "{\"label\": \"4.98 out of 5 average rating,  402 reviews\", \"localizedLabel\": \"4.98 (402)\", \"average\": 4.98, \"reviewsCount\": 402}",
+        "id": "46951073.0",
+        "City": "Fort Wayne",
+        "title": "Home in Fort Wayne",
+        "url": "https://www.airbnb.com/rooms/46951073?locale=en-US&currency=USD&check_in=2024-11-09&check_out=2024-11-14",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$151 per night\", \"originalPrice\": null, \"price\": \"$151\", \"qualifier\": \"night\", \"total\": \"$755 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:299",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::12182194",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "38",
+        "latitude": "41.08053",
+        "rating": "5.0",
+        "description": "A small group slow and easy 3 hour tour of downtown including 5 tastings and interesting informative commentary stops over a 1.25 mile loop.",
+        "visit_duration": "2.75",
+        "addressObj": "{\"street1\": null, \"street2\": null, \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46802\"}",
+        "subtype": [
+          "Food Tours"
+        ],
+        "ratingHistogram": "{\"count1\": 0, \"count2\": 0, \"count3\": 0, \"count4\": 1, \"count5\": 37}",
+        "location_contains_city": "True",
+        "id": "12182194",
+        "longitude": "-85.138145",
+        "website": "http://www.fortwaynefoodtours.com",
+        "rankingPosition": "1.0",
+        "address": "Fort Wayne, IN 46802",
+        "neighborhoodLocations": [],
+        "rankingString": "#1 of 11 Food & Drink in Fort Wayne",
+        "City": "Fort Wayne",
+        "localName": "Fort Wayne Food Tours",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g37114-d12182194-Reviews-Fort_Wayne_Food_Tours-Fort_Wayne_Indiana.html",
+        "localAddress": "46802",
+        "rankingDenominator": "11.0",
+        "name": "Fort Wayne Food Tours",
+        "locationString": "Fort Wayne, Indiana",
+        "subcategories": [
+          "Food & Drink",
+          "Tours"
+        ],
+        "rawRanking": "3.247202635"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2547",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::2292596",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "204",
+        "latitude": "41.075737",
+        "rating": "5.0",
+        "visit_duration": "2.5",
+        "addressObj": "{\"street1\": \"125 W Jefferson Blvd\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46802-3012\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.12\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FIndiana%2FWacky-Lets-Roam-Fort-Wayne-Scavenger-Hunt-Fun-With-Fort-Wayne%2Fd22216-104204P257%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=c4c28f1afd3924dd0&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=2292596&clt=TD&from=api&nt=true\", \"price\": \"$12.31\", \"roundedUpPrice\": \"$13\", \"offerType\": null, \"title\": \"Self-Guided Fort Wayne Scavenger Hunt: Fun With Fort Wayne\", \"productCode\": \"104204P257\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/26/47/48.jpg\", \"description\": null, \"primaryCategory\": \"Walking Tours\"}]}",
+        "subtype": [
+          "Theaters"
+        ],
+        "ratingHistogram": "{\"count1\": 0, \"count2\": 1, \"count3\": 6, \"count4\": 32, \"count5\": 165}",
+        "location_contains_city": "True",
+        "id": "2292596",
+        "longitude": "-85.13976",
+        "website": "http://www.fortwaynetheatre.com/",
+        "rankingPosition": "4.0",
+        "address": "125 W Jefferson Blvd, Fort Wayne, IN 46802-3012",
+        "neighborhoodLocations": [],
+        "rankingString": "#4 of 115 things to do in Fort Wayne",
+        "City": "Fort Wayne",
+        "localName": "Embassy Theatre",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g37114-d2292596-Reviews-Embassy_Theatre-Fort_Wayne_Indiana.html",
+        "localAddress": "125 W Jefferson Blvd, 46802-3012",
+        "rankingDenominator": "115.0",
+        "name": "Embassy Theatre",
+        "locationString": "Fort Wayne, Indiana",
+        "subcategories": [
+          "Concerts & Shows"
+        ],
+        "rawRanking": "3.907184124"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2556",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::2708325",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "692",
+        "latitude": "41.074406",
+        "rating": "5.0",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1301 Ewing St\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46802-3343\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.12\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FIndiana%2FWacky-Lets-Roam-Fort-Wayne-Scavenger-Hunt-Fun-With-Fort-Wayne%2Fd22216-104204P257%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=c4c28f1afd3924dd0&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=2708325&clt=TD&from=api&nt=true\", \"price\": \"$12.31\", \"roundedUpPrice\": \"$13\", \"offerType\": null, \"title\": \"Self-Guided Fort Wayne Scavenger Hunt: Fun With Fort Wayne\", \"productCode\": \"104204P257\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/26/47/48.jpg\", \"description\": null, \"primaryCategory\": \"Walking Tours\"}]}",
+        "subtype": [
+          "Arenas & Stadiums"
+        ],
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 1, \"count3\": 8, \"count4\": 86, \"count5\": 593}",
+        "location_contains_city": "True",
+        "id": "2708325",
+        "longitude": "-85.14274",
+        "website": "http://www.parkviewfield.com",
+        "rankingPosition": "2.0",
+        "address": "1301 Ewing St, Fort Wayne, IN 46802-3343",
+        "neighborhoodLocations": [],
+        "rankingString": "#2 of 115 things to do in Fort Wayne",
+        "City": "Fort Wayne",
+        "localName": "Parkview Field",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g37114-d2708325-Reviews-Parkview_Field-Fort_Wayne_Indiana.html",
+        "localAddress": "1301 Ewing St, 46802-3343",
+        "rankingDenominator": "115.0",
+        "name": "Parkview Field",
+        "locationString": "Fort Wayne, Indiana",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.256840706"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2545",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Dallas",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Dallas"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Fort Wayne",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Fort Wayne"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F0966424",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F0966424",
+        "Price": 249,
+        "DepTime": "12:04",
+        "ArrTime": "15:19",
+        "ActualElapsedTime": "2 hours 15 minutes",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Dallas",
+        "DestCityName": "Fort Wayne",
+        "Distance": 859.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F1727319",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F1727319",
+        "Price": 334,
+        "DepTime": "13:03",
+        "ArrTime": "14:52",
+        "ActualElapsedTime": "2 hours 49 minutes",
+        "FlightDate": "2024-11-22",
+        "OriginCityName": "Fort Wayne",
+        "DestCityName": "Dallas",
+        "Distance": 859.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_81::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "current_city": "Fort Wayne"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_81::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "current_city": "Fort Wayne"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_81::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "current_city": "Fort Wayne"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_81::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1126.5,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::46951073.0",
+        "outbound_node_key": "Flight::F0966424",
+        "return_node_key": "Flight::F1727319"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_81",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_81",
+        "query": "Plan a 3-day trip for 2 people from Dallas to Fort Wayne from November 20th to November 22nd, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. The trip should also adhere to house rules allowing pets.",
+        "days": 3,
+        "origin_city": "Dallas",
+        "destination_city": "Fort Wayne",
+        "budget": 1500.0,
+        "source_mini_kg_query_id": "idx_81"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::538877.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "924.0",
+        "avg_cost": "46.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"221 E Washington Center Rd\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46825-4404\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/91/7e/4e/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/d3/5a/48/cork-n-cleaver-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/4a/6e/e1/beef-booze.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/4d/31/2a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/4d/31/0b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/4d/30/f4/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/9d/21/9b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/9d/21/9a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/22/83/c5/dinner-was-amazing-our.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/af/e6/ce/cork-n-cleaver-steak.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/53/7a/c9/20190313-193736-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/53/7a/c8/20190313-200430-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/53/7a/c7/20190313-201734-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/df/ed/dc/img-20190316-210337-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/ff/a7/6a/cork-n-cleaver-steak.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/5b/34/81/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/5b/34/80/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/5b/34/7f/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/5b/34/7e/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/a9/8e/31/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/81/4a/c8/286599ac-6024-4045-8c61.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/d3/5a/47/cork-n-cleaver-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/30/5a/38/the-heavy-clever-menu.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/4d/30/f4/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/4d/31/0b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/4d/31/2a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/9d/21/9a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/9d/21/9b/caption.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "538877.0",
+        "longitude": "-85.13832",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/11/91/7e/4e/photo0jpg.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "45.00 - 100.00",
+        "rankingString": "#2 of 693 Restaurants in Fort Wayne",
+        "openNowText": "Closed Now",
+        "City": "Fort Wayne",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "9.00 - 35.00",
+        "cuisines": [
+          "American",
+          "Steakhouse"
+        ],
+        "localName": "Cork 'N Cleaver Steak & Seafood",
+        "input": "Fort Wayne",
+        "phone": "+1 260-484-7772",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g37114-d538877-Reviews-Cork_N_Cleaver_Steak_Seafood-Fort_Wayne_Indiana.html",
+        "localAddress": "221 E Washington Center Rd, 46825-4404",
+        "Rest-MidRange": "57.5",
+        "name": "Cork 'N Cleaver Steak & Seafood",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.490548134",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "41.133224",
+        "menuWebUrl": "http://corkncleaveronline.com/menu",
+        "description": "We do a lot of things in a uniquely special way in order to attain our goal of excellence. The Cork is a place where everyone can enjoy good food, and food friends.Come and enjoy our original and unique concepts such as an innovative salad bar, cleaver-style menus, wine lists and exhibition cooking.",
+        "photoCount": "70.0",
+        "ratingHistogram": "{\"count1\": 11, \"count2\": 18, \"count3\": 77, \"count4\": 182, \"count5\": 636}",
+        "website": "http://www.corkncleaveronline.com",
+        "rankingPosition": "2.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Indiana/Indianapolis\"}",
+        "address": "221 E Washington Center Rd, Fort Wayne, IN 46825-4404",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Crab",
+          "Filet Mignon",
+          "Lobster",
+          "Shrimp",
+          "Salad",
+          "Salmon",
+          "Caviar",
+          "Tuna",
+          "Beef",
+          "Pesto",
+          "Cakes",
+          "Fish",
+          "Soup",
+          "Baked Potato",
+          "Cake",
+          "Teriyaki",
+          "Herring"
+        ],
+        "reviewTags": "[{\"text\": \"steak\", \"reviews\": 240}, {\"text\": \"prime rib\", \"reviews\": 45}, {\"text\": \"salad bar\", \"reviews\": 360}, {\"text\": \"the wait staff\", \"reviews\": 14}, {\"text\": \"martini\", \"reviews\": 19}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "19",
+        "rankingDenominator": "693.0",
+        "locationString": "Fort Wayne, Indiana",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"37114\", \"name\": \"Fort Wayne\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28935\", \"name\": \"Indiana\", \"abbreviation\": \"IN\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7331",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::606910.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "461.0",
+        "avg_cost": "46.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"1732 W Main St\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46808-3355\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/ae/57/17/paula-s-on-main.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/43/7b/39/cover-photo.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/9f/33/1a/paula-s-on-main.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/47/dc/7b/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/d0/salmon-raspberry-chipotle.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cf/salmon-blackened-with.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/ce/chilean-sea-bass.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cd/salmon-grilled-teriyaki.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cc/crab-cakes.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/2e/35/46/paula-s-on-main.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/70/71/82/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/6b/photo8jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/6a/photo7jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/69/photo6jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/68/photo5jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/67/photo4jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/66/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/64/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/63/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4b/c2/62/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/ae/57/1a/paula-s-on-main.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/10/18/6a/25/upper-level-at-paula.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/b8/c1/59/crab-legs-the-biggest.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/10/e0/81/80/amazing-seafood.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cc/crab-cakes.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/d0/salmon-raspberry-chipotle.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cf/salmon-blackened-with.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/cd/salmon-grilled-teriyaki.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/b1/17/ce/chilean-sea-bass.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Gluten free options"
+        ],
+        "id": "606910.0",
+        "longitude": "-85.16464",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/07/43/7b/39/cover-photo.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "45.00 - 100.00",
+        "rankingString": "#1 of 693 Restaurants in Fort Wayne",
+        "openNowText": "Closed Now",
+        "City": "Fort Wayne",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "9.00 - 35.00",
+        "cuisines": [
+          "American",
+          "Seafood",
+          "European"
+        ],
+        "localName": "Paula's On Main",
+        "input": "Fort Wayne",
+        "phone": "+1 260-424-2300",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g37114-d606910-Reviews-Paula_s_On_Main-Fort_Wayne_Indiana.html",
+        "localAddress": "1732 W Main St, 46808-3355",
+        "Rest-MidRange": "57.5",
+        "name": "Paula's On Main",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.490916729",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=261637641&geo=606910&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311322676&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8gSrctSHcvq5BA8Ge4aoa1QBbSnXwQ9ibR61yaxK9mD0&cs=1a5598156b9dc1de2a1bfaad94a16b558_QjS\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "41.078663",
+        "photoCount": "99.0",
+        "ratingHistogram": "{\"count1\": 5, \"count2\": 17, \"count3\": 38, \"count4\": 76, \"count5\": 325}",
+        "website": "http://www.paulasonmain.com",
+        "rankingPosition": "1.0",
+        "hours": "{\"weekRanges\": [[], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Indiana/Indianapolis\"}",
+        "address": "1732 W Main St, Fort Wayne, IN 46808-3355",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Chowder",
+          "Pasta",
+          "Crab",
+          "Crab Cake",
+          "Fish & Chips",
+          "Jambalaya",
+          "Lobster",
+          "Oyster",
+          "Shrimp",
+          "Fish Taco",
+          "Salad",
+          "Clam Chowder",
+          "Calamari",
+          "Key lime pie",
+          "Carrot Cake",
+          "Crab Legs",
+          "Cioppino",
+          "Mussels",
+          "Scallops",
+          "Halibut",
+          "Salmon",
+          "Tuna",
+          "Tilapia",
+          "Clams",
+          "Bass",
+          "Pesto",
+          "Cakes",
+          "Fish",
+          "Lobster Tail",
+          "Tartare",
+          "Shrimp Cocktail",
+          "Soup",
+          "Wedge Salad",
+          "Perch",
+          "Warm Bread",
+          "Jumbo Shrimp",
+          "Cake",
+          "Fried",
+          "Fresh Fish",
+          "Sea Bass",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"seafood\", \"reviews\": 146}, {\"text\": \"crab cakes\", \"reviews\": 53}, {\"text\": \"scallops\", \"reviews\": 36}, {\"text\": \"salad\", \"reviews\": 41}, {\"text\": \"menu items\", \"reviews\": 5}, {\"text\": \"entrees\", \"reviews\": 36}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "19",
+        "rankingDenominator": "693.0",
+        "locationString": "Fort Wayne, Indiana",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"37114\", \"name\": \"Fort Wayne\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28935\", \"name\": \"Indiana\", \"abbreviation\": \"IN\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7329",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::609240.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "277.0",
+        "avg_cost": "28.75",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"5792 Coventry Ln\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46804-7141\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/1f/03/8b/photo4jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/07/64/a7/sara-s-exterior.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/35/8b/28/a-full-meal-in-a-potato.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/0d/57/8b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/0d/57/8a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/ec/e5/ad/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/ec/e5/ac/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/ec/e5/ae/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/ec/e5/ab/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/ef/60/95/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0e/8b/3a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0e/8b/39/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0e/8b/38/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0e/8b/37/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/0e/8b/36/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/66/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/64/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/63/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/61/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/60/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/5f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/9b/6e/0f/former-president-kennedy.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/bc/80/61/sara-s-family-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/08/53/e6/90/sara-s-family-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/12/71/9a/20200921-131433-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/12/71/99/20200923-111531-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/12/71/98/20200923-111550-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/5c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/5d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/5f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/60/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/61/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/63/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/64/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/90/0f/66/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/0d/57/8a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/0d/57/8b/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "609240.0",
+        "longitude": "-85.25777",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0e/07/64/a7/sara-s-exterior.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "45.00 - 100.00",
+        "rankingString": "#10 of 823 places to eat in Fort Wayne",
+        "openNowText": "Opens in 29 min",
+        "City": "Fort Wayne",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch"
+        ],
+        "Range": "9.00 - 35.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "Sara's Family Restaurant",
+        "input": "Fort Wayne",
+        "phone": "+1 260-436-4185",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g37114-d609240-Reviews-Sara_s_Family_Restaurant-Fort_Wayne_Indiana.html",
+        "localAddress": "5792 Coventry Ln, 46804-7141",
+        "Rest-MidRange": "57.5",
+        "name": "Sara's Family Restaurant",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.03792429",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "41.032375",
+        "photoCount": "106.0",
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 11, \"count3\": 31, \"count4\": 70, \"count5\": 162}",
+        "email": "admin@sarasfamilyrestaurant.com",
+        "website": "http://www.sarasfamilyrestaurant.com/",
+        "rankingPosition": "10.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1170, \"closeHours\": \"19:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1230, \"closeHours\": \"20:30\"}]], \"timezone\": \"America/Indiana/Indianapolis\"}",
+        "address": "5792 Coventry Ln, Fort Wayne, IN 46804-7141",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Sandwiches",
+          "Fish & Chips",
+          "Burger",
+          "Meatloaf",
+          "Omelette",
+          "Salad",
+          "Pancakes",
+          "Eggs Benedict",
+          "Waffles",
+          "Club Sandwich",
+          "Toasts",
+          "Cakes",
+          "Fish",
+          "Hash Browns",
+          "Okra",
+          "Baked Potato",
+          "Sausage",
+          "Side Salad",
+          "Fried",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"pancakes\", \"reviews\": 19}, {\"text\": \"salad\", \"reviews\": 14}, {\"text\": \"chicken\", \"reviews\": 4}, {\"text\": \"large portions\", \"reviews\": 10}, {\"text\": \"comfort food\", \"reviews\": 8}, {\"text\": \"menu items\", \"reviews\": 5}, {\"text\": \"ft wayne\", \"reviews\": 5}, {\"text\": \"crispy\", \"reviews\": 12}, {\"text\": \"homemade\", \"reviews\": 4}, {\"text\": \"hubby\", \"reviews\": 3}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "19",
+        "rankingDenominator": "506.0",
+        "locationString": "Fort Wayne, Indiana",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"37114\", \"name\": \"Fort Wayne\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28935\", \"name\": \"Indiana\", \"abbreviation\": \"IN\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7320",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::609248.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "272.0",
+        "avg_cost": "46.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"1830 S Calhoun St\", \"street2\": \"\", \"city\": \"Fort Wayne\", \"state\": \"IN\", \"country\": \"United States\", \"postalcode\": \"46802-5258\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/76/8e/d4/oyster-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/b8/2e/4b/over-100-years-old.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/e2/d5/e4/20180507-143710-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/e2/d5/e3/20180507-143650-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/5d/a6/df/visited-october-19-2016.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/15/aa/80/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/e2/65/photo4jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/e2/64/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/e2/63/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/e2/62/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/e2/61/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/df/8f/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/df/8e/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/c7/df/8d/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/95/e3/bb/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/95/e3/ba/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/95/e3/b9/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/f1/49/13/the-main-room.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/10/3a/0f/oyster-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/d7/31/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7e/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/15/aa/7f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/28/15/aa/80/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Seating",
+          "Serves Alcohol",
+          "Full Bar",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Gluten free options"
+        ],
+        "id": "609248.0",
+        "longitude": "-85.13845",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0c/76/8e/d4/oyster-bar.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "14.0",
+        "Range.1": "45.00 - 100.00",
+        "rankingString": "#9 of 693 Restaurants in Fort Wayne",
+        "openNowText": "Closed Now",
+        "City": "Fort Wayne",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "9.00 - 35.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "Oyster Bar",
+        "input": "Fort Wayne",
+        "phone": "+1 260-744-9490",
+        "State": "Indiana",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g37114-d609248-Reviews-Oyster_Bar-Fort_Wayne_Indiana.html",
+        "localAddress": "1830 S Calhoun St, 46802-5258",
+        "Rest-MidRange": "57.5",
+        "name": "Oyster Bar",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.029043198",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "41.068752",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g37114-d609248-Oyster_Bar-Fort_Wayne_Indiana.html",
+        "description": "The Oyster Bar is one of the oldest operating restaurants in Indiana. This establishment opened in 1888 as a saloon and is now a Fort Wayne staple for seafood and American cuisine.",
+        "photoCount": "74.0",
+        "ratingHistogram": "{\"count1\": 7, \"count2\": 11, \"count3\": 5, \"count4\": 45, \"count5\": 204}",
+        "website": "http://fwoysterbar.com",
+        "rankingPosition": "9.0",
+        "hours": "{\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Indiana/Indianapolis\"}",
+        "address": "1830 S Calhoun St, Fort Wayne, IN 46802-5258",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Chowder",
+          "Pasta",
+          "Crab",
+          "Crab Cake",
+          "Filet Mignon",
+          "Burger",
+          "Lobster",
+          "Oyster",
+          "Shrimp",
+          "Salad",
+          "Clam Chowder",
+          "Calamari",
+          "Cioppino",
+          "Risotto",
+          "Scallops",
+          "Salmon",
+          "Tuna",
+          "Clams",
+          "Prawns",
+          "Bass",
+          "Hamburgers",
+          "Pesto",
+          "Cakes",
+          "Fish",
+          "Bisque",
+          "Soup",
+          "Oysters Rockefeller",
+          "Fried",
+          "Sea Bass"
+        ],
+        "reviewTags": "[{\"text\": \"oysters\", \"reviews\": 48}, {\"text\": \"filet\", \"reviews\": 15}, {\"text\": \"ahi tuna\", \"reviews\": 3}, {\"text\": \"salad\", \"reviews\": 15}, {\"text\": \"bread\", \"reviews\": 6}, {\"text\": \"the seafood au gratin\", \"reviews\": 8}, {\"text\": \"blue cheese\", \"reviews\": 4}, {\"text\": \"entrees\", \"reviews\": 30}, {\"text\": \"wayne\", \"reviews\": 18}, {\"text\": \"ft\", \"reviews\": 15}, {\"text\": \"indiana\", \"reviews\": 9}, {\"text\": \"fort\", \"reviews\": 6}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "19",
+        "rankingDenominator": "693.0",
+        "locationString": "Fort Wayne, Indiana",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"37114\", \"name\": \"Fort Wayne\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28935\", \"name\": \"Indiana\", \"abbreviation\": \"IN\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7310",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Attraction::12182194",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.006809,
+        "distance_m": 585.18,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Attraction::2292596",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.010495,
+        "distance_m": 1001.91,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Attraction::2708325",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.013678,
+        "distance_m": 1283.39,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::538877.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.051369,
+        "distance_m": 5690.66,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::606910.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.033269,
+        "distance_m": 2801.19,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::609240.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::609240.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::609240.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.135716,
+        "distance_m": 11949.29,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::609248.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::46951073.0",
+      "target": "Restaurant::609248.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.015195,
+        "distance_m": 1613.08,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::12182194",
+      "target": "Restaurant::538877.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::12182194",
+      "target": "Restaurant::538877.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.052694,
+        "distance_m": 5859.32,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::12182194",
+      "target": "Restaurant::606910.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.026561,
+        "distance_m": 2230.45,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::12182194",
+      "target": "Restaurant::609240.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.128954,
+        "distance_m": 11370.08,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::12182194",
+      "target": "Restaurant::609248.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.011782,
+        "distance_m": 1309.9,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Attraction::2708325",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.140438,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Restaurant::538877.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.057505,
+        "distance_m": 6393.4,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Restaurant::606910.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Restaurant::606910.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.025051,
+        "distance_m": 2110.71,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Restaurant::609240.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.125724,
+        "distance_m": 11007.46,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2292596",
+      "target": "Restaurant::609248.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.007107,
+        "distance_m": 784.42,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Attraction::2292596",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.140438,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Restaurant::538877.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Restaurant::538877.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.058984,
+        "distance_m": 6550.74,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Restaurant::606910.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.02231,
+        "distance_m": 1895.76,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Restaurant::609240.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.122468,
+        "distance_m": 10718.12,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2708325",
+      "target": "Restaurant::609248.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.007097,
+        "distance_m": 724.29,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F0966424",
+      "target": "Accommodation::46951073.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::1",
+      "target": "Accommodation::46951073.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::1",
+      "target": "Accommodation::46951073.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 4,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::1",
+      "target": "Flight::F0966424",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::1",
+      "target": "Restaurant::609248.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "order": 3,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Accommodation::46951073.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Accommodation::46951073.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Attraction::12182194",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Attraction::2292596",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Restaurant::538877.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Restaurant::606910.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::2",
+      "target": "Restaurant::609240.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::3",
+      "target": "Accommodation::46951073.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::3",
+      "target": "Attraction::2708325",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::3",
+      "target": "Flight::F1727319",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::3",
+      "target": "Restaurant::538877.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_81::option_001::3",
+      "target": "Restaurant::609240.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "Accommodation::46951073.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "Flight::F0966424",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "Flight::F1727319",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "PlanDay::idx_81::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "PlanDay::idx_81::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_81::option_001",
+      "target": "PlanDay::idx_81::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_81",
+      "target": "PlanOption::idx_81::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1126.5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Attraction::12182194",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.052694,
+        "distance_m": 5859.32,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Attraction::2292596",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.057505,
+        "distance_m": 6393.4,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Attraction::2292596",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Attraction::2708325",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.058984,
+        "distance_m": 6550.74,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Flight::F1727319",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Restaurant::609240.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::538877.0",
+      "target": "Restaurant::609248.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 3,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::606910.0",
+      "target": "Accommodation::46951073.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::606910.0",
+      "target": "Attraction::12182194",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.026561,
+        "distance_m": 2230.45,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::606910.0",
+      "target": "Attraction::2292596",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.025051,
+        "distance_m": 2110.71,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::606910.0",
+      "target": "Attraction::2708325",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.02231,
+        "distance_m": 1895.76,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Attraction::12182194",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.128954,
+        "distance_m": 11370.08,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Attraction::12182194",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-21",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Attraction::2292596",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.125724,
+        "distance_m": 11007.46,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Attraction::2708325",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.122468,
+        "distance_m": 10718.12,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Attraction::2708325",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-22",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Restaurant::538877.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609240.0",
+      "target": "Restaurant::609248.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ],
+        "reciprocal_of": "Restaurant::609248.0->Restaurant::609240.0"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Accommodation::46951073.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-20",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Attraction::12182194",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.011782,
+        "distance_m": 1309.9,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Attraction::2292596",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.007107,
+        "distance_m": 784.42,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Attraction::2708325",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.007097,
+        "distance_m": 724.29,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Restaurant::538877.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::609248.0",
+      "target": "Restaurant::609240.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "brew pub",
+          "contemporary",
+          "diner",
+          "european",
+          "fast food",
+          "gastropub",
+          "international",
+          "italian",
+          "pizza",
+          "seafood",
+          "soups",
+          "steakhouse",
+          "wine bar"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F0966424",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::46951073.0",
+      "label": "Accommodation",
+      "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 3,
+      "slot": "dinner",
+      "node_key": "Restaurant::609248.0",
+      "label": "Restaurant",
+      "name": "Oyster Bar",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-20",
+      "order": 4,
+      "slot": "accommodation",
+      "node_key": "Accommodation::46951073.0",
+      "label": "Accommodation",
+      "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::46951073.0",
+      "label": "Accommodation",
+      "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::609240.0",
+      "label": "Restaurant",
+      "name": "Sara's Family Restaurant",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::12182194",
+      "label": "Attraction",
+      "name": "Fort Wayne Food Tours",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::538877.0",
+      "label": "Restaurant",
+      "name": "Cork 'N Cleaver Steak & Seafood",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::2292596",
+      "label": "Attraction",
+      "name": "Embassy Theatre",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::606910.0",
+      "label": "Restaurant",
+      "name": "Paula's On Main",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-21",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::46951073.0",
+      "label": "Accommodation",
+      "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::46951073.0",
+      "label": "Accommodation",
+      "name": "✨ Luxurious 2 bd home - downtown w/ free parking ✨",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::609240.0",
+      "label": "Restaurant",
+      "name": "Sara's Family Restaurant",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::2708325",
+      "label": "Attraction",
+      "name": "Parkview Field",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::538877.0",
+      "label": "Restaurant",
+      "name": "Cork 'N Cleaver Steak & Seafood",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-22",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F1727319",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

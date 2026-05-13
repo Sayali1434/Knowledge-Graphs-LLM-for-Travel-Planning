@@ -1,0 +1,2861 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_68\", \"query_text\": \"Plan a 3-day trip for 2 people from New York to Los Angeles from November 5th to November 7th, 2024, with a budget of $5,700. Include shopping as a key attraction.\", \"request\": {\"org\": \"New York\", \"dest\": \"Los Angeles\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-05', '2024-11-06', '2024-11-07']\", \"people_number\": 2, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': 'Shopping', 'transportation': None}\", \"budget\": 5700, \"query\": \"Plan a 3-day trip for 2 people from New York to Los Angeles from November 5th to November 7th, 2024, with a budget of $5,700. Include shopping as a key attraction.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"event\": null, \"attraction\": \"Shopping\", \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F1992179\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"New York\", \"DestCityName\": \"Los Angeles\", \"DepTime\": \"00:15\", \"ArrTime\": \"03:18\", \"Price\": 540}}, {\"node_key\": \"Flight::F1454113\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"New York\", \"DestCityName\": \"Los Angeles\", \"DepTime\": \"05:52\", \"ArrTime\": \"08:30\", \"Price\": 627}}, {\"node_key\": \"Flight::F2794132\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"New York\", \"DestCityName\": \"Los Angeles\", \"DepTime\": \"05:53\", \"ArrTime\": \"08:30\", \"Price\": 644}}, {\"node_key\": \"Flight::F1890872\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"New York\", \"DestCityName\": \"Los Angeles\", \"DepTime\": \"05:56\", \"ArrTime\": \"08:56\", \"Price\": 855}}, {\"node_key\": \"Flight::F0166082\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"New York\", \"DestCityName\": \"Los Angeles\", \"DepTime\": \"05:53\", \"ArrTime\": \"09:14\", \"Price\": 926}}, {\"node_key\": \"Flight::F0845146\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Los Angeles\", \"DestCityName\": \"New York\", \"DepTime\": \"23:48\", \"ArrTime\": \"08:12\", \"Price\": 673}}, {\"node_key\": \"Flight::F1890396\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Los Angeles\", \"DestCityName\": \"New York\", \"DepTime\": \"23:50\", \"ArrTime\": \"08:12\", \"Price\": 834}}, {\"node_key\": \"Flight::F3527806\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Los Angeles\", \"DestCityName\": \"New York\", \"DepTime\": \"23:48\", \"ArrTime\": \"07:47\", \"Price\": 902}}, {\"node_key\": \"Flight::F2923529\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Los Angeles\", \"DestCityName\": \"New York\", \"DepTime\": \"23:54\", \"ArrTime\": \"08:06\", \"Price\": 949}}, {\"node_key\": \"Flight::F2925427\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Los Angeles\", \"DestCityName\": \"New York\", \"DepTime\": \"23:59\", \"ArrTime\": \"07:58\", \"Price\": 1205}}, {\"node_key\": \"Accommodation::39923432.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39923432.0\", \"name\": \"Pristine Mid Century Gem Near USC Hospital\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$104 per night\", \"originalPrice\": null, \"price\": \"$104\", \"qualifier\": \"night\", \"total\": \"$519 total\"}, \"rating\": {\"label\": \"4.81 out of 5 average rating,  260 reviews\", \"localizedLabel\": \"4.81 (260)\", \"average\": 4.81, \"reviewsCount\": 260}, \"coordinates\": {\"latitude\": 34.05354, \"longitude\": -118.19744}}}, {\"node_key\": \"Accommodation::26249790.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"26249790.0\", \"name\": \"Guest house with private parking\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$124 per night\", \"originalPrice\": null, \"price\": \"$124\", \"qualifier\": \"night\", \"total\": \"$616 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  270 reviews\", \"localizedLabel\": \"4.93 (270)\", \"average\": 4.93, \"reviewsCount\": 270}, \"coordinates\": {\"latitude\": 34.17785, \"longitude\": -118.2907}}}, {\"node_key\": \"Accommodation::9.84e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.84e+17\", \"name\": \"Cabin on the Rocks\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No visitors & No parties\", \"pricing\": {\"label\": \"$320 per night\", \"originalPrice\": null, \"price\": \"$320\", \"qualifier\": \"night\", \"total\": \"$1,598 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  128 reviews\", \"localizedLabel\": \"4.98 (128)\", \"average\": 4.98, \"reviewsCount\": 128}, \"coordinates\": {\"latitude\": 34.07873, \"longitude\": -118.60588}}}, {\"node_key\": \"Accommodation::36914685.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"36914685.0\", \"name\": \"Topanga Pool House\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$400 per night\", \"originalPrice\": null, \"price\": \"$400\", \"qualifier\": \"night\", \"total\": \"$2,000 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  197 reviews\", \"localizedLabel\": \"4.97 (197)\", \"average\": 4.97, \"reviewsCount\": 197}, \"coordinates\": {\"latitude\": 34.08034, \"longitude\": -118.59843}}}, {\"node_key\": \"Accommodation::7.07e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7.07e+17\", \"name\": \"Cozy Beverly Hills Studio Guest House\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$275 per night\", \"originalPrice\": null, \"price\": \"$275\", \"qualifier\": \"night\", \"total\": \"$1,373 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  94 reviews\", \"localizedLabel\": \"4.97 (94)\", \"average\": 4.97, \"reviewsCount\": 94}, \"coordinates\": {\"latitude\": 34.0607837, \"longitude\": -118.3999024}}}, {\"node_key\": \"Accommodation::1.24e+18\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"1.24e+18\", \"name\": \"Rare find! Garden Oasis Guest House in heart of LA\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$152 per night\", \"originalPrice\": null, \"price\": \"$152\", \"qualifier\": \"night\", \"total\": \"$759 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  17 reviews\", \"localizedLabel\": \"5.0 (17)\", \"average\": 5, \"reviewsCount\": 17}, \"coordinates\": {\"latitude\": 34.02149522580676, \"longitude\": -118.31974721981135}}}, {\"node_key\": \"Accommodation::5.94e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.94e+17\", \"name\": \"Autumn's Modern 1 bedroom with Charming Courtyard.\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$164 per night\", \"originalPrice\": null, \"price\": \"$164\", \"qualifier\": \"night\", \"total\": \"$820 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  132 reviews\", \"localizedLabel\": \"4.93 (132)\", \"average\": 4.93, \"reviewsCount\": 132}, \"coordinates\": {\"latitude\": 34.00334, \"longitude\": -118.34269}}}, {\"node_key\": \"Accommodation::9.3e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.3e+17\", \"name\": \"Clean Energy Wi-Fi Garden Home / Helms Platform\", \"City\": \"Los Angeles\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$237 per night\", \"originalPrice\": null, \"price\": \"$237\", \"qualifier\": \"night\", \"total\": \"$1,183 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  95 reviews\", \"localizedLabel\": \"4.98 (95)\", \"average\": 4.98, \"reviewsCount\": 95}, \"coordinates\": {\"latitude\": 34.024907018365475, \"longitude\": -118.3847110055534}}}, {\"node_key\": \"Accommodation::13561970.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"13561970.0\", \"name\": \"5 star guest suite in L.A.'s  best location\", \"City\": \"Los Angeles\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$192 per night\", \"originalPrice\": null, \"price\": \"$192\", \"qualifier\": \"night\", \"total\": \"$960 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  444 reviews\", \"localizedLabel\": \"4.95 (444)\", \"average\": 4.95, \"reviewsCount\": 444}, \"coordinates\": {\"latitude\": 34.08687, \"longitude\": -118.38732}}}, {\"node_key\": \"Accommodation::2494793.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"2494793.0\", \"name\": \"Cozy and Bright Private Room\", \"City\": \"Los Angeles\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No pets & No smoking\", \"pricing\": {\"label\": \"$99 per night\", \"originalPrice\": null, \"price\": \"$99\", \"qualifier\": \"night\", \"total\": \"$491 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  786 reviews\", \"localizedLabel\": \"4.9 (786)\", \"average\": 4.9, \"reviewsCount\": 786}, \"coordinates\": {\"latitude\": 34.02026, \"longitude\": -118.47336}}}, {\"node_key\": \"Attraction::547175\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"547175\", \"name\": \"The Grove\", \"City\": \"Los Angeles\", \"subtype\": [\"Shopping Malls\"], \"subcategories\": [\"Shopping\"], \"visit_duration\": \"1.5\", \"rating\": \"4.5\", \"rankingString\": \"#33 of 973 things to do in Los Angeles\", \"address\": \"189 The Grove Drive, Los Angeles, CA 90036-6222\", \"description\": \"This sprawling outdoor shopping hub is one of California’s most popular malls. Before flocking to the stores, board the free double-decker Grove Trolley to The Original Farmers Market where you can browse gourmet groceries and specialty foods. Back at the mall, you'll find a range of fashion-forward brands and pop-up stores. When hungry, choose between classic American grub, Italian dining, or fast food amidst other cuisines. Be sure to stay for the spectacular light show at the Dancing Fount...\"}}, {\"node_key\": \"Attraction::1908285\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1908285\", \"name\": \"Citadel Outlets\", \"City\": \"Los Angeles\", \"subtype\": [\"Factory Outlets\", \"Shopping Malls\"], \"subcategories\": [\"Shopping\"], \"visit_duration\": \"1.5\", \"rating\": \"4.0\", \"rankingString\": \"#44 of 973 things to do in Los Angeles\", \"address\": \"100 Citadel Dr Suite 480, Los Angeles, CA 90040-1596\", \"description\": \"L.A. Style. Outlet Savings. Citadel Outlets represents a style that is uniquely Los Angeles. L.A. style is admired for its effortless yet refined presence. It is defined by the city where trends are born and passionately followed. Citadel Outlets offers a world-class shopping experience in an open-air setting, just 10 minutes South of Downtown LA, 35 minutes East of LAX and 30 minutes north of the Anaheim/Disneyland Resort area. This is where the fashion forward shop to find leading designers...\"}}, {\"node_key\": \"Restaurant::4504016.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4504016.0\", \"name\": \"El Compadre\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Mexican\", \"Southwestern\", \"Latin\", \"Bar\", \"Spanish\", \"Pub\"], \"avg_cost\": \"60.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1449 W Sunset Blvd, Los Angeles, CA 90026-3457\", \"hours\": {\"weekRanges\": [[], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::3701882.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3701882.0\", \"name\": \"n/naka\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Japanese\", \"Sushi\", \"Asian\"], \"avg_cost\": \"96.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"3455 Overland Ave, Los Angeles, CA 90034-5419\", \"hours\": {\"weekRanges\": [[], [], [], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::911418.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"911418.0\", \"name\": \"Bubba Gump Shrimp Co.\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Cajun & Creole\", \"Seafood\", \"Grill\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1000 Universal Studios Blvd Suite 114, Universal CityWalk Hollywood, Los Angeles, CA 91608\", \"hours\": {\"weekRanges\": [[{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::348825.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"348825.0\", \"name\": \"Brent's Deli Northridge\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Deli\", \"Israeli\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"19565 Parthenia St, Los Angeles, CA 91324\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::514194.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"514194.0\", \"name\": \"Musso & Frank Grill\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"6667 Hollywood Blvd, Los Angeles, CA 90028-6292\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::2241406.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2241406.0\", \"name\": \"Perch\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"French\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"448 S Hill St, Los Angeles, CA 90013-1113\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1560, \"closeHours\": \"02:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::364702.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"364702.0\", \"name\": \"Water Grill\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"544 S Grand Ave, Los Angeles, CA 90071-2602\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::364756.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"364756.0\", \"name\": \"Langer's Delicatessen Restaurant\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Deli\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"704 S Alvarado St, Los Angeles, CA 90057-4020\", \"hours\": {\"weekRanges\": [[], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 960, \"closeHours\": \"16:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::594024.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"594024.0\", \"name\": \"Providence\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Seafood\", \"Contemporary\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"5955 Melrose Ave, Los Angeles, CA 90038\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 1125, \"openHours\": \"18:45\", \"close\": 1275, \"closeHours\": \"21:15\"}], [{\"open\": 1125, \"openHours\": \"18:45\", \"close\": 1275, \"closeHours\": \"21:15\"}], [{\"open\": 1125, \"openHours\": \"18:45\", \"close\": 1275, \"closeHours\": \"21:15\"}], [{\"open\": 1125, \"openHours\": \"18:45\", \"close\": 1275, \"closeHours\": \"21:15\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1275, \"closeHours\": \"21:15\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::3731729.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3731729.0\", \"name\": \"Bestia\", \"City\": \"Los Angeles\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2121 E 7th Pl, Los Angeles, CA 90021\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Event::vvG10Zb1T4uJpt\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG10Zb1T4uJpt\", \"name\": \"Kirk Franklin - REUNION TOUR 2024\", \"city\": \"Los Angeles\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Religious\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/kirk-franklin-reunion-tour-2024-anaheim-california-10-30-2024/event/090060AFD53665A9\", \"availabilityStarts\": \"2024-05-22T17:00:00Z\", \"price\": 39.5, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2533.44}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2833.11}, {\"source\": \"Restaurant::594024.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2833.11}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3192.14}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3671.73}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3888.28}, {\"source\": \"Restaurant::514194.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3888.28}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4089.3}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4123.57}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4997.66}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5062.17}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5271.6}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5299.91}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5531.02}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5662.44}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5666.65}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5804.55}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6301.53}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6561.75}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6616.77}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6730.26}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6849.43}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6901.21}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6970.99}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7000.94}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7130.71}, {\"source\": \"Restaurant::911418.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7130.71}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7238.0}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7244.61}, {\"source\": \"Restaurant::3701882.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7244.61}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7315.33}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7404.11}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7488.49}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7588.2}, {\"source\": \"Restaurant::3731729.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7588.2}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7653.18}, {\"source\": \"Restaurant::364756.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7653.18}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7762.74}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8232.59}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8448.56}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8454.46}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8529.96}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8560.54}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8996.45}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9039.15}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9405.02}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9407.54}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9568.75}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9631.24}, {\"source\": \"Restaurant::4504016.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9631.24}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9678.4}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9820.78}, {\"source\": \"Restaurant::364702.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9820.78}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9826.04}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10115.44}, {\"source\": \"Restaurant::2241406.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10115.44}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10162.32}, {\"source\": \"Restaurant::2241406.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10162.32}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10435.15}, {\"source\": \"Restaurant::364702.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10435.15}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10537.12}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10736.43}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10963.48}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10984.97}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11094.98}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11353.48}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11484.0}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11902.26}, {\"source\": \"Restaurant::4504016.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11902.26}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11929.25}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 12117.36}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12275.78}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12425.81}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12571.97}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 12575.11}, {\"source\": \"Restaurant::3731729.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 12575.11}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 12613.13}, {\"source\": \"Restaurant::364756.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 12613.13}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12678.02}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12693.94}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 12918.86}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13111.28}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13207.69}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 13280.99}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13348.21}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13439.46}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13584.1}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13612.77}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13742.39}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13787.75}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14359.14}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14701.25}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14775.92}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14792.03}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14899.82}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14949.78}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 15418.83}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 15610.86}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 15717.88}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 16009.67}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 16883.57}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 16970.19}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 17003.19}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 17039.91}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 17212.27}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 17458.46}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 18222.28}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 18376.09}, {\"source\": \"Restaurant::594024.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 18376.09}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 18549.85}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 18812.6}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 19791.47}, {\"source\": \"Restaurant::514194.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 19791.47}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 20039.05}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 20335.66}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 20400.54}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 20700.4}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 21188.37}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 21414.61}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 22196.41}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 22431.46}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 22545.29}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 22804.03}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 22875.7}, {\"source\": \"Accommodation::13561970.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 23305.78}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 23339.4}, {\"source\": \"Restaurant::911418.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 23339.4}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 23398.53}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 23487.51}, {\"source\": \"Accommodation::7.07e+17\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 23826.85}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::3701882.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 23940.59}, {\"source\": \"Restaurant::3701882.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 23940.59}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::911418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 24107.57}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 24341.26}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 24544.81}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 24704.08}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::514194.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 25042.0}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::594024.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 25393.54}, {\"source\": \"Accommodation::26249790.0\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 25448.52}, {\"source\": \"Attraction::547175\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 25543.83}, {\"source\": \"Restaurant::348825.0\", \"target\": \"Attraction::547175\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 25543.83}, {\"source\": \"Accommodation::9.3e+17\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 27859.5}, {\"source\": \"Accommodation::2494793.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 29530.98}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 29748.41}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::364756.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 30416.94}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 31806.49}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 31852.3}, {\"source\": \"Accommodation::1.24e+18\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 31980.38}, {\"source\": \"Accommodation::5.94e+17\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 32107.53}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 32154.84}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::4504016.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 32490.16}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::364702.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 32516.17}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::2241406.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 32818.94}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 34403.88}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Restaurant::3731729.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 35056.77}, {\"source\": \"Accommodation::39923432.0\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 38682.2}, {\"source\": \"Accommodation::36914685.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 41807.03}, {\"source\": \"Accommodation::9.84e+17\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 42447.03}, {\"source\": \"Attraction::1908285\", \"target\": \"Restaurant::348825.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 44856.93}, {\"source\": \"Restaurant::348825.0\", \"target\": \"Attraction::1908285\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 44856.93}, {\"source\": \"Attraction::1908285\", \"target\": \"Attraction::547175\", \"type\": \"SIMILAR_SUBCATEGORY\", \"distance_m\": null}, {\"source\": \"Attraction::547175\", \"target\": \"Attraction::1908285\", \"type\": \"SIMILAR_SUBCATEGORY\", \"distance_m\": null}, {\"source\": \"Flight::F1454113\", \"target\": \"Flight::F2794132\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1454113\", \"target\": \"Flight::F1890872\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1454113\", \"target\": \"Flight::F0166082\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F2794132\", \"target\": \"Flight::F1454113\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F2794132\", \"target\": \"Flight::F1890872\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F2794132\", \"target\": \"Flight::F0166082\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890872\", \"target\": \"Flight::F0166082\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890872\", \"target\": \"Flight::F2794132\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890872\", \"target\": \"Flight::F1454113\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0166082\", \"target\": \"Flight::F1890872\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0166082\", \"target\": \"Flight::F2794132\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0166082\", \"target\": \"Flight::F1454113\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0845146\", \"target\": \"Flight::F1890396\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0845146\", \"target\": \"Flight::F3527806\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F0845146\", \"target\": \"Flight::F2923529\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890396\", \"target\": \"Flight::F3527806\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890396\", \"target\": \"Flight::F2923529\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}, {\"source\": \"Flight::F1890396\", \"target\": \"Flight::F0845146\", \"type\": \"SIMILAR_FLIGHT_OPTION\", \"distance_m\": null}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1992179\", \"dep_time\": \"00:15\", \"arr_time\": \"03:18\", \"local_activity_start_after_arrival_buffer\": \"03:48\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1454113\", \"dep_time\": \"05:52\", \"arr_time\": \"08:30\", \"local_activity_start_after_arrival_buffer\": \"09:00\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2794132\", \"dep_time\": \"05:53\", \"arr_time\": \"08:30\", \"local_activity_start_after_arrival_buffer\": \"09:00\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1890872\", \"dep_time\": \"05:56\", \"arr_time\": \"08:56\", \"local_activity_start_after_arrival_buffer\": \"09:26\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0166082\", \"dep_time\": \"05:53\", \"arr_time\": \"09:14\", \"local_activity_start_after_arrival_buffer\": \"09:44\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F0845146\", \"dep_time\": \"23:48\", \"arr_time\": \"08:12\", \"latest_local_activity_finish_before_airport_buffer\": \"21:48\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1890396\", \"dep_time\": \"23:50\", \"arr_time\": \"08:12\", \"latest_local_activity_finish_before_airport_buffer\": \"21:50\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F3527806\", \"dep_time\": \"23:48\", \"arr_time\": \"07:47\", \"latest_local_activity_finish_before_airport_buffer\": \"21:48\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2923529\", \"dep_time\": \"23:54\", \"arr_time\": \"08:06\", \"latest_local_activity_finish_before_airport_buffer\": \"21:54\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2925427\", \"dep_time\": \"23:59\", \"arr_time\": \"07:58\", \"latest_local_activity_finish_before_airport_buffer\": \"21:59\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::348825.0\", \"Restaurant::364756.0\"], \"lunch\": [\"Restaurant::4504016.0\", \"Restaurant::911418.0\", \"Restaurant::348825.0\", \"Restaurant::514194.0\", \"Restaurant::2241406.0\", \"Restaurant::364702.0\", \"Restaurant::364756.0\"], \"dinner\": [\"Restaurant::4504016.0\", \"Restaurant::3701882.0\", \"Restaurant::911418.0\", \"Restaurant::348825.0\", \"Restaurant::514194.0\", \"Restaurant::2241406.0\", \"Restaurant::364702.0\", \"Restaurant::594024.0\", \"Restaurant::3731729.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::547175\", \"Attraction::1908285\"], \"afternoon_attraction\": [\"Attraction::547175\", \"Attraction::1908285\"]}, \"event_slots_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::348825.0\", \"name\": \"Brent's Deli Northridge\"}, {\"node_key\": \"Restaurant::364756.0\", \"name\": \"Langer's Delicatessen Restaurant\"}], \"lunch\": [{\"node_key\": \"Restaurant::4504016.0\", \"name\": \"El Compadre\"}, {\"node_key\": \"Restaurant::911418.0\", \"name\": \"Bubba Gump Shrimp Co.\"}, {\"node_key\": \"Restaurant::348825.0\", \"name\": \"Brent's Deli Northridge\"}, {\"node_key\": \"Restaurant::514194.0\", \"name\": \"Musso & Frank Grill\"}, {\"node_key\": \"Restaurant::2241406.0\", \"name\": \"Perch\"}, {\"node_key\": \"Restaurant::364702.0\", \"name\": \"Water Grill\"}, {\"node_key\": \"Restaurant::364756.0\", \"name\": \"Langer's Delicatessen Restaurant\"}], \"dinner\": [{\"node_key\": \"Restaurant::4504016.0\", \"name\": \"El Compadre\"}, {\"node_key\": \"Restaurant::3701882.0\", \"name\": \"n/naka\"}, {\"node_key\": \"Restaurant::911418.0\", \"name\": \"Bubba Gump Shrimp Co.\"}, {\"node_key\": \"Restaurant::348825.0\", \"name\": \"Brent's Deli Northridge\"}, {\"node_key\": \"Restaurant::514194.0\", \"name\": \"Musso & Frank Grill\"}, {\"node_key\": \"Restaurant::2241406.0\", \"name\": \"Perch\"}, {\"node_key\": \"Restaurant::364702.0\", \"name\": \"Water Grill\"}, {\"node_key\": \"Restaurant::594024.0\", \"name\": \"Providence\"}, {\"node_key\": \"Restaurant::3731729.0\", \"name\": \"Bestia\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-05\", \"required_slots\": {\"Flight::F1992179\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1454113\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2794132\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1890872\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0166082\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-06\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-07\", \"required_slots\": {\"Flight::F0845146\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1890396\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F3527806\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2923529\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2925427\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_68",
+    "query_text": "Plan a 3-day trip for 2 people from New York to Los Angeles from November 5th to November 7th, 2024, with a budget of $5,700. Include shopping as a key attraction.",
+    "request": {
+      "org": "New York",
+      "dest": "Los Angeles",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-05', '2024-11-06', '2024-11-07']",
+      "people_number": 2,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': 'Shopping', 'transportation': None}",
+      "budget": 5700,
+      "query": "Plan a 3-day trip for 2 people from New York to Los Angeles from November 5th to November 7th, 2024, with a budget of $5,700. Include shopping as a key attraction.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-05",
+      "2024-11-06",
+      "2024-11-07"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "event": null,
+      "attraction": "Shopping",
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1992179",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "New York",
+          "DestCityName": "Los Angeles",
+          "DepTime": "00:15",
+          "ArrTime": "03:18",
+          "Price": 540
+        }
+      },
+      {
+        "node_key": "Flight::F1454113",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "New York",
+          "DestCityName": "Los Angeles",
+          "DepTime": "05:52",
+          "ArrTime": "08:30",
+          "Price": 627
+        }
+      },
+      {
+        "node_key": "Flight::F2794132",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "New York",
+          "DestCityName": "Los Angeles",
+          "DepTime": "05:53",
+          "ArrTime": "08:30",
+          "Price": 644
+        }
+      },
+      {
+        "node_key": "Flight::F1890872",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "New York",
+          "DestCityName": "Los Angeles",
+          "DepTime": "05:56",
+          "ArrTime": "08:56",
+          "Price": 855
+        }
+      },
+      {
+        "node_key": "Flight::F0166082",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "New York",
+          "DestCityName": "Los Angeles",
+          "DepTime": "05:53",
+          "ArrTime": "09:14",
+          "Price": 926
+        }
+      },
+      {
+        "node_key": "Flight::F0845146",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Los Angeles",
+          "DestCityName": "New York",
+          "DepTime": "23:48",
+          "ArrTime": "08:12",
+          "Price": 673
+        }
+      },
+      {
+        "node_key": "Flight::F1890396",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Los Angeles",
+          "DestCityName": "New York",
+          "DepTime": "23:50",
+          "ArrTime": "08:12",
+          "Price": 834
+        }
+      },
+      {
+        "node_key": "Flight::F3527806",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Los Angeles",
+          "DestCityName": "New York",
+          "DepTime": "23:48",
+          "ArrTime": "07:47",
+          "Price": 902
+        }
+      },
+      {
+        "node_key": "Flight::F2923529",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Los Angeles",
+          "DestCityName": "New York",
+          "DepTime": "23:54",
+          "ArrTime": "08:06",
+          "Price": 949
+        }
+      },
+      {
+        "node_key": "Flight::F2925427",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Los Angeles",
+          "DestCityName": "New York",
+          "DepTime": "23:59",
+          "ArrTime": "07:58",
+          "Price": 1205
+        }
+      },
+      {
+        "node_key": "Accommodation::39923432.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39923432.0",
+          "name": "Pristine Mid Century Gem Near USC Hospital",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$104 per night",
+            "originalPrice": null,
+            "price": "$104",
+            "qualifier": "night",
+            "total": "$519 total"
+          },
+          "rating": {
+            "label": "4.81 out of 5 average rating,  260 reviews",
+            "localizedLabel": "4.81 (260)",
+            "average": 4.81,
+            "reviewsCount": 260
+          },
+          "coordinates": {
+            "latitude": 34.05354,
+            "longitude": -118.19744
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::26249790.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "26249790.0",
+          "name": "Guest house with private parking",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$124 per night",
+            "originalPrice": null,
+            "price": "$124",
+            "qualifier": "night",
+            "total": "$616 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  270 reviews",
+            "localizedLabel": "4.93 (270)",
+            "average": 4.93,
+            "reviewsCount": 270
+          },
+          "coordinates": {
+            "latitude": 34.17785,
+            "longitude": -118.2907
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.84e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.84e+17",
+          "name": "Cabin on the Rocks",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No visitors & No parties",
+          "pricing": {
+            "label": "$320 per night",
+            "originalPrice": null,
+            "price": "$320",
+            "qualifier": "night",
+            "total": "$1,598 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  128 reviews",
+            "localizedLabel": "4.98 (128)",
+            "average": 4.98,
+            "reviewsCount": 128
+          },
+          "coordinates": {
+            "latitude": 34.07873,
+            "longitude": -118.60588
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::36914685.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "36914685.0",
+          "name": "Topanga Pool House",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$400 per night",
+            "originalPrice": null,
+            "price": "$400",
+            "qualifier": "night",
+            "total": "$2,000 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  197 reviews",
+            "localizedLabel": "4.97 (197)",
+            "average": 4.97,
+            "reviewsCount": 197
+          },
+          "coordinates": {
+            "latitude": 34.08034,
+            "longitude": -118.59843
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7.07e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7.07e+17",
+          "name": "Cozy Beverly Hills Studio Guest House",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$275 per night",
+            "originalPrice": null,
+            "price": "$275",
+            "qualifier": "night",
+            "total": "$1,373 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  94 reviews",
+            "localizedLabel": "4.97 (94)",
+            "average": 4.97,
+            "reviewsCount": 94
+          },
+          "coordinates": {
+            "latitude": 34.0607837,
+            "longitude": -118.3999024
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::1.24e+18",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "1.24e+18",
+          "name": "Rare find! Garden Oasis Guest House in heart of LA",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$152 per night",
+            "originalPrice": null,
+            "price": "$152",
+            "qualifier": "night",
+            "total": "$759 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  17 reviews",
+            "localizedLabel": "5.0 (17)",
+            "average": 5,
+            "reviewsCount": 17
+          },
+          "coordinates": {
+            "latitude": 34.02149522580676,
+            "longitude": -118.31974721981135
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5.94e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.94e+17",
+          "name": "Autumn's Modern 1 bedroom with Charming Courtyard.",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$164 per night",
+            "originalPrice": null,
+            "price": "$164",
+            "qualifier": "night",
+            "total": "$820 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  132 reviews",
+            "localizedLabel": "4.93 (132)",
+            "average": 4.93,
+            "reviewsCount": 132
+          },
+          "coordinates": {
+            "latitude": 34.00334,
+            "longitude": -118.34269
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.3e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.3e+17",
+          "name": "Clean Energy Wi-Fi Garden Home / Helms Platform",
+          "City": "Los Angeles",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$237 per night",
+            "originalPrice": null,
+            "price": "$237",
+            "qualifier": "night",
+            "total": "$1,183 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  95 reviews",
+            "localizedLabel": "4.98 (95)",
+            "average": 4.98,
+            "reviewsCount": 95
+          },
+          "coordinates": {
+            "latitude": 34.024907018365475,
+            "longitude": -118.3847110055534
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::13561970.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "13561970.0",
+          "name": "5 star guest suite in L.A.'s  best location",
+          "City": "Los Angeles",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$192 per night",
+            "originalPrice": null,
+            "price": "$192",
+            "qualifier": "night",
+            "total": "$960 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  444 reviews",
+            "localizedLabel": "4.95 (444)",
+            "average": 4.95,
+            "reviewsCount": 444
+          },
+          "coordinates": {
+            "latitude": 34.08687,
+            "longitude": -118.38732
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::2494793.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "2494793.0",
+          "name": "Cozy and Bright Private Room",
+          "City": "Los Angeles",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No pets & No smoking",
+          "pricing": {
+            "label": "$99 per night",
+            "originalPrice": null,
+            "price": "$99",
+            "qualifier": "night",
+            "total": "$491 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  786 reviews",
+            "localizedLabel": "4.9 (786)",
+            "average": 4.9,
+            "reviewsCount": 786
+          },
+          "coordinates": {
+            "latitude": 34.02026,
+            "longitude": -118.47336
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::547175",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "547175",
+          "name": "The Grove",
+          "City": "Los Angeles",
+          "subtype": [
+            "Shopping Malls"
+          ],
+          "subcategories": [
+            "Shopping"
+          ],
+          "visit_duration": "1.5",
+          "rating": "4.5",
+          "rankingString": "#33 of 973 things to do in Los Angeles",
+          "address": "189 The Grove Drive, Los Angeles, CA 90036-6222",
+          "description": "This sprawling outdoor shopping hub is one of California’s most popular malls. Before flocking to the stores, board the free double-decker Grove Trolley to The Original Farmers Market where you can browse gourmet groceries and specialty foods. Back at the mall, you'll find a range of fashion-forward brands and pop-up stores. When hungry, choose between classic American grub, Italian dining, or fast food amidst other cuisines. Be sure to stay for the spectacular light show at the Dancing Fount..."
+        }
+      },
+      {
+        "node_key": "Attraction::1908285",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1908285",
+          "name": "Citadel Outlets",
+          "City": "Los Angeles",
+          "subtype": [
+            "Factory Outlets",
+            "Shopping Malls"
+          ],
+          "subcategories": [
+            "Shopping"
+          ],
+          "visit_duration": "1.5",
+          "rating": "4.0",
+          "rankingString": "#44 of 973 things to do in Los Angeles",
+          "address": "100 Citadel Dr Suite 480, Los Angeles, CA 90040-1596",
+          "description": "L.A. Style. Outlet Savings. Citadel Outlets represents a style that is uniquely Los Angeles. L.A. style is admired for its effortless yet refined presence. It is defined by the city where trends are born and passionately followed. Citadel Outlets offers a world-class shopping experience in an open-air setting, just 10 minutes South of Downtown LA, 35 minutes East of LAX and 30 minutes north of the Anaheim/Disneyland Resort area. This is where the fashion forward shop to find leading designers..."
+        }
+      },
+      {
+        "node_key": "Restaurant::4504016.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4504016.0",
+          "name": "El Compadre",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern",
+            "Latin",
+            "Bar",
+            "Spanish",
+            "Pub"
+          ],
+          "avg_cost": "60.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "1449 W Sunset Blvd, Los Angeles, CA 90026-3457",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3701882.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3701882.0",
+          "name": "n/naka",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Sushi",
+            "Asian"
+          ],
+          "avg_cost": "96.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "3455 Overland Ave, Los Angeles, CA 90034-5419",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::911418.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "911418.0",
+          "name": "Bubba Gump Shrimp Co.",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Cajun & Creole",
+            "Seafood",
+            "Grill"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1000 Universal Studios Blvd Suite 114, Universal CityWalk Hollywood, Los Angeles, CA 91608",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::348825.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "348825.0",
+          "name": "Brent's Deli Northridge",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Deli",
+            "Israeli"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "19565 Parthenia St, Los Angeles, CA 91324",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::514194.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "514194.0",
+          "name": "Musso & Frank Grill",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "6667 Hollywood Blvd, Los Angeles, CA 90028-6292",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2241406.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2241406.0",
+          "name": "Perch",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "French"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "448 S Hill St, Los Angeles, CA 90013-1113",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::364702.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "364702.0",
+          "name": "Water Grill",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "544 S Grand Ave, Los Angeles, CA 90071-2602",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::364756.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "364756.0",
+          "name": "Langer's Delicatessen Restaurant",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Deli"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "704 S Alvarado St, Los Angeles, CA 90057-4020",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::594024.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "594024.0",
+          "name": "Providence",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Seafood",
+            "Contemporary"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "5955 Melrose Ave, Los Angeles, CA 90038",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 1125,
+                  "openHours": "18:45",
+                  "close": 1275,
+                  "closeHours": "21:15"
+                }
+              ],
+              [
+                {
+                  "open": 1125,
+                  "openHours": "18:45",
+                  "close": 1275,
+                  "closeHours": "21:15"
+                }
+              ],
+              [
+                {
+                  "open": 1125,
+                  "openHours": "18:45",
+                  "close": 1275,
+                  "closeHours": "21:15"
+                }
+              ],
+              [
+                {
+                  "open": 1125,
+                  "openHours": "18:45",
+                  "close": 1275,
+                  "closeHours": "21:15"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1275,
+                  "closeHours": "21:15"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3731729.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3731729.0",
+          "name": "Bestia",
+          "City": "Los Angeles",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2121 E 7th Pl, Los Angeles, CA 90021",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG10Zb1T4uJpt",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG10Zb1T4uJpt",
+          "name": "Kirk Franklin - REUNION TOUR 2024",
+          "city": "Los Angeles",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Religious",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/kirk-franklin-reunion-tour-2024-anaheim-california-10-30-2024/event/090060AFD53665A9",
+            "availabilityStarts": "2024-05-22T17:00:00Z",
+            "price": 39.5,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2533.44
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2833.11
+      },
+      {
+        "source": "Restaurant::594024.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2833.11
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3192.14
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3671.73
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3888.28
+      },
+      {
+        "source": "Restaurant::514194.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3888.28
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4089.3
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4123.57
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4997.66
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5062.17
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5271.6
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5299.91
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5531.02
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5662.44
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5666.65
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5804.55
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6301.53
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6561.75
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6616.77
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6730.26
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6849.43
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6901.21
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6970.99
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7000.94
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7130.71
+      },
+      {
+        "source": "Restaurant::911418.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7130.71
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7238.0
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7244.61
+      },
+      {
+        "source": "Restaurant::3701882.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7244.61
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7315.33
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7404.11
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7488.49
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7588.2
+      },
+      {
+        "source": "Restaurant::3731729.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7588.2
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7653.18
+      },
+      {
+        "source": "Restaurant::364756.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7653.18
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7762.74
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8232.59
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8448.56
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8454.46
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8529.96
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8560.54
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8996.45
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9039.15
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9405.02
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9407.54
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9568.75
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9631.24
+      },
+      {
+        "source": "Restaurant::4504016.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9631.24
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9678.4
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9820.78
+      },
+      {
+        "source": "Restaurant::364702.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9820.78
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9826.04
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10115.44
+      },
+      {
+        "source": "Restaurant::2241406.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10115.44
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10162.32
+      },
+      {
+        "source": "Restaurant::2241406.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10162.32
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10435.15
+      },
+      {
+        "source": "Restaurant::364702.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10435.15
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10537.12
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10736.43
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10963.48
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10984.97
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11094.98
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11353.48
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11484.0
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11902.26
+      },
+      {
+        "source": "Restaurant::4504016.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11902.26
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11929.25
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 12117.36
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12275.78
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12425.81
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12571.97
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 12575.11
+      },
+      {
+        "source": "Restaurant::3731729.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 12575.11
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 12613.13
+      },
+      {
+        "source": "Restaurant::364756.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 12613.13
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12678.02
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12693.94
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 12918.86
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13111.28
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13207.69
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 13280.99
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13348.21
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13439.46
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13584.1
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13612.77
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13742.39
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13787.75
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14359.14
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14701.25
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14775.92
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14792.03
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14899.82
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14949.78
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 15418.83
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 15610.86
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 15717.88
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 16009.67
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 16883.57
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 16970.19
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 17003.19
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 17039.91
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 17212.27
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 17458.46
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 18222.28
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 18376.09
+      },
+      {
+        "source": "Restaurant::594024.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 18376.09
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 18549.85
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 18812.6
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 19791.47
+      },
+      {
+        "source": "Restaurant::514194.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 19791.47
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 20039.05
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 20335.66
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 20400.54
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 20700.4
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 21188.37
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 21414.61
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 22196.41
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 22431.46
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 22545.29
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 22804.03
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 22875.7
+      },
+      {
+        "source": "Accommodation::13561970.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 23305.78
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 23339.4
+      },
+      {
+        "source": "Restaurant::911418.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 23339.4
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 23398.53
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 23487.51
+      },
+      {
+        "source": "Accommodation::7.07e+17",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 23826.85
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::3701882.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 23940.59
+      },
+      {
+        "source": "Restaurant::3701882.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 23940.59
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::911418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 24107.57
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 24341.26
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 24544.81
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 24704.08
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::514194.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 25042.0
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::594024.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 25393.54
+      },
+      {
+        "source": "Accommodation::26249790.0",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 25448.52
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 25543.83
+      },
+      {
+        "source": "Restaurant::348825.0",
+        "target": "Attraction::547175",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 25543.83
+      },
+      {
+        "source": "Accommodation::9.3e+17",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 27859.5
+      },
+      {
+        "source": "Accommodation::2494793.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 29530.98
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 29748.41
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::364756.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 30416.94
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 31806.49
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 31852.3
+      },
+      {
+        "source": "Accommodation::1.24e+18",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 31980.38
+      },
+      {
+        "source": "Accommodation::5.94e+17",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 32107.53
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 32154.84
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::4504016.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 32490.16
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::364702.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 32516.17
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::2241406.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 32818.94
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 34403.88
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Restaurant::3731729.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 35056.77
+      },
+      {
+        "source": "Accommodation::39923432.0",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 38682.2
+      },
+      {
+        "source": "Accommodation::36914685.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 41807.03
+      },
+      {
+        "source": "Accommodation::9.84e+17",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 42447.03
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Restaurant::348825.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 44856.93
+      },
+      {
+        "source": "Restaurant::348825.0",
+        "target": "Attraction::1908285",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 44856.93
+      },
+      {
+        "source": "Attraction::1908285",
+        "target": "Attraction::547175",
+        "type": "SIMILAR_SUBCATEGORY",
+        "distance_m": null
+      },
+      {
+        "source": "Attraction::547175",
+        "target": "Attraction::1908285",
+        "type": "SIMILAR_SUBCATEGORY",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1454113",
+        "target": "Flight::F2794132",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1454113",
+        "target": "Flight::F1890872",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1454113",
+        "target": "Flight::F0166082",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F2794132",
+        "target": "Flight::F1454113",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F2794132",
+        "target": "Flight::F1890872",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F2794132",
+        "target": "Flight::F0166082",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890872",
+        "target": "Flight::F0166082",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890872",
+        "target": "Flight::F2794132",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890872",
+        "target": "Flight::F1454113",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0166082",
+        "target": "Flight::F1890872",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0166082",
+        "target": "Flight::F2794132",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0166082",
+        "target": "Flight::F1454113",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0845146",
+        "target": "Flight::F1890396",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0845146",
+        "target": "Flight::F3527806",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F0845146",
+        "target": "Flight::F2923529",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890396",
+        "target": "Flight::F3527806",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890396",
+        "target": "Flight::F2923529",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      },
+      {
+        "source": "Flight::F1890396",
+        "target": "Flight::F0845146",
+        "type": "SIMILAR_FLIGHT_OPTION",
+        "distance_m": null
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-05",
+        "2024-11-06",
+        "2024-11-07"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1992179",
+          "dep_time": "00:15",
+          "arr_time": "03:18",
+          "local_activity_start_after_arrival_buffer": "03:48",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1454113",
+          "dep_time": "05:52",
+          "arr_time": "08:30",
+          "local_activity_start_after_arrival_buffer": "09:00",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2794132",
+          "dep_time": "05:53",
+          "arr_time": "08:30",
+          "local_activity_start_after_arrival_buffer": "09:00",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1890872",
+          "dep_time": "05:56",
+          "arr_time": "08:56",
+          "local_activity_start_after_arrival_buffer": "09:26",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0166082",
+          "dep_time": "05:53",
+          "arr_time": "09:14",
+          "local_activity_start_after_arrival_buffer": "09:44",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F0845146",
+          "dep_time": "23:48",
+          "arr_time": "08:12",
+          "latest_local_activity_finish_before_airport_buffer": "21:48",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1890396",
+          "dep_time": "23:50",
+          "arr_time": "08:12",
+          "latest_local_activity_finish_before_airport_buffer": "21:50",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F3527806",
+          "dep_time": "23:48",
+          "arr_time": "07:47",
+          "latest_local_activity_finish_before_airport_buffer": "21:48",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2923529",
+          "dep_time": "23:54",
+          "arr_time": "08:06",
+          "latest_local_activity_finish_before_airport_buffer": "21:54",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2925427",
+          "dep_time": "23:59",
+          "arr_time": "07:58",
+          "latest_local_activity_finish_before_airport_buffer": "21:59",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::348825.0",
+          "Restaurant::364756.0"
+        ],
+        "lunch": [
+          "Restaurant::4504016.0",
+          "Restaurant::911418.0",
+          "Restaurant::348825.0",
+          "Restaurant::514194.0",
+          "Restaurant::2241406.0",
+          "Restaurant::364702.0",
+          "Restaurant::364756.0"
+        ],
+        "dinner": [
+          "Restaurant::4504016.0",
+          "Restaurant::3701882.0",
+          "Restaurant::911418.0",
+          "Restaurant::348825.0",
+          "Restaurant::514194.0",
+          "Restaurant::2241406.0",
+          "Restaurant::364702.0",
+          "Restaurant::594024.0",
+          "Restaurant::3731729.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::547175",
+          "Attraction::1908285"
+        ],
+        "afternoon_attraction": [
+          "Attraction::547175",
+          "Attraction::1908285"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::348825.0",
+            "name": "Brent's Deli Northridge"
+          },
+          {
+            "node_key": "Restaurant::364756.0",
+            "name": "Langer's Delicatessen Restaurant"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::4504016.0",
+            "name": "El Compadre"
+          },
+          {
+            "node_key": "Restaurant::911418.0",
+            "name": "Bubba Gump Shrimp Co."
+          },
+          {
+            "node_key": "Restaurant::348825.0",
+            "name": "Brent's Deli Northridge"
+          },
+          {
+            "node_key": "Restaurant::514194.0",
+            "name": "Musso & Frank Grill"
+          },
+          {
+            "node_key": "Restaurant::2241406.0",
+            "name": "Perch"
+          },
+          {
+            "node_key": "Restaurant::364702.0",
+            "name": "Water Grill"
+          },
+          {
+            "node_key": "Restaurant::364756.0",
+            "name": "Langer's Delicatessen Restaurant"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::4504016.0",
+            "name": "El Compadre"
+          },
+          {
+            "node_key": "Restaurant::3701882.0",
+            "name": "n/naka"
+          },
+          {
+            "node_key": "Restaurant::911418.0",
+            "name": "Bubba Gump Shrimp Co."
+          },
+          {
+            "node_key": "Restaurant::348825.0",
+            "name": "Brent's Deli Northridge"
+          },
+          {
+            "node_key": "Restaurant::514194.0",
+            "name": "Musso & Frank Grill"
+          },
+          {
+            "node_key": "Restaurant::2241406.0",
+            "name": "Perch"
+          },
+          {
+            "node_key": "Restaurant::364702.0",
+            "name": "Water Grill"
+          },
+          {
+            "node_key": "Restaurant::594024.0",
+            "name": "Providence"
+          },
+          {
+            "node_key": "Restaurant::3731729.0",
+            "name": "Bestia"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-05",
+          "required_slots": {
+            "Flight::F1992179": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1454113": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2794132": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1890872": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0166082": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-06",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-07",
+          "required_slots": {
+            "Flight::F0845146": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1890396": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F3527806": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2923529": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2925427": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-05": [],
+      "2024-11-06": [],
+      "2024-11-07": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

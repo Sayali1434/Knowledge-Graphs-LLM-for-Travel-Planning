@@ -1,0 +1,3149 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_63\", \"query_text\": \"Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.\", \"request\": {\"org\": \"Boston\", \"dest\": \"Wilmington\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-02', '2024-11-03', '2024-11-04']\", \"people_number\": 4, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': 'Sights & Landmarks', 'transportation': None}\", \"budget\": 4500, \"query\": \"Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-02\", \"2024-11-03\", \"2024-11-04\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"event\": null, \"attraction\": \"Sights & Landmarks\", \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F1368945\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-02\", \"OriginCityName\": \"Boston\", \"DestCityName\": \"Wilmington\", \"DepTime\": \"11:55\", \"ArrTime\": \"13:46\", \"Price\": 181}}, {\"node_key\": \"Flight::F2125384\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-02\", \"OriginCityName\": \"Boston\", \"DestCityName\": \"Wilmington\", \"DepTime\": \"11:52\", \"ArrTime\": \"13:44\", \"Price\": 236}}, {\"node_key\": \"Flight::F2580987\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-02\", \"OriginCityName\": \"Boston\", \"DestCityName\": \"Wilmington\", \"DepTime\": \"11:54\", \"ArrTime\": \"14:01\", \"Price\": 276}}, {\"node_key\": \"Flight::F2125390\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-04\", \"OriginCityName\": \"Wilmington\", \"DestCityName\": \"Boston\", \"DepTime\": \"14:54\", \"ArrTime\": \"16:46\", \"Price\": 153}}, {\"node_key\": \"Flight::F1368978\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-04\", \"OriginCityName\": \"Wilmington\", \"DestCityName\": \"Boston\", \"DepTime\": \"14:51\", \"ArrTime\": \"16:46\", \"Price\": 169}}, {\"node_key\": \"Flight::F2581019\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-04\", \"OriginCityName\": \"Wilmington\", \"DestCityName\": \"Boston\", \"DepTime\": \"15:00\", \"ArrTime\": \"17:06\", \"Price\": 170}}, {\"node_key\": \"Accommodation::35459997.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"35459997.0\", \"name\": \"Harbor Oaks, rest, relax, renew...\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$91 per night\", \"originalPrice\": null, \"price\": \"$91\", \"qualifier\": \"night\", \"total\": \"$455 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  221 reviews\", \"localizedLabel\": \"5.0 (221)\", \"average\": 5, \"reviewsCount\": 221}, \"coordinates\": {\"latitude\": 34.14459, \"longitude\": -77.91672}}}, {\"node_key\": \"Accommodation::50660715.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"50660715.0\", \"name\": \"The Native Garden Cottage\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$104 per night\", \"originalPrice\": null, \"price\": \"$104\", \"qualifier\": \"night\", \"total\": \"$518 total\"}, \"rating\": {\"label\": \"New place to stay\", \"localizedLabel\": \"New\", \"average\": null, \"reviewsCount\": null}, \"coordinates\": {\"latitude\": 34.2471517, \"longitude\": -77.9246689}}}, {\"node_key\": \"Accommodation::42770861.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42770861.0\", \"name\": \"Chic Loft | Downtown | Front & Market\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$144 per night\", \"originalPrice\": null, \"price\": \"$144\", \"qualifier\": \"night\", \"total\": \"$718 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}, \"coordinates\": {\"latitude\": 34.23521041870117, \"longitude\": -77.94835662841797}}}, {\"node_key\": \"Accommodation::45073964.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45073964.0\", \"name\": \"Serendipitous Studio - Entire Place\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$109 per night\", \"originalPrice\": null, \"price\": \"$109\", \"qualifier\": \"night\", \"total\": \"$542 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  315 reviews\", \"localizedLabel\": \"4.94 (315)\", \"average\": 4.94, \"reviewsCount\": 315}, \"coordinates\": {\"latitude\": 34.31912, \"longitude\": -77.75028}}}, {\"node_key\": \"Accommodation::43430089.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43430089.0\", \"name\": \"The Zen Den - A quaint Private Oasis room w/ Bath\", \"City\": \"Wilmington\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking & No parties\", \"pricing\": {\"label\": \"$66 per night, originally $71\", \"originalPrice\": \"$71\", \"price\": \"$66\", \"qualifier\": \"night\", \"total\": \"$326 total\"}, \"rating\": {\"label\": \"4.87 out of 5 average rating,  646 reviews\", \"localizedLabel\": \"4.87 (646)\", \"average\": 4.87, \"reviewsCount\": 646}, \"coordinates\": {\"latitude\": 34.23402, \"longitude\": -77.93225}}}, {\"node_key\": \"Accommodation::45156488.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45156488.0\", \"name\": \"Hawks Nest 3 @UNCW\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$77 per night, originally $96\", \"originalPrice\": \"$96\", \"price\": \"$77\", \"qualifier\": \"night\", \"total\": \"$385 total\"}, \"rating\": {\"label\": \"4.58 out of 5 average rating,  59 reviews\", \"localizedLabel\": \"4.58 (59)\", \"average\": 4.58, \"reviewsCount\": 59}, \"coordinates\": {\"latitude\": 34.22269, \"longitude\": -77.8813}}}, {\"node_key\": \"Accommodation::42355506.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42355506.0\", \"name\": \"The Swan • Fully Private Guest Suite\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$103 per night, originally $111\", \"originalPrice\": \"$111\", \"price\": \"$103\", \"qualifier\": \"night\", \"total\": \"$512 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  568 reviews\", \"localizedLabel\": \"5.0 (568)\", \"average\": 5, \"reviewsCount\": 568}, \"coordinates\": {\"latitude\": 34.26888, \"longitude\": -77.87377}}}, {\"node_key\": \"Accommodation::37920083.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"37920083.0\", \"name\": \"Pop’s Villa  - 8th Floor - Waterfront\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No parties & No smoking\", \"pricing\": {\"label\": \"$119 per night, originally $133\", \"originalPrice\": \"$133\", \"price\": \"$119\", \"qualifier\": \"night\", \"total\": \"$594 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  324 reviews\", \"localizedLabel\": \"4.94 (324)\", \"average\": 4.94, \"reviewsCount\": 324}, \"coordinates\": {\"latitude\": 34.2371385, \"longitude\": -77.9499053}}}, {\"node_key\": \"Accommodation::25972293.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"25972293.0\", \"name\": \"Crestwood Cottage\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$119 per night, originally $128\", \"originalPrice\": \"$128\", \"price\": \"$119\", \"qualifier\": \"night\", \"total\": \"$594 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  524 reviews\", \"localizedLabel\": \"4.96 (524)\", \"average\": 4.96, \"reviewsCount\": 524}, \"coordinates\": {\"latitude\": 34.25702, \"longitude\": -77.86165}}}, {\"node_key\": \"Accommodation::43726935.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43726935.0\", \"name\": \"Downtown | Balcony | River views | Free parking\", \"City\": \"Wilmington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$123 per night, originally $147\", \"originalPrice\": \"$147\", \"price\": \"$123\", \"qualifier\": \"night\", \"total\": \"$611 total\"}, \"rating\": {\"label\": \"4.89 out of 5 average rating,  312 reviews\", \"localizedLabel\": \"4.89 (312)\", \"average\": 4.89, \"reviewsCount\": 312}, \"coordinates\": {\"latitude\": 34.2364, \"longitude\": -77.94956}}}, {\"node_key\": \"Attraction::126588\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126588\", \"name\": \"Battleship North Carolina\", \"City\": \"Wilmington\", \"subtype\": [\"Ships\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 154 things to do in Wilmington\", \"address\": \"1 Battleship Rd, Wilmington, NC 28401-2577\", \"description\": \"As you walk the decks of the NORTH CAROLINA, imagine yourself in the South Pacific during WWII searching the sky for enemy aircraft, anticipating what may happen next. Step aboard the most decorated US Battleship of WWII! Explore nine decks, crew's quarters, gun turrets, and much more. Discover where history comes alive. Located at the junctions of highways 17, 76, 74, 421 on the Cape Fear River across from historic downtown Wilmington. Open every day!\"}}, {\"node_key\": \"Attraction::4020985\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"4020985\", \"name\": \"Riverwalk\", \"City\": \"Wilmington\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 154 things to do in Wilmington\", \"address\": \"S Water st, Wilmington, NC 28401\"}}, {\"node_key\": \"Attraction::318472\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"318472\", \"name\": \"Airlie Gardens\", \"City\": \"Wilmington\", \"subtype\": [\"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 154 things to do in Wilmington\", \"address\": \"300 Airlie Rd, Wilmington, NC 28403-3706\"}}, {\"node_key\": \"Attraction::126586\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126586\", \"name\": \"Historic District\", \"City\": \"Wilmington\", \"subtype\": [\"Neighborhoods\"], \"subcategories\": [\"Sights & Landmarks\", \"Other\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 154 things to do in Wilmington\", \"address\": \"N 3rd St, Wilmington, NC 28412\", \"description\": \"One of the largest districts listed with the National Register of Historical Places.\"}}, {\"node_key\": \"Attraction::3645942\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3645942\", \"name\": \"Downtown Wilmington\", \"City\": \"Wilmington\", \"subtype\": [\"Neighborhoods\"], \"subcategories\": [\"Sights & Landmarks\", \"Other\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 154 things to do in Wilmington\", \"address\": \"226 North Front Street, Wilmington, NC 28401\"}}, {\"node_key\": \"Attraction::2258302\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2258302\", \"name\": \"Bellamy Mansion\", \"City\": \"Wilmington\", \"subtype\": [\"Specialty Museums\", \"Historic Sites\", \"Architectural Buildings\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 154 things to do in Wilmington\", \"address\": \"503 Market St, Wilmington, NC 28401-4634\"}}, {\"node_key\": \"Attraction::318471\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"318471\", \"name\": \"Poplar Grove Plantation\", \"City\": \"Wilmington\", \"subtype\": [\"Historic Sites\", \"Points of Interest & Landmarks\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 154 things to do in Wilmington\", \"address\": \"10200 US Highway 17 Located on North HWY 17. Entrance south of manor house; Abbey Nature Preserve adjacent to the north., Wilmington, NC 28411-6854\", \"description\": \"On the National Register of Historic Places, Poplar Grove is a museum complex with 1850 manor house, smoke house, tenant house and blacksmith shop. Enjoy craft demonstrations, exhibits, farm animals, horse rescue program, Wednesday Farmers' Market, and various festivals throughout the year. Open Monday-Saturday for tours March through October. Saturday hours of operation during November, December, January and February. Closed Sundays. Check daily tour time for low, mid and high season hours. ...\"}}, {\"node_key\": \"Attraction::527037\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"527037\", \"name\": \"Burgwin-Wright House and Gardens\", \"City\": \"Wilmington\", \"subtype\": [\"Specialty Museums\", \"Art Galleries\", \"Historic Sites\", \"Gardens\", \"History Museums\"], \"subcategories\": [\"Shopping\", \"Sights & Landmarks\", \"Museums\", \"Nature & Parks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#14 of 154 things to do in Wilmington\", \"address\": \"224 Market St, Wilmington, NC 28401-4444\", \"description\": \"Built in 1770, the Burgwin-Wright House & Gardens is the only structure in Wilmington from the colonial era open to the public. Operated as a museum house, it offers visitors a unique opportunity to experience what life was like in the 18th century. All rooms have been restored and showcase hundreds of objects. Occupying an acre, gardens consist of seven areas, including an orchard, a kitchen garden and a rose garden. Built using the walls of a former city jail as a foundation, circa 1744, th...\"}}, {\"node_key\": \"Attraction::126589\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126589\", \"name\": \"Henrietta III\", \"City\": \"Wilmington\", \"subtype\": [\"Ships\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.0\", \"rankingString\": \"#35 of 154 things to do in Wilmington\", \"address\": \"101 South Water Street, Wilmington, NC\", \"description\": \"Cruise the Cape Fear River in style on this elegant riverboat that offers narrated sightseeing tours, lunch and dinner cruises and romantic moonlight trips.\"}}, {\"node_key\": \"Restaurant::2249367.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2249367.0\", \"name\": \"Genki Sushi\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Japanese\", \"Sushi\", \"Asian\"], \"avg_cost\": \"32.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"4724 New Centre Dr #5, Wilmington, NC 28405-3061\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::6561484.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6561484.0\", \"name\": \"The Peppered Cupcake\", \"City\": \"Wilmington\", \"mealTypes\": [], \"cuisines\": [\"American\"], \"avg_cost\": \"32.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"105 S Front St, Wilmington, NC 28401\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::783958.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"783958.0\", \"name\": \"Front Street Brewery\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"9 N. Front Street, Wilmington, NC 28401-4436\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1015690.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1015690.0\", \"name\": \"Indochine Wilmington\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Asian\", \"Thai\", \"Vietnamese\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"7 Wayne Dr Corner Market St, Wilmington, NC 28403-1233\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::522943.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"522943.0\", \"name\": \"Kilwins Ice Cream -  Chocolate - Fudge\", \"City\": \"Wilmington\", \"mealTypes\": [], \"cuisines\": [\"American\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"16 Market St between Front and 2nd, Wilmington, NC 28401\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1493697.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1493697.0\", \"name\": \"Copper Penny\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Bar\", \"Pub\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"109 Chestnut St, Wilmington, NC 28401-3940\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1493311.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1493311.0\", \"name\": \"Caprice Bistro\", \"City\": \"Wilmington\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"French\", \"Belgian\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"10 Market St, Wilmington, NC 28401-4454\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1507383.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1507383.0\", \"name\": \"Cape Fear Seafood Company\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"5226 College Rd #5, Wilmington, NC 28412-2236\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1529790.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1529790.0\", \"name\": \"Fish Bites Seafood\", \"City\": \"Wilmington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"506 Deveraux Drive Ste 11, Wilmington, NC 28412\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1044781.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1044781.0\", \"name\": \"The Wilmington\", \"City\": \"Wilmington\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"British\", \"Gastropub\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"69 Rosebery Avenue Clerkenwell, London EC1R 4RL England\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"Europe/London\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::126586\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 17.28}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 17.28}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 19.13}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 19.13}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 30.47}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 30.47}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 50.87}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 50.87}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 71.13}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 71.13}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 76.16}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 76.16}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 76.51}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 80.06}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 85.95}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 93.74}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 94.69}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 94.69}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 96.33}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 122.08}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 122.08}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 129.61}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 134.71}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 136.2}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 136.2}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 138.64}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 138.64}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 141.98}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 145.57}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 145.99}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 147.63}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 160.12}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 162.25}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 162.25}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 164.03}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 177.34}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 185.18}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 189.98}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 191.36}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 191.36}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 195.32}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 211.5}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 212.24}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 216.83}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 224.01}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 224.01}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 228.11}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 235.21}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 242.36}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 242.36}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 256.45}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 256.45}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 256.51}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 256.51}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 265.89}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 265.89}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 275.84}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 286.03}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 286.03}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 290.28}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 296.55}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 302.46}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 302.46}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 323.79}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 326.21}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 326.21}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 328.57}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 339.03}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 339.03}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 340.79}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 340.79}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 355.14}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 355.14}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 358.77}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 362.76}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 378.2}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 386.12}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 395.7}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 426.46}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 426.46}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 446.25}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 446.25}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 454.07}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 454.07}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 459.33}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 459.33}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 467.47}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 467.47}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 502.05}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 515.19}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 517.11}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 517.11}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 536.82}, {\"source\": \"Restaurant::783958.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 536.82}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 539.25}, {\"source\": \"Restaurant::1493697.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 539.25}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 551.33}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 551.33}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 567.24}, {\"source\": \"Restaurant::6561484.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 567.24}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 578.52}, {\"source\": \"Restaurant::522943.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 578.52}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 598.06}, {\"source\": \"Restaurant::1493311.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 598.06}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 605.73}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 647.9}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1011.94}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1297.42}, {\"source\": \"Accommodation::45073964.0\", \"target\": \"Attraction::318471\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1399.4}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1503.1}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1536.36}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1546.23}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1561.08}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1567.9}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1572.49}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1581.41}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1597.78}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1631.79}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1872.63}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1995.61}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2089.1}, {\"source\": \"Accommodation::35459997.0\", \"target\": \"Restaurant::1507383.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2099.23}, {\"source\": \"Accommodation::25972293.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2154.89}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2390.42}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2410.98}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2413.71}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2415.8}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2552.67}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2601.21}, {\"source\": \"Accommodation::42355506.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2620.75}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2620.95}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2621.42}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::1493311.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2637.23}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2646.92}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2674.61}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2725.7}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2927.37}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2969.48}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3347.84}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3347.84}, {\"source\": \"Accommodation::35459997.0\", \"target\": \"Restaurant::1529790.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3420.56}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3659.87}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3659.87}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3845.02}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3845.02}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3848.52}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3933.22}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3933.22}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3946.07}, {\"source\": \"Accommodation::37920083.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3972.3}, {\"source\": \"Attraction::126589\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3983.18}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::126589\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3983.18}, {\"source\": \"Attraction::4020985\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3992.94}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::4020985\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3992.94}, {\"source\": \"Accommodation::50660715.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4015.28}, {\"source\": \"Attraction::126588\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4330.81}, {\"source\": \"Restaurant::1015690.0\", \"target\": \"Attraction::126588\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4330.81}, {\"source\": \"Accommodation::42355506.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4487.87}, {\"source\": \"Accommodation::25972293.0\", \"target\": \"Restaurant::1015690.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4599.07}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Attraction::318472\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4720.06}, {\"source\": \"Accommodation::43430089.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4897.93}, {\"source\": \"Accommodation::25972293.0\", \"target\": \"Attraction::318472\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5184.39}, {\"source\": \"Attraction::318472\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5596.91}, {\"source\": \"Restaurant::2249367.0\", \"target\": \"Attraction::318472\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5596.91}, {\"source\": \"Attraction::2258302\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5806.13}, {\"source\": \"Restaurant::2249367.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5806.13}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Attraction::2258302\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5861.89}, {\"source\": \"Attraction::527037\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6121.89}, {\"source\": \"Restaurant::2249367.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6121.89}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Attraction::527037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6134.86}, {\"source\": \"Attraction::3645942\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6273.58}, {\"source\": \"Restaurant::2249367.0\", \"target\": \"Attraction::3645942\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6273.58}, {\"source\": \"Accommodation::42770861.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6308.16}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::6561484.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6311.91}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::783958.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6376.85}, {\"source\": \"Attraction::126586\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6391.43}, {\"source\": \"Restaurant::2249367.0\", \"target\": \"Attraction::126586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6391.43}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::522943.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6391.58}, {\"source\": \"Accommodation::43726935.0\", \"target\": \"Restaurant::2249367.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6393.11}, {\"source\": \"Accommodation::45156488.0\", \"target\": \"Restaurant::1493697.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6396.64}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-02\", \"2024-11-03\", \"2024-11-04\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1368945\", \"dep_time\": \"11:55\", \"arr_time\": \"13:46\", \"local_activity_start_after_arrival_buffer\": \"14:16\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2125384\", \"dep_time\": \"11:52\", \"arr_time\": \"13:44\", \"local_activity_start_after_arrival_buffer\": \"14:14\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2580987\", \"dep_time\": \"11:54\", \"arr_time\": \"14:01\", \"local_activity_start_after_arrival_buffer\": \"14:31\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2125390\", \"dep_time\": \"14:54\", \"arr_time\": \"16:46\", \"latest_local_activity_finish_before_airport_buffer\": \"12:54\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F1368978\", \"dep_time\": \"14:51\", \"arr_time\": \"16:46\", \"latest_local_activity_finish_before_airport_buffer\": \"12:51\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F2581019\", \"dep_time\": \"15:00\", \"arr_time\": \"17:06\", \"latest_local_activity_finish_before_airport_buffer\": \"13:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::6561484.0\", \"Restaurant::522943.0\", \"Restaurant::1044781.0\"], \"lunch\": [\"Restaurant::2249367.0\", \"Restaurant::6561484.0\", \"Restaurant::783958.0\", \"Restaurant::1015690.0\", \"Restaurant::522943.0\", \"Restaurant::1493697.0\", \"Restaurant::1507383.0\", \"Restaurant::1529790.0\", \"Restaurant::1044781.0\"], \"dinner\": [\"Restaurant::2249367.0\", \"Restaurant::6561484.0\", \"Restaurant::783958.0\", \"Restaurant::1015690.0\", \"Restaurant::522943.0\", \"Restaurant::1493697.0\", \"Restaurant::1493311.0\", \"Restaurant::1507383.0\", \"Restaurant::1529790.0\", \"Restaurant::1044781.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::126588\", \"Attraction::4020985\", \"Attraction::318472\", \"Attraction::126586\", \"Attraction::3645942\", \"Attraction::2258302\", \"Attraction::318471\", \"Attraction::527037\", \"Attraction::126589\"], \"afternoon_attraction\": [\"Attraction::126588\", \"Attraction::4020985\", \"Attraction::318472\", \"Attraction::126586\", \"Attraction::3645942\", \"Attraction::2258302\", \"Attraction::318471\", \"Attraction::527037\", \"Attraction::126589\"]}, \"event_slots_by_date\": {\"2024-11-02\": [], \"2024-11-03\": [], \"2024-11-04\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::6561484.0\", \"name\": \"The Peppered Cupcake\"}, {\"node_key\": \"Restaurant::522943.0\", \"name\": \"Kilwins Ice Cream -  Chocolate - Fudge\"}, {\"node_key\": \"Restaurant::1044781.0\", \"name\": \"The Wilmington\"}], \"lunch\": [{\"node_key\": \"Restaurant::2249367.0\", \"name\": \"Genki Sushi\"}, {\"node_key\": \"Restaurant::6561484.0\", \"name\": \"The Peppered Cupcake\"}, {\"node_key\": \"Restaurant::783958.0\", \"name\": \"Front Street Brewery\"}, {\"node_key\": \"Restaurant::1015690.0\", \"name\": \"Indochine Wilmington\"}, {\"node_key\": \"Restaurant::522943.0\", \"name\": \"Kilwins Ice Cream -  Chocolate - Fudge\"}, {\"node_key\": \"Restaurant::1493697.0\", \"name\": \"Copper Penny\"}, {\"node_key\": \"Restaurant::1507383.0\", \"name\": \"Cape Fear Seafood Company\"}, {\"node_key\": \"Restaurant::1529790.0\", \"name\": \"Fish Bites Seafood\"}, {\"node_key\": \"Restaurant::1044781.0\", \"name\": \"The Wilmington\"}], \"dinner\": [{\"node_key\": \"Restaurant::2249367.0\", \"name\": \"Genki Sushi\"}, {\"node_key\": \"Restaurant::6561484.0\", \"name\": \"The Peppered Cupcake\"}, {\"node_key\": \"Restaurant::783958.0\", \"name\": \"Front Street Brewery\"}, {\"node_key\": \"Restaurant::1015690.0\", \"name\": \"Indochine Wilmington\"}, {\"node_key\": \"Restaurant::522943.0\", \"name\": \"Kilwins Ice Cream -  Chocolate - Fudge\"}, {\"node_key\": \"Restaurant::1493697.0\", \"name\": \"Copper Penny\"}, {\"node_key\": \"Restaurant::1493311.0\", \"name\": \"Caprice Bistro\"}, {\"node_key\": \"Restaurant::1507383.0\", \"name\": \"Cape Fear Seafood Company\"}, {\"node_key\": \"Restaurant::1529790.0\", \"name\": \"Fish Bites Seafood\"}, {\"node_key\": \"Restaurant::1044781.0\", \"name\": \"The Wilmington\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-02\": [], \"2024-11-03\": [], \"2024-11-04\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-02\", \"required_slots\": {\"Flight::F1368945\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2125384\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2580987\": [\"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-03\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-04\", \"required_slots\": {\"Flight::F2125390\": [\"breakfast\", \"morning_attraction\"], \"Flight::F1368978\": [\"breakfast\", \"morning_attraction\"], \"Flight::F2581019\": [\"breakfast\", \"morning_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-02\": [], \"2024-11-03\": [], \"2024-11-04\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_63",
+    "query_text": "Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.",
+    "request": {
+      "org": "Boston",
+      "dest": "Wilmington",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-02', '2024-11-03', '2024-11-04']",
+      "people_number": 4,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': 'Sights & Landmarks', 'transportation': None}",
+      "budget": 4500,
+      "query": "Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-02",
+      "2024-11-03",
+      "2024-11-04"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "event": null,
+      "attraction": "Sights & Landmarks",
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1368945",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-02",
+          "OriginCityName": "Boston",
+          "DestCityName": "Wilmington",
+          "DepTime": "11:55",
+          "ArrTime": "13:46",
+          "Price": 181
+        }
+      },
+      {
+        "node_key": "Flight::F2125384",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-02",
+          "OriginCityName": "Boston",
+          "DestCityName": "Wilmington",
+          "DepTime": "11:52",
+          "ArrTime": "13:44",
+          "Price": 236
+        }
+      },
+      {
+        "node_key": "Flight::F2580987",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-02",
+          "OriginCityName": "Boston",
+          "DestCityName": "Wilmington",
+          "DepTime": "11:54",
+          "ArrTime": "14:01",
+          "Price": 276
+        }
+      },
+      {
+        "node_key": "Flight::F2125390",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-04",
+          "OriginCityName": "Wilmington",
+          "DestCityName": "Boston",
+          "DepTime": "14:54",
+          "ArrTime": "16:46",
+          "Price": 153
+        }
+      },
+      {
+        "node_key": "Flight::F1368978",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-04",
+          "OriginCityName": "Wilmington",
+          "DestCityName": "Boston",
+          "DepTime": "14:51",
+          "ArrTime": "16:46",
+          "Price": 169
+        }
+      },
+      {
+        "node_key": "Flight::F2581019",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-04",
+          "OriginCityName": "Wilmington",
+          "DestCityName": "Boston",
+          "DepTime": "15:00",
+          "ArrTime": "17:06",
+          "Price": 170
+        }
+      },
+      {
+        "node_key": "Accommodation::35459997.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "35459997.0",
+          "name": "Harbor Oaks, rest, relax, renew...",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$91 per night",
+            "originalPrice": null,
+            "price": "$91",
+            "qualifier": "night",
+            "total": "$455 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  221 reviews",
+            "localizedLabel": "5.0 (221)",
+            "average": 5,
+            "reviewsCount": 221
+          },
+          "coordinates": {
+            "latitude": 34.14459,
+            "longitude": -77.91672
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::50660715.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "50660715.0",
+          "name": "The Native Garden Cottage",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$104 per night",
+            "originalPrice": null,
+            "price": "$104",
+            "qualifier": "night",
+            "total": "$518 total"
+          },
+          "rating": {
+            "label": "New place to stay",
+            "localizedLabel": "New",
+            "average": null,
+            "reviewsCount": null
+          },
+          "coordinates": {
+            "latitude": 34.2471517,
+            "longitude": -77.9246689
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::42770861.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42770861.0",
+          "name": "Chic Loft | Downtown | Front & Market",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$144 per night",
+            "originalPrice": null,
+            "price": "$144",
+            "qualifier": "night",
+            "total": "$718 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  255 reviews",
+            "localizedLabel": "4.95 (255)",
+            "average": 4.95,
+            "reviewsCount": 255
+          },
+          "coordinates": {
+            "latitude": 34.23521041870117,
+            "longitude": -77.94835662841797
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45073964.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45073964.0",
+          "name": "Serendipitous Studio - Entire Place",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$109 per night",
+            "originalPrice": null,
+            "price": "$109",
+            "qualifier": "night",
+            "total": "$542 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  315 reviews",
+            "localizedLabel": "4.94 (315)",
+            "average": 4.94,
+            "reviewsCount": 315
+          },
+          "coordinates": {
+            "latitude": 34.31912,
+            "longitude": -77.75028
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43430089.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43430089.0",
+          "name": "The Zen Den - A quaint Private Oasis room w/ Bath",
+          "City": "Wilmington",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No smoking & No parties",
+          "pricing": {
+            "label": "$66 per night, originally $71",
+            "originalPrice": "$71",
+            "price": "$66",
+            "qualifier": "night",
+            "total": "$326 total"
+          },
+          "rating": {
+            "label": "4.87 out of 5 average rating,  646 reviews",
+            "localizedLabel": "4.87 (646)",
+            "average": 4.87,
+            "reviewsCount": 646
+          },
+          "coordinates": {
+            "latitude": 34.23402,
+            "longitude": -77.93225
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45156488.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45156488.0",
+          "name": "Hawks Nest 3 @UNCW",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$77 per night, originally $96",
+            "originalPrice": "$96",
+            "price": "$77",
+            "qualifier": "night",
+            "total": "$385 total"
+          },
+          "rating": {
+            "label": "4.58 out of 5 average rating,  59 reviews",
+            "localizedLabel": "4.58 (59)",
+            "average": 4.58,
+            "reviewsCount": 59
+          },
+          "coordinates": {
+            "latitude": 34.22269,
+            "longitude": -77.8813
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::42355506.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42355506.0",
+          "name": "The Swan • Fully Private Guest Suite",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$103 per night, originally $111",
+            "originalPrice": "$111",
+            "price": "$103",
+            "qualifier": "night",
+            "total": "$512 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  568 reviews",
+            "localizedLabel": "5.0 (568)",
+            "average": 5,
+            "reviewsCount": 568
+          },
+          "coordinates": {
+            "latitude": 34.26888,
+            "longitude": -77.87377
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::37920083.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "37920083.0",
+          "name": "Pop’s Villa  - 8th Floor - Waterfront",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No parties & No smoking",
+          "pricing": {
+            "label": "$119 per night, originally $133",
+            "originalPrice": "$133",
+            "price": "$119",
+            "qualifier": "night",
+            "total": "$594 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  324 reviews",
+            "localizedLabel": "4.94 (324)",
+            "average": 4.94,
+            "reviewsCount": 324
+          },
+          "coordinates": {
+            "latitude": 34.2371385,
+            "longitude": -77.9499053
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::25972293.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "25972293.0",
+          "name": "Crestwood Cottage",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$119 per night, originally $128",
+            "originalPrice": "$128",
+            "price": "$119",
+            "qualifier": "night",
+            "total": "$594 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  524 reviews",
+            "localizedLabel": "4.96 (524)",
+            "average": 4.96,
+            "reviewsCount": 524
+          },
+          "coordinates": {
+            "latitude": 34.25702,
+            "longitude": -77.86165
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43726935.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43726935.0",
+          "name": "Downtown | Balcony | River views | Free parking",
+          "City": "Wilmington",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$123 per night, originally $147",
+            "originalPrice": "$147",
+            "price": "$123",
+            "qualifier": "night",
+            "total": "$611 total"
+          },
+          "rating": {
+            "label": "4.89 out of 5 average rating,  312 reviews",
+            "localizedLabel": "4.89 (312)",
+            "average": 4.89,
+            "reviewsCount": 312
+          },
+          "coordinates": {
+            "latitude": 34.2364,
+            "longitude": -77.94956
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::126588",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126588",
+          "name": "Battleship North Carolina",
+          "City": "Wilmington",
+          "subtype": [
+            "Ships"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#1 of 154 things to do in Wilmington",
+          "address": "1 Battleship Rd, Wilmington, NC 28401-2577",
+          "description": "As you walk the decks of the NORTH CAROLINA, imagine yourself in the South Pacific during WWII searching the sky for enemy aircraft, anticipating what may happen next. Step aboard the most decorated US Battleship of WWII! Explore nine decks, crew's quarters, gun turrets, and much more. Discover where history comes alive. Located at the junctions of highways 17, 76, 74, 421 on the Cape Fear River across from historic downtown Wilmington. Open every day!"
+        }
+      },
+      {
+        "node_key": "Attraction::4020985",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "4020985",
+          "name": "Riverwalk",
+          "City": "Wilmington",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 154 things to do in Wilmington",
+          "address": "S Water st, Wilmington, NC 28401"
+        }
+      },
+      {
+        "node_key": "Attraction::318472",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "318472",
+          "name": "Airlie Gardens",
+          "City": "Wilmington",
+          "subtype": [
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 154 things to do in Wilmington",
+          "address": "300 Airlie Rd, Wilmington, NC 28403-3706"
+        }
+      },
+      {
+        "node_key": "Attraction::126586",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126586",
+          "name": "Historic District",
+          "City": "Wilmington",
+          "subtype": [
+            "Neighborhoods"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Other"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#4 of 154 things to do in Wilmington",
+          "address": "N 3rd St, Wilmington, NC 28412",
+          "description": "One of the largest districts listed with the National Register of Historical Places."
+        }
+      },
+      {
+        "node_key": "Attraction::3645942",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3645942",
+          "name": "Downtown Wilmington",
+          "City": "Wilmington",
+          "subtype": [
+            "Neighborhoods"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Other"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#6 of 154 things to do in Wilmington",
+          "address": "226 North Front Street, Wilmington, NC 28401"
+        }
+      },
+      {
+        "node_key": "Attraction::2258302",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2258302",
+          "name": "Bellamy Mansion",
+          "City": "Wilmington",
+          "subtype": [
+            "Specialty Museums",
+            "Historic Sites",
+            "Architectural Buildings"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#3 of 154 things to do in Wilmington",
+          "address": "503 Market St, Wilmington, NC 28401-4634"
+        }
+      },
+      {
+        "node_key": "Attraction::318471",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "318471",
+          "name": "Poplar Grove Plantation",
+          "City": "Wilmington",
+          "subtype": [
+            "Historic Sites",
+            "Points of Interest & Landmarks",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#13 of 154 things to do in Wilmington",
+          "address": "10200 US Highway 17 Located on North HWY 17. Entrance south of manor house; Abbey Nature Preserve adjacent to the north., Wilmington, NC 28411-6854",
+          "description": "On the National Register of Historic Places, Poplar Grove is a museum complex with 1850 manor house, smoke house, tenant house and blacksmith shop. Enjoy craft demonstrations, exhibits, farm animals, horse rescue program, Wednesday Farmers' Market, and various festivals throughout the year. Open Monday-Saturday for tours March through October. Saturday hours of operation during November, December, January and February. Closed Sundays. Check daily tour time for low, mid and high season hours. ..."
+        }
+      },
+      {
+        "node_key": "Attraction::527037",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "527037",
+          "name": "Burgwin-Wright House and Gardens",
+          "City": "Wilmington",
+          "subtype": [
+            "Specialty Museums",
+            "Art Galleries",
+            "Historic Sites",
+            "Gardens",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Sights & Landmarks",
+            "Museums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#14 of 154 things to do in Wilmington",
+          "address": "224 Market St, Wilmington, NC 28401-4444",
+          "description": "Built in 1770, the Burgwin-Wright House & Gardens is the only structure in Wilmington from the colonial era open to the public. Operated as a museum house, it offers visitors a unique opportunity to experience what life was like in the 18th century. All rooms have been restored and showcase hundreds of objects. Occupying an acre, gardens consist of seven areas, including an orchard, a kitchen garden and a rose garden. Built using the walls of a former city jail as a foundation, circa 1744, th..."
+        }
+      },
+      {
+        "node_key": "Attraction::126589",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126589",
+          "name": "Henrietta III",
+          "City": "Wilmington",
+          "subtype": [
+            "Ships"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.0",
+          "rankingString": "#35 of 154 things to do in Wilmington",
+          "address": "101 South Water Street, Wilmington, NC",
+          "description": "Cruise the Cape Fear River in style on this elegant riverboat that offers narrated sightseeing tours, lunch and dinner cruises and romantic moonlight trips."
+        }
+      },
+      {
+        "node_key": "Restaurant::2249367.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2249367.0",
+          "name": "Genki Sushi",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Sushi",
+            "Asian"
+          ],
+          "avg_cost": "32.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "4724 New Centre Dr #5, Wilmington, NC 28405-3061",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6561484.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6561484.0",
+          "name": "The Peppered Cupcake",
+          "City": "Wilmington",
+          "mealTypes": [],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "32.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "105 S Front St, Wilmington, NC 28401",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::783958.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "783958.0",
+          "name": "Front Street Brewery",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "9 N. Front Street, Wilmington, NC 28401-4436",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1015690.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1015690.0",
+          "name": "Indochine Wilmington",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Asian",
+            "Thai",
+            "Vietnamese"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "7 Wayne Dr Corner Market St, Wilmington, NC 28403-1233",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::522943.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "522943.0",
+          "name": "Kilwins Ice Cream -  Chocolate - Fudge",
+          "City": "Wilmington",
+          "mealTypes": [],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "16 Market St between Front and 2nd, Wilmington, NC 28401",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1493697.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1493697.0",
+          "name": "Copper Penny",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Pub"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "109 Chestnut St, Wilmington, NC 28401-3940",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1493311.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1493311.0",
+          "name": "Caprice Bistro",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "French",
+            "Belgian"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "10 Market St, Wilmington, NC 28401-4454",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1507383.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1507383.0",
+          "name": "Cape Fear Seafood Company",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "5226 College Rd #5, Wilmington, NC 28412-2236",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1529790.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1529790.0",
+          "name": "Fish Bites Seafood",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "506 Deveraux Drive Ste 11, Wilmington, NC 28412",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1044781.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1044781.0",
+          "name": "The Wilmington",
+          "City": "Wilmington",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "British",
+            "Gastropub"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "69 Rosebery Avenue Clerkenwell, London EC1R 4RL England",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "Europe/London"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 17.28
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 17.28
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 19.13
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 19.13
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 30.47
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 30.47
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 50.87
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 50.87
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 71.13
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 71.13
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 76.16
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 76.16
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 76.51
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 80.06
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 85.95
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 93.74
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 94.69
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 94.69
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 96.33
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 122.08
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 122.08
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 129.61
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 134.71
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 136.2
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 136.2
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 138.64
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 138.64
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 141.98
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 145.57
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 145.99
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 147.63
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 160.12
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 162.25
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 162.25
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 164.03
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 177.34
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 185.18
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 189.98
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 191.36
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 191.36
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 195.32
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 211.5
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 212.24
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 216.83
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 224.01
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 224.01
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 228.11
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 235.21
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 242.36
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 242.36
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 256.45
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 256.45
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 256.51
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 256.51
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 265.89
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 265.89
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 275.84
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 286.03
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 286.03
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 290.28
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 296.55
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 302.46
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 302.46
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 323.79
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 326.21
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 326.21
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 328.57
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 339.03
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 339.03
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 340.79
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 340.79
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 355.14
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 355.14
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 358.77
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 362.76
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 378.2
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 386.12
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 395.7
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 426.46
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 426.46
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 446.25
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 446.25
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 454.07
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 454.07
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 459.33
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 459.33
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 467.47
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 467.47
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 502.05
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 515.19
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 517.11
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 517.11
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 536.82
+      },
+      {
+        "source": "Restaurant::783958.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 536.82
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 539.25
+      },
+      {
+        "source": "Restaurant::1493697.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 539.25
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 551.33
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 551.33
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 567.24
+      },
+      {
+        "source": "Restaurant::6561484.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 567.24
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 578.52
+      },
+      {
+        "source": "Restaurant::522943.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 578.52
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 598.06
+      },
+      {
+        "source": "Restaurant::1493311.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 598.06
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 605.73
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 647.9
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1011.94
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1297.42
+      },
+      {
+        "source": "Accommodation::45073964.0",
+        "target": "Attraction::318471",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1399.4
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1503.1
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1536.36
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1546.23
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1561.08
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1567.9
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1572.49
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1581.41
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1597.78
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1631.79
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1872.63
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1995.61
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2089.1
+      },
+      {
+        "source": "Accommodation::35459997.0",
+        "target": "Restaurant::1507383.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2099.23
+      },
+      {
+        "source": "Accommodation::25972293.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2154.89
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2390.42
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2410.98
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2413.71
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2415.8
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2552.67
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2601.21
+      },
+      {
+        "source": "Accommodation::42355506.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2620.75
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2620.95
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2621.42
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::1493311.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2637.23
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2646.92
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2674.61
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2725.7
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2927.37
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2969.48
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3347.84
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3347.84
+      },
+      {
+        "source": "Accommodation::35459997.0",
+        "target": "Restaurant::1529790.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3420.56
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3659.87
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3659.87
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3845.02
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3845.02
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3848.52
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3933.22
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3933.22
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3946.07
+      },
+      {
+        "source": "Accommodation::37920083.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3972.3
+      },
+      {
+        "source": "Attraction::126589",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3983.18
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::126589",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3983.18
+      },
+      {
+        "source": "Attraction::4020985",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3992.94
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::4020985",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3992.94
+      },
+      {
+        "source": "Accommodation::50660715.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4015.28
+      },
+      {
+        "source": "Attraction::126588",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4330.81
+      },
+      {
+        "source": "Restaurant::1015690.0",
+        "target": "Attraction::126588",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4330.81
+      },
+      {
+        "source": "Accommodation::42355506.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4487.87
+      },
+      {
+        "source": "Accommodation::25972293.0",
+        "target": "Restaurant::1015690.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4599.07
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Attraction::318472",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4720.06
+      },
+      {
+        "source": "Accommodation::43430089.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4897.93
+      },
+      {
+        "source": "Accommodation::25972293.0",
+        "target": "Attraction::318472",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5184.39
+      },
+      {
+        "source": "Attraction::318472",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5596.91
+      },
+      {
+        "source": "Restaurant::2249367.0",
+        "target": "Attraction::318472",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5596.91
+      },
+      {
+        "source": "Attraction::2258302",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5806.13
+      },
+      {
+        "source": "Restaurant::2249367.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5806.13
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Attraction::2258302",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5861.89
+      },
+      {
+        "source": "Attraction::527037",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6121.89
+      },
+      {
+        "source": "Restaurant::2249367.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6121.89
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Attraction::527037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6134.86
+      },
+      {
+        "source": "Attraction::3645942",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6273.58
+      },
+      {
+        "source": "Restaurant::2249367.0",
+        "target": "Attraction::3645942",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6273.58
+      },
+      {
+        "source": "Accommodation::42770861.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6308.16
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::6561484.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6311.91
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::783958.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6376.85
+      },
+      {
+        "source": "Attraction::126586",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6391.43
+      },
+      {
+        "source": "Restaurant::2249367.0",
+        "target": "Attraction::126586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6391.43
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::522943.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6391.58
+      },
+      {
+        "source": "Accommodation::43726935.0",
+        "target": "Restaurant::2249367.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6393.11
+      },
+      {
+        "source": "Accommodation::45156488.0",
+        "target": "Restaurant::1493697.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6396.64
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-02",
+        "2024-11-03",
+        "2024-11-04"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1368945",
+          "dep_time": "11:55",
+          "arr_time": "13:46",
+          "local_activity_start_after_arrival_buffer": "14:16",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2125384",
+          "dep_time": "11:52",
+          "arr_time": "13:44",
+          "local_activity_start_after_arrival_buffer": "14:14",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2580987",
+          "dep_time": "11:54",
+          "arr_time": "14:01",
+          "local_activity_start_after_arrival_buffer": "14:31",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2125390",
+          "dep_time": "14:54",
+          "arr_time": "16:46",
+          "latest_local_activity_finish_before_airport_buffer": "12:54",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F1368978",
+          "dep_time": "14:51",
+          "arr_time": "16:46",
+          "latest_local_activity_finish_before_airport_buffer": "12:51",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F2581019",
+          "dep_time": "15:00",
+          "arr_time": "17:06",
+          "latest_local_activity_finish_before_airport_buffer": "13:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::6561484.0",
+          "Restaurant::522943.0",
+          "Restaurant::1044781.0"
+        ],
+        "lunch": [
+          "Restaurant::2249367.0",
+          "Restaurant::6561484.0",
+          "Restaurant::783958.0",
+          "Restaurant::1015690.0",
+          "Restaurant::522943.0",
+          "Restaurant::1493697.0",
+          "Restaurant::1507383.0",
+          "Restaurant::1529790.0",
+          "Restaurant::1044781.0"
+        ],
+        "dinner": [
+          "Restaurant::2249367.0",
+          "Restaurant::6561484.0",
+          "Restaurant::783958.0",
+          "Restaurant::1015690.0",
+          "Restaurant::522943.0",
+          "Restaurant::1493697.0",
+          "Restaurant::1493311.0",
+          "Restaurant::1507383.0",
+          "Restaurant::1529790.0",
+          "Restaurant::1044781.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::126588",
+          "Attraction::4020985",
+          "Attraction::318472",
+          "Attraction::126586",
+          "Attraction::3645942",
+          "Attraction::2258302",
+          "Attraction::318471",
+          "Attraction::527037",
+          "Attraction::126589"
+        ],
+        "afternoon_attraction": [
+          "Attraction::126588",
+          "Attraction::4020985",
+          "Attraction::318472",
+          "Attraction::126586",
+          "Attraction::3645942",
+          "Attraction::2258302",
+          "Attraction::318471",
+          "Attraction::527037",
+          "Attraction::126589"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-02": [],
+        "2024-11-03": [],
+        "2024-11-04": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::6561484.0",
+            "name": "The Peppered Cupcake"
+          },
+          {
+            "node_key": "Restaurant::522943.0",
+            "name": "Kilwins Ice Cream -  Chocolate - Fudge"
+          },
+          {
+            "node_key": "Restaurant::1044781.0",
+            "name": "The Wilmington"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::2249367.0",
+            "name": "Genki Sushi"
+          },
+          {
+            "node_key": "Restaurant::6561484.0",
+            "name": "The Peppered Cupcake"
+          },
+          {
+            "node_key": "Restaurant::783958.0",
+            "name": "Front Street Brewery"
+          },
+          {
+            "node_key": "Restaurant::1015690.0",
+            "name": "Indochine Wilmington"
+          },
+          {
+            "node_key": "Restaurant::522943.0",
+            "name": "Kilwins Ice Cream -  Chocolate - Fudge"
+          },
+          {
+            "node_key": "Restaurant::1493697.0",
+            "name": "Copper Penny"
+          },
+          {
+            "node_key": "Restaurant::1507383.0",
+            "name": "Cape Fear Seafood Company"
+          },
+          {
+            "node_key": "Restaurant::1529790.0",
+            "name": "Fish Bites Seafood"
+          },
+          {
+            "node_key": "Restaurant::1044781.0",
+            "name": "The Wilmington"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::2249367.0",
+            "name": "Genki Sushi"
+          },
+          {
+            "node_key": "Restaurant::6561484.0",
+            "name": "The Peppered Cupcake"
+          },
+          {
+            "node_key": "Restaurant::783958.0",
+            "name": "Front Street Brewery"
+          },
+          {
+            "node_key": "Restaurant::1015690.0",
+            "name": "Indochine Wilmington"
+          },
+          {
+            "node_key": "Restaurant::522943.0",
+            "name": "Kilwins Ice Cream -  Chocolate - Fudge"
+          },
+          {
+            "node_key": "Restaurant::1493697.0",
+            "name": "Copper Penny"
+          },
+          {
+            "node_key": "Restaurant::1493311.0",
+            "name": "Caprice Bistro"
+          },
+          {
+            "node_key": "Restaurant::1507383.0",
+            "name": "Cape Fear Seafood Company"
+          },
+          {
+            "node_key": "Restaurant::1529790.0",
+            "name": "Fish Bites Seafood"
+          },
+          {
+            "node_key": "Restaurant::1044781.0",
+            "name": "The Wilmington"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-02": [],
+        "2024-11-03": [],
+        "2024-11-04": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-02",
+          "required_slots": {
+            "Flight::F1368945": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2125384": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2580987": [
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-03",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-04",
+          "required_slots": {
+            "Flight::F2125390": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F1368978": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F2581019": [
+              "breakfast",
+              "morning_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-02": [],
+      "2024-11-03": [],
+      "2024-11-04": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

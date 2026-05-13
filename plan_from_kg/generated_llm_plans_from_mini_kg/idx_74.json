@@ -1,0 +1,3436 @@
+{
+  "query_id": "idx_74",
+  "query_text": "Plan a 3-day trip for 2 people from Raleigh to Tampa from November 18th to November 20th, 2024, with a budget of $1,500. The trip should avoid flights and include visits to museums and sights & landmarks. Dining options should feature Chinese, Indian, American, and Italian cuisines.",
+  "request": {
+    "org": "Raleigh",
+    "dest": "Tampa",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-18', '2024-11-19', '2024-11-20']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': None, 'cuisine': ['Chinese', 'Indian', 'American', 'Italian'], 'room type': None, 'transportation': 'no flight', 'event': None, 'attraction': ['Museums', 'Sights & Landmarks']}",
+    "budget": 1500,
+    "query": "Plan a 3-day trip for 2 people from Raleigh to Tampa from November 18th to November 20th, 2024, with a budget of $1,500. The trip should avoid flights and include visits to museums and sights & landmarks. Dining options should feature Chinese, Indian, American, and Italian cuisines.",
+    "level": "hard",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Cultural Exploration",
+    "spending_preference": "Luxury Traveler",
+    "location_preference": "Forests/Wildlife"
+  },
+  "constraints": {
+    "house rule": null,
+    "cuisine": "Chinese, Indian, American, Italian",
+    "room type": null,
+    "transportation": "no flight",
+    "event": null,
+    "attraction": "Museums, Sights & Landmarks"
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This plan optimizes the trip by selecting flights that allow for a balanced first day and a productive return day, while maximizing local attractions and dining options within the given constraints.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1500.0,
+    "min_estimated_total_cost": 854.75,
+    "max_estimated_total_cost": 854.75,
+    "best_option_remaining_budget": 645.25
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 854.75,
+      "stay": {
+        "node_key": "Accommodation::51043145.0",
+        "label": "Accommodation",
+        "name": "2 Blocks from Bucs Stadium",
+        "id": "51043145.0",
+        "City": "Tampa",
+        "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+      },
+      "outbound": {
+        "node_key": "Flight::F3203280",
+        "label": "Flight",
+        "name": "F3203280: Raleigh to Tampa, 06:56-08:54",
+        "Flight Number": "F3203280",
+        "FlightDate": "2024-11-18",
+        "OriginCityName": "Raleigh",
+        "DestCityName": "Tampa",
+        "Price": 144,
+        "DepTime": "06:56",
+        "ArrTime": "08:54"
+      },
+      "return": {
+        "node_key": "Flight::F1012966",
+        "label": "Flight",
+        "name": "F1012966: Tampa to Raleigh, 20:42-22:24",
+        "Flight Number": "F1012966",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Tampa",
+        "DestCityName": "Raleigh",
+        "Price": 135,
+        "DepTime": "20:42",
+        "ArrTime": "22:24"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-18",
+          "current_city": "Tampa",
+          "llm_notes": "The first day includes a balanced itinerary with an early arrival, allowing for a light breakfast, morning attraction, and lunch before the afternoon attraction. Dinner is scheduled near the accommodation.",
+          "outbound_flight": {
+            "node_key": "Flight::F3203280",
+            "label": "Flight",
+            "name": "F3203280: Raleigh to Tampa, 06:56-08:54",
+            "Flight Number": "F3203280",
+            "FlightDate": "2024-11-18",
+            "OriginCityName": "Raleigh",
+            "DestCityName": "Tampa",
+            "Price": 144,
+            "DepTime": "06:56",
+            "ArrTime": "08:54"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::51043145.0",
+            "label": "Accommodation",
+            "name": "2 Blocks from Bucs Stadium",
+            "id": "51043145.0",
+            "City": "Tampa",
+            "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::3537931.0",
+            "label": "Restaurant",
+            "name": "Oxford Exchange",
+            "id": "3537931.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::2078476",
+            "label": "Attraction",
+            "name": "Glazer Children's Museum",
+            "id": "2078476",
+            "City": "Tampa",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::388777.0",
+            "label": "Restaurant",
+            "name": "Columbia Restaurant",
+            "id": "388777.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::7317600",
+            "label": "Attraction",
+            "name": "Tampa Riverwalk",
+            "id": "7317600",
+            "City": "Tampa",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1371112.0",
+            "label": "Restaurant",
+            "name": "Ocean Prime",
+            "id": "1371112.0",
+            "City": "Tampa",
+            "avg_cost": "74.0",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::51043145.0",
+            "label": "Accommodation",
+            "name": "2 Blocks from Bucs Stadium",
+            "id": "51043145.0",
+            "City": "Tampa",
+            "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-19",
+          "current_city": "Tampa",
+          "llm_notes": "A full non-travel day with a diverse range of activities, including a morning attraction, lunch near the attraction, and a dinner at a nearby restaurant.",
+          "start_accommodation": {
+            "node_key": "Accommodation::51043145.0",
+            "label": "Accommodation",
+            "name": "2 Blocks from Bucs Stadium",
+            "id": "51043145.0",
+            "City": "Tampa",
+            "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::3537931.0",
+            "label": "Restaurant",
+            "name": "Oxford Exchange",
+            "id": "3537931.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::109450",
+            "label": "Attraction",
+            "name": "Henry B. Plant Museum",
+            "id": "109450",
+            "City": "Tampa",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::388777.0",
+            "label": "Restaurant",
+            "name": "Columbia Restaurant",
+            "id": "388777.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::1963506",
+            "label": "Attraction",
+            "name": "Tampa Bay History Center",
+            "id": "1963506",
+            "City": "Tampa",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1989331.0",
+            "label": "Restaurant",
+            "name": "Bavaro's Pizza Napoletana & Pastaria",
+            "id": "1989331.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::51043145.0",
+            "label": "Accommodation",
+            "name": "2 Blocks from Bucs Stadium",
+            "id": "51043145.0",
+            "City": "Tampa",
+            "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-20",
+          "current_city": "Tampa",
+          "llm_notes": "The return day focuses on a morning attraction and lunch, with dinner skipped due to the early return flight. The final attraction is chosen based on visit_duration fit.",
+          "start_accommodation": {
+            "node_key": "Accommodation::51043145.0",
+            "label": "Accommodation",
+            "name": "2 Blocks from Bucs Stadium",
+            "id": "51043145.0",
+            "City": "Tampa",
+            "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::3537931.0",
+            "label": "Restaurant",
+            "name": "Oxford Exchange",
+            "id": "3537931.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::1145399",
+            "label": "Attraction",
+            "name": "Raymond James Stadium",
+            "id": "1145399",
+            "City": "Tampa",
+            "rating": "4.0"
+          },
+          "lunch": {
+            "node_key": "Restaurant::388777.0",
+            "label": "Restaurant",
+            "name": "Columbia Restaurant",
+            "id": "388777.0",
+            "City": "Tampa",
+            "avg_cost": "46.25",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::2650465",
+            "label": "Attraction",
+            "name": "Horse Power for Kids & Animal Sanctuary",
+            "id": "2650465",
+            "City": "Tampa",
+            "rating": "5.0"
+          },
+          "return_flight": {
+            "node_key": "Flight::F1012966",
+            "label": "Flight",
+            "name": "F1012966: Tampa to Raleigh, 20:42-22:24",
+            "Flight Number": "F1012966",
+            "FlightDate": "2024-11-20",
+            "OriginCityName": "Tampa",
+            "DestCityName": "Raleigh",
+            "Price": 135,
+            "DepTime": "20:42",
+            "ArrTime": "22:24"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_74",
+    "node_count": 42,
+    "edge_count": 454,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::51043145.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "6",
+        "house_rules": "No parties",
+        "State": "Florida",
+        "name": "2 Blocks from Bucs Stadium",
+        "coordinates": "{\"latitude\": 27.97175, \"longitude\": -82.49891}",
+        "rating": "{\"label\": \"4.93 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"4.93 (414)\", \"average\": 4.93, \"reviewsCount\": 414}",
+        "id": "51043145.0",
+        "City": "Tampa",
+        "title": "Guest suite in Tampa",
+        "url": "https://www.airbnb.com/rooms/51043145?locale=en-US&currency=USD&check_in=2024-11-17&check_out=2024-11-22",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$89 per night\", \"originalPrice\": null, \"price\": \"$89\", \"qualifier\": \"night\", \"total\": \"$445 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:669",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::109450",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "836",
+        "latitude": "27.946356",
+        "rating": "4.5",
+        "description": "Since 1933, the Tampa Bay Hotel has been home to the Henry B. Plant Museum and The University of Tampa. The building, renamed Plant Hall, is a National Historic Landmark. The Henry B. Plant Museum holds the distinction of accreditation by the American Alliance of Museums. Its mission is to interpret the Tampa Bay Hotel and the experiences of the diverse individuals who contributed to its success. The Museum ignites thought and transports visitors to another era through exhibits and innovative programs, so that they may be educated and inspired by the lifestyles, times and experiences of Florida’s early tourist industry. Original furnishings and artifacts and a dynamic self-guided audio tour immerse visitors in the opulence of the 1891 Tampa Bay Hotel and its rich history.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"401 W Kennedy Blvd\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33606-1450\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.31\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-History-Cruise%2Fd666-10654P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=d7322c3e9fcc8b33e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=109450&clt=TD&from=api&nt=true\", \"price\": \"$30.77\", \"roundedUpPrice\": \"$31\", \"offerType\": null, \"title\": \"Tampa History Cruise\", \"productCode\": \"10654P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/22/84/cc.jpg\", \"description\": null, \"primaryCategory\": \"Day Cruises\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-Haunted-History-Guided-Walking-Tour%2Fd666-319796P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=2c1830f21b3173fd8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=109450&clt=TD&from=api&nt=true\", \"price\": \"$33.00\", \"roundedUpPrice\": \"$33\", \"offerType\": null, \"title\": \"Tampa Ghost Tour: Haunted History and Paranormal \", \"productCode\": \"319796P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/2c/26/fe.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-City-Tour-by-Custom-Golf-Cart%2Fd666-404648P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1caef873c43e0ceb9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=109450&clt=TD&from=api&nt=true\", \"price\": \"$125.00\", \"roundedUpPrice\": \"$125\", \"offerType\": null, \"title\": \"Private Tampa City Tour by Custom Golf Cart \", \"productCode\": \"404648P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/69/04/9e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FPrivate-Yellowstone-Jeep-Safari-from-Cody%2Fd666-232058P59%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=b15997005a332374f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=109450&clt=TD&from=api&nt=true\", \"price\": \"$275.00\", \"roundedUpPrice\": \"$275\", \"offerType\": null, \"title\": \"Tampa Historic VIP Boutique Private City Tour \", \"productCode\": \"232058P59\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/9c/78/7d.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "History Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 12, \"count3\": 68, \"count4\": 271, \"count5\": 482}",
+        "location_contains_city": "True",
+        "id": "109450",
+        "longitude": "-82.464035",
+        "website": "http://plantmuseum.com",
+        "rankingPosition": "7.0",
+        "address": "401 W Kennedy Blvd, Tampa, FL 33606-1450",
+        "neighborhoodLocations": [],
+        "rankingString": "#7 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Henry B. Plant Museum",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d109450-Reviews-Henry_B_Plant_Museum-Tampa_Florida.html",
+        "localAddress": "401 W Kennedy Blvd, 33606-1450",
+        "rankingDenominator": "378.0",
+        "name": "Henry B. Plant Museum",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.062792301"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3546",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::1145399",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1134",
+        "latitude": "27.975933",
+        "rating": "4.0",
+        "description": "Home to the Tampa Bay Buccaneers, USF Bulls, Outback Bowl, Monster Jam, Supercross, Super Bowl XXXV & XLIII, 2017 CFB Playoff National Championship, Concerts and more!",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"4201 N Dale Mabry Hwy\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33607-6103\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.62\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-Bay-Buccaneers-Football-Game-at-Raymond-James-Stadium%2Fd666-379366P55%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=fd56a01ed199edce0&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=1145399&clt=TD&from=api&nt=true\", \"price\": \"$90.94\", \"roundedUpPrice\": \"$91\", \"offerType\": null, \"title\": \"Tampa Bay Buccaneers Football Game at Raymond James Stadium\", \"productCode\": \"379366P55\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/b8/36/3c.jpg\", \"description\": null, \"primaryCategory\": \"Skip-the-Line Tours\"}]}",
+        "subtype": [
+          "Arenas & Stadiums"
+        ],
+        "ratingHistogram": "{\"count1\": 38, \"count2\": 49, \"count3\": 140, \"count4\": 352, \"count5\": 555}",
+        "location_contains_city": "True",
+        "id": "1145399",
+        "longitude": "-82.50337",
+        "website": "https://www.facebook.com/RJStadium/",
+        "rankingPosition": "23.0",
+        "address": "4201 N Dale Mabry Hwy, Tampa, FL 33607-6103",
+        "neighborhoodLocations": [],
+        "rankingString": "#23 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Raymond James Stadium",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d1145399-Reviews-Raymond_James_Stadium-Tampa_Florida.html",
+        "localAddress": "4201 N Dale Mabry Hwy, 33607-6103",
+        "rankingDenominator": "378.0",
+        "name": "Raymond James Stadium",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.696853638"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3544",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::1963506",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "630",
+        "latitude": "27.942371",
+        "rating": "4.5",
+        "description": "Set sail with explorers and pirates in the History Center's Treasure Seekers gallery, journey through the everglades with Florida Seminoles, ride along with a cattle drive, and roam the brick streets of Ybor City with immigrant cigar rollers. Located on the Tampa Riverwalk, the Tampa Bay History Center features three floors of interactive exhibits, theaters and displays, a museum store and waterfront dining at the Columbia Cafe.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"801 Water Street\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33602-5418\"}",
+        "subtype": [
+          "History Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 14, \"count3\": 59, \"count4\": 205, \"count5\": 349}",
+        "location_contains_city": "True",
+        "id": "1963506",
+        "longitude": "-82.449875",
+        "website": "http://tampabayhistorycenter.org/",
+        "rankingPosition": "9.0",
+        "address": "801 Water Street, Tampa, FL 33602-5418",
+        "neighborhoodLocations": [],
+        "rankingString": "#9 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Tampa Bay History Center",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d1963506-Reviews-Tampa_Bay_History_Center-Tampa_Florida.html",
+        "localAddress": "801 Water Street, 33602-5418",
+        "rankingDenominator": "378.0",
+        "name": "Tampa Bay History Center",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.011276245"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3545",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::2078476",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "499",
+        "latitude": "27.949587",
+        "rating": "4.5",
+        "description": "There’s something new to discover with each visit to Glazer Children’s Museum. Play pretend in your favorite signature exhibits and discover new worlds in our traveling exhibits. Create and connect as a family with our seasonal Family Play Projects, cozy up for storytime with Team GCM, get your giggles out during spontaneous play activities, and celebrate your day of play in our Ring Out the Day Parade, every visit.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"110 W Gasparilla Plaza\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33602-1500\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.49\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-Bay-CityPASS%2Fd666-2640TPA%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=305782df3d08d1d5e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=2078476&clt=TD&from=api&nt=true\", \"price\": \"$144.00\", \"roundedUpPrice\": \"$144\", \"offerType\": null, \"title\": \"Tampa Bay CityPASS\\u00ae\", \"productCode\": \"2640TPA\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/e6/a7/a9.jpg\", \"description\": null, \"primaryCategory\": \"Sightseeing Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FExciting-Tampa-Tour-on-Deluxe-Street-Legal-Golf-Cart-See-Why-Tampas-1-US-City%2Fd666-199944P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=e58b62fae17e54a1c&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=2078476&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Guided Tampa Sightseeing Tour in a Deluxe Street Legal Golf Cart\", \"productCode\": \"199944P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/e1/2e/f1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FChristmas-Lights-Wonderland-Deluxe-Golf-Cart-Tour%2Fd666-199944P7%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=bea084679d6c189e7&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=2078476&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Christmas Lights Wonderland Deluxe Golf Cart Guided Tour in Tampa\", \"productCode\": \"199944P7\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/32/92/ca.jpg\", \"description\": null, \"primaryCategory\": \"Golf Tours & Tee Times\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTampa-City-Tour-by-Custom-Golf-Cart%2Fd666-404648P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1caef873c43e0ceb9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=2078476&clt=TD&from=api&nt=true\", \"price\": \"$125.00\", \"roundedUpPrice\": \"$125\", \"offerType\": null, \"title\": \"Private Tampa City Tour by Custom Golf Cart \", \"productCode\": \"404648P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/69/04/9e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Children's Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 16, \"count2\": 23, \"count3\": 44, \"count4\": 147, \"count5\": 269}",
+        "location_contains_city": "True",
+        "id": "2078476",
+        "longitude": "-82.461494",
+        "website": "http://www.glazermuseum.org",
+        "rankingPosition": "20.0",
+        "address": "110 W Gasparilla Plaza, Tampa, FL 33602-1500",
+        "neighborhoodLocations": [],
+        "rankingString": "#20 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Glazer Children's Museum",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d2078476-Reviews-Glazer_Children_s_Museum-Tampa_Florida.html",
+        "localAddress": "110 W Gasparilla Plaza, 33602-1500",
+        "rankingDenominator": "378.0",
+        "name": "Glazer Children's Museum",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "3.705082417"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3551",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::2650465",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "253",
+        "latitude": "28.024601",
+        "rating": "5.0",
+        "description": "HorsePower for Kids is an outdoor animal sanctuary and family fun farm located in northwest Tampa near Oldsmar and Westchase. You can enjoy: Animal Petting Area, Pony rides, Playground, Tire & Bench Swings, Western Town and Tree House - No reservation is required while visiting during our business hours, you are welcome to tour the farm at your own leisure. We are open Thursday-Sunday. Closed during Summer Months (June/July/August)",
+        "visit_duration": "3.5",
+        "addressObj": "{\"street1\": \"8005 Race Track Rd\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33635-9709\"}",
+        "subtype": [
+          "Zoos",
+          "Farms"
+        ],
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 2, \"count3\": 4, \"count4\": 27, \"count5\": 216}",
+        "location_contains_city": "True",
+        "id": "2650465",
+        "longitude": "-82.64824",
+        "website": "http://www.horsepowerforkids.com",
+        "rankingPosition": "11.0",
+        "address": "8005 Race Track Rd, Tampa, FL 33635-9709",
+        "neighborhoodLocations": [],
+        "rankingString": "#11 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Horse Power for Kids & Animal Sanctuary",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d2650465-Reviews-Horse_Power_for_Kids_Animal_Sanctuary-Tampa_Florida.html",
+        "localAddress": "8005 Race Track Rd, 33635-9709",
+        "rankingDenominator": "378.0",
+        "name": "Horse Power for Kids & Animal Sanctuary",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Sights & Landmarks",
+          "Zoos & Aquariums",
+          "Nature & Parks",
+          "Outdoor Activities"
+        ],
+        "rawRanking": "3.999932051"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3532",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::7317600",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1874",
+        "latitude": "27.94467",
+        "rating": "4.5",
+        "description": "This riverwalk is a scenic 2.6-mile-long path along the Hillsborough River where you can discover some of downtown Tampa’s must-sees. Enjoy a leisurely stroll and you'll pass by the Tampa Museum of Art, the Curtis Hixon Waterfront Park—perfect for a picnic overlooking the Tampa skyline—and finally the Tampa Bay History Center. You can also bike or take a scooter down the riverwalk. If you need a rest, there's no shortage of rest stops along the way to watch the water taxis sail by. You might even be inspired to take a boat tour on the river yourself! There are also plenty of restaurants and bars for food and drinks with a view. – Tripadvisor",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": null, \"street2\": null, \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33602\"}",
+        "offerGroup": "{\"lowestPrice\": \"$8.99\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FPrivate-Photo-Session-with-a-Local-Photographer-in-Tampa%2Fd666-63511P824%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=87b7ad4a9fbd9e411&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=7317600&clt=TD&from=api&nt=true\", \"price\": \"$273.24\", \"roundedUpPrice\": \"$274\", \"offerType\": null, \"title\": \"Private Photo Session with a Local Photographer in Tampa\", \"productCode\": \"63511P824\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/b9/ca/ab.jpg\", \"description\": null, \"primaryCategory\": \"Photography Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FVacation-Photographer-in-Tampa%2Fd666-63511P525%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=41f7b8a8ff1a4e752&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=7317600&clt=TD&from=api&nt=true\", \"price\": \"$273.24\", \"roundedUpPrice\": \"$274\", \"offerType\": null, \"title\": \"Vacation Photographer in Tampa\", \"productCode\": \"63511P525\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/a9/99/51.jpg\", \"description\": null, \"primaryCategory\": \"Photography Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FExciting-Tampa-Tour-on-Deluxe-Street-Legal-Golf-Cart-See-Why-Tampas-1-US-City%2Fd666-199944P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=e58b62fae17e54a1c&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=7317600&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Guided Tampa Sightseeing Tour in a Deluxe Street Legal Golf Cart\", \"productCode\": \"199944P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/e1/2e/f1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FTiki-Boat-Tampa-River-Cruise%2Fd666-242020P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=5cc6573613ce0e1b7&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=7317600&clt=TD&from=api&nt=true\", \"price\": \"$59.95\", \"roundedUpPrice\": \"$60\", \"offerType\": null, \"title\": \"Tiki Boat - Downtown Tampa - The Only Authentic Floating Tiki Bar\", \"productCode\": \"242020P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/39/63/ae.jpg\", \"description\": null, \"primaryCategory\": \"Ferry Services\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FTampa%2FDowntown-Tampa-Historic-Walking-Tour%2Fd666-369692P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=1d840bfc02392abff&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=7317600&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \"Downtown Tampa Historic Walking Tour\", \"productCode\": \"369692P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/00/29/8e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Scenic Walking Areas"
+        ],
+        "ratingHistogram": "{\"count1\": 11, \"count2\": 22, \"count3\": 154, \"count4\": 549, \"count5\": 1138}",
+        "location_contains_city": "True",
+        "id": "7317600",
+        "longitude": "-82.45876",
+        "website": "http://www.thetampariverwalk.com/",
+        "rankingPosition": "10.0",
+        "address": "Tampa, FL 33602",
+        "neighborhoodLocations": [],
+        "rankingString": "#10 of 378 things to do in Tampa",
+        "City": "Tampa",
+        "localName": "Tampa Riverwalk",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g34678-d7317600-Reviews-Tampa_Riverwalk-Tampa_Florida.html",
+        "localAddress": "33602",
+        "rankingDenominator": "378.0",
+        "name": "Tampa Riverwalk",
+        "locationString": "Tampa, Florida",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.002166271"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3535",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Raleigh",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Raleigh"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Tampa",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Tampa"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F1012966",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F1012966",
+        "Price": 135,
+        "DepTime": "20:42",
+        "ArrTime": "22:24",
+        "ActualElapsedTime": "1 hours 42 minutes",
+        "FlightDate": "2024-11-20",
+        "OriginCityName": "Tampa",
+        "DestCityName": "Raleigh",
+        "Distance": 587.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F3203280",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F3203280",
+        "Price": 144,
+        "DepTime": "06:56",
+        "ArrTime": "08:54",
+        "ActualElapsedTime": "1 hours 58 minutes",
+        "FlightDate": "2024-11-18",
+        "OriginCityName": "Raleigh",
+        "DestCityName": "Tampa",
+        "Distance": 587.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_74::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "current_city": "Tampa"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_74::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "current_city": "Tampa"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_74::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "current_city": "Tampa"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_74::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 854.75,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::51043145.0",
+        "outbound_node_key": "Flight::F3203280",
+        "return_node_key": "Flight::F1012966"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_74",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_74",
+        "query": "Plan a 3-day trip for 2 people from Raleigh to Tampa from November 18th to November 20th, 2024, with a budget of $1,500. The trip should avoid flights and include visits to museums and sights & landmarks. Dining options should feature Chinese, Indian, American, and Italian cuisines.",
+        "days": 3,
+        "origin_city": "Raleigh",
+        "destination_city": "Tampa",
+        "budget": 1500.0,
+        "source_mini_kg_query_id": "idx_74"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::1371112.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1067.0",
+        "avg_cost": "74.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"2205 N Westshore Blvd\", \"street2\": \"\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33607\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/ed/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/e8/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/ff/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/f8/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/f7/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/f6/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/f4/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/f1/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/ea/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/b2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/b1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/b0/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/af/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/ae/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/ad/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/ac/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/12/8a/ab/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/f9/81/4e/porterhouse-pork-chop.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/d5/5b/fa/chop-chop-saladso-fresh.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/3a/7a/71/ocean-prime-tampa.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/dc/23/82/gigi-s-chapeau-club-at.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/70/80/90/10-layer-carrot-cake.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/53/cc/f3/20201115-181027-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/53/cc/f2/20201115-181024-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/53/cc/f1/20201115-192013-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/e0/c6/b8/20200617-214116-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/e0/c6/b6/20200617-210757-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/e0/c6/b5/20200617-203048-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/e0/c6/b2/20200617-200445-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/4c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/4b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/4a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/49/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/48/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/47/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/46/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/45/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/44/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/da/c8/43/caption.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Outdoor Seating",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Valet Parking",
+          "Television",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1371112.0",
+        "longitude": "-82.52315",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0f/5e/63/e8/ocean-prime-tampa.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "20.0",
+        "Range.1": "60.00 - 150.00",
+        "rankingString": "#14 of 2,493 Restaurants in Tampa",
+        "openNowText": "Closed Now",
+        "City": "Tampa",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "13.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Steakhouse",
+          "Seafood"
+        ],
+        "localName": "Ocean Prime",
+        "input": "Tampa",
+        "phone": "+1 813-490-5288",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g34678-d1371112-Reviews-Ocean_Prime-Tampa_Florida.html",
+        "localAddress": "2205 N Westshore Blvd, 33607",
+        "Rest-MidRange": "92.5",
+        "name": "Ocean Prime",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.390922546",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232180132&geo=1371112&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311335545&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8DS0_EJAr7p6D2lE5Nhp807LKI3WCfsyyJq6lRR6ksas&cs=16c4602ec0b4e2ee46c2803ab45819b54_TVM\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "27.96103",
+        "menuWebUrl": "https://www.ocean-prime.com/locations-menus/tampa/menus?utm_source=tripadvisor&utm_medium=listing&utm_content=tampa",
+        "description": "Ocean Prime is a nationally acclaimed, dynamic seafood and steakhouse from the award-winning Cameron Mitchell Restaurants. Ocean Prime, located in Tampa, FL, delivers an elevated fine dining experience with exceptional ambiance, a chef-curated menu, signature handcrafted cocktails, a Wine Spectator honored wine list and genuine hospitality. Whether you are looking to socialize, talk business, or celebrate, we are ready to help you create a memorable event. Visit our website to book a reservation.",
+        "photoCount": "365.0",
+        "ratingHistogram": "{\"count1\": 23, \"count2\": 29, \"count3\": 82, \"count4\": 191, \"count5\": 742}",
+        "email": "cameron@cameronmitchell.com",
+        "website": "https://www.ocean-prime.com/locations-menus/tampa",
+        "rankingPosition": "14.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "2205 N Westshore Blvd, Tampa, FL 33607",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Fondue",
+          "Crab",
+          "Crab Cake",
+          "Filet Mignon",
+          "Lobster",
+          "Oyster",
+          "Ribs",
+          "Shrimp",
+          "Surf And Turf",
+          "Salad",
+          "Calamari",
+          "Mac and cheese",
+          "Carrot Cake",
+          "Crab Legs",
+          "Cobb Salad",
+          "Risotto",
+          "Scallops",
+          "Halibut",
+          "Salmon",
+          "Tuna",
+          "Bass",
+          "Beef",
+          "French onion soup",
+          "Shellfish",
+          "Lamb",
+          "Cakes",
+          "Fish",
+          "Pork",
+          "Bisque",
+          "Lobster Tail",
+          "Tartare",
+          "Shrimp Cocktail",
+          "Soup",
+          "Snapper",
+          "Lobster Bisque",
+          "Baked Potato",
+          "Cake",
+          "Sea Bass",
+          "Truffle",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"sea bass\", \"reviews\": 66}, {\"text\": \"steak\", \"reviews\": 183}, {\"text\": \"scallops\", \"reviews\": 51}, {\"text\": \"carrot cake\", \"reviews\": 28}, {\"text\": \"salad\", \"reviews\": 55}, {\"text\": \"french onion soup\", \"reviews\": 12}, {\"text\": \"anniversary dinner\", \"reviews\": 16}, {\"text\": \"service was impeccable\", \"reviews\": 13}, {\"text\": \"appetizers\", \"reviews\": 106}, {\"text\": \"airport\", \"reviews\": 17}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "48",
+        "rankingDenominator": "2493.0",
+        "locationString": "Tampa, Florida",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"34678\", \"name\": \"Tampa\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28930\", \"name\": \"Florida\", \"abbreviation\": \"FL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8245",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::1989331.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "389.0",
+        "avg_cost": "46.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"514 North Franklin Street\", \"street2\": \"#101\", \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33602\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/71/51/02/pizza-napoletana.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/71/51/09/wood-fired-neapolitan.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/71/51/03/our-cheese-board-has.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/71/51/00/fresh-tagliatelle-alla.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/71/50/ff/authentic-neapolitan.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/66/c9/50/bavaro-s-pizza-napoletana.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/6e/9d/ec/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d5/1b/a6/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d5/1b/a7/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d5/1b/a8/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/24/86/24/34/bavaro-s-pizza-napoletana.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/24/86/24/36/bavaro-s-pizza-napoletana.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Seating",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Wine and Beer",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1989331.0",
+        "longitude": "-82.45859",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/21/71/51/02/pizza-napoletana.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "20.0",
+        "Range.1": "60.00 - 150.00",
+        "rankingString": "#12 of 2,493 Restaurants in Tampa",
+        "openNowText": "Closed Now",
+        "City": "Tampa",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Drinks"
+        ],
+        "Range": "13.00 - 40.00",
+        "cuisines": [
+          "Italian",
+          "Pizza"
+        ],
+        "localName": "Bavaro's Pizza Napoletana & Pastaria",
+        "input": "Tampa",
+        "phone": "+1 813-868-4440",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g34678-d1989331-Reviews-Bavaro_s_Pizza_Napoletana_Pastaria-Tampa_Florida.html",
+        "localAddress": "514 North Franklin Street, #101, 33602",
+        "Rest-MidRange": "92.5",
+        "name": "Bavaro's Pizza Napoletana & Pastaria",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.416363716",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232178779&geo=1989331&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311335543&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8xJjkZKWS3lLZGvSRhiZVjCf3z0OQHzDu4gRHgpOHnd8&cs=1cf5d63bbcc109c1bd0381d4ccc86d8a2_bhp\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "27.94895",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g34678-d1989331-Bavaro_s_Pizza_Napoletana_Pastaria-Tampa_Florida.html",
+        "description": "The founder and Pizzaiolo, Dan Bavaro spent three years researching, training and traveling throughout the US and Italy to gather his vision and craft of pizza Napoletana. \"Our pizza is thin and soft with a slight crisp to the crust while topped with the finest ingredients imported from Italy or locally grown and organic. Our food is an art form, which is prepared with passion as I was taught by fifth generation, Neapolitan families. One teaching the oven and the other pizza Napoletana.\" In addition to our Neapolitan pizza we have a variety of home-made pastas, soups and desserts which are made fresh on location and from scratch. Our ingredients are either imported from Italy or locally grown and organic.",
+        "photoCount": "152.0",
+        "ratingHistogram": "{\"count1\": 15, \"count2\": 16, \"count3\": 31, \"count4\": 67, \"count5\": 260}",
+        "email": "tampa@bavarospizza.com",
+        "website": "https://bavarospizza.com/locations/tampa/",
+        "rankingPosition": "12.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "514 North Franklin Street #101, Tampa, FL 33602",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Salad",
+          "Cannoli",
+          "Tiramisu",
+          "Prosciutto",
+          "Meatballs",
+          "Tagliatelle",
+          "Bolognese",
+          "Gelato",
+          "Antipasti",
+          "Margherita Pizza",
+          "Pesto",
+          "Penne",
+          "Wood Fired Pizza",
+          "Soup",
+          "Homemade Pasta",
+          "Rigatoni",
+          "Sausage",
+          "Fresh Pasta",
+          "Pies"
+        ],
+        "reviewTags": "[{\"text\": \"pizza\", \"reviews\": 165}, {\"text\": \"ravioli\", \"reviews\": 26}, {\"text\": \"cannoli\", \"reviews\": 14}, {\"text\": \"garlic bread\", \"reviews\": 8}, {\"text\": \"antipasti\", \"reviews\": 9}, {\"text\": \"fresh pasta\", \"reviews\": 4}, {\"text\": \"pie\", \"reviews\": 6}, {\"text\": \"brick oven\", \"reviews\": 11}, {\"text\": \"vodka sauce\", \"reviews\": 9}, {\"text\": \"downtown tampa\", \"reviews\": 22}, {\"text\": \"straz center\", \"reviews\": 4}, {\"text\": \"cozy atmosphere\", \"reviews\": 4}, {\"text\": \"italian food\", \"reviews\": 7}, {\"text\": \"pizzeria\", \"reviews\": 9}, {\"text\": \"dough\", \"reviews\": 11}, {\"text\": \"ingredients\", \"reviews\": 11}, {\"text\": \"cappuccino\", \"reviews\": 4}]",
+        "travelerChoiceAward": "REGULAR_AWARD",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "48",
+        "rankingDenominator": "2493.0",
+        "locationString": "Tampa, Florida",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"34678\", \"name\": \"Tampa\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28930\", \"name\": \"Florida\", \"abbreviation\": \"FL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8243",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::3537931.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1052.0",
+        "avg_cost": "46.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"420 W Kennedy Blvd\", \"street2\": null, \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33606-1413\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/c0/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/ce/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/d2/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/d0/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/b9/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/ce/05/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/cd/b8/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/cd/a8/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/cd/65/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/cd/52/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/cd/43/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/b7/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/b1/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/9c/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/94/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/8c/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/85/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/6a/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/66/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/5f/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/48/59/oxford-exchange.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/35/00/00/20170118-094742-largejpg_rotated_90.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c7/photo9jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c6/photo8jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c5/photo7jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c4/photo6jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c3/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c2/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c1/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/c0/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/bf/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/63/60/be/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c3/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c4/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c5/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/33/53/c6/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8e/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/8f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/90/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/91/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/4c/80/92/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "3537931.0",
+        "longitude": "-82.46463",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/05/ba/46/c0/oxford-exchange.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "20.0",
+        "Range.1": "60.00 - 150.00",
+        "rankingString": "#16 of 2,493 Restaurants in Tampa",
+        "openNowText": "Open Now",
+        "City": "Tampa",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Brunch"
+        ],
+        "Range": "13.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Cafe",
+          "Contemporary"
+        ],
+        "localName": "Oxford Exchange",
+        "input": "Tampa",
+        "phone": "+1 813-253-0222",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g34678-d3537931-Reviews-Oxford_Exchange-Tampa_Florida.html",
+        "localAddress": "420 W Kennedy Blvd, 33606-1413",
+        "Rest-MidRange": "92.5",
+        "name": "Oxford Exchange",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.363790989",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=261225173&geo=3537931&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311335546&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8K1NuIGQr-1FNvLRjj7-b-0bN6M1hgmOGiiTvgah2GuA&cs=13c5271dfb2b2280783b7b85ca2d94195_i3t\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "27.94516",
+        "description": "We believe that real benefits come from sharing the simple pleasures of every day living. Oxford Exchange attempts to promote open and civil conversations, the exploration of literature, the benefits of shared meals and drinks, curated retail products and provides a home for business.",
+        "photoCount": "668.0",
+        "ratingHistogram": "{\"count1\": 25, \"count2\": 35, \"count3\": 83, \"count4\": 265, \"count5\": 644}",
+        "email": "info@oxfordexchange.com",
+        "website": "http://www.oxfordexchange.com",
+        "rankingPosition": "16.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1050, \"closeHours\": \"17:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1050, \"closeHours\": \"17:30\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "420 W Kennedy Blvd, Tampa, FL 33606-1413",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Sandwiches",
+          "French Toast",
+          "Burger",
+          "Omelette",
+          "Salad",
+          "Pancakes",
+          "Tacos",
+          "Eggs Benedict",
+          "Club Sandwich",
+          "Kale Salad",
+          "Salmon",
+          "Toasts",
+          "Cakes",
+          "Fish",
+          "Flatbread",
+          "Brussel Sprouts",
+          "Scones",
+          "Chicken Salad",
+          "Chopped Salad",
+          "Cake",
+          "Sweet Potato Fries",
+          "Chicken Burger",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 209}, {\"text\": \"chicken burger\", \"reviews\": 23}, {\"text\": \"wedges\", \"reviews\": 15}, {\"text\": \"french toast\", \"reviews\": 24}, {\"text\": \"eggs benedict\", \"reviews\": 23}, {\"text\": \"brussel sprouts\", \"reviews\": 15}, {\"text\": \"book store\", \"reviews\": 101}, {\"text\": \"coffee bar\", \"reviews\": 77}, {\"text\": \"gift store\", \"reviews\": 18}, {\"text\": \"plant museum\", \"reviews\": 14}, {\"text\": \"atrium\", \"reviews\": 53}, {\"text\": \"oe\", \"reviews\": 72}, {\"text\": \"latte\", \"reviews\": 25}, {\"text\": \"avocado\", \"reviews\": 19}, {\"text\": \"mimosas\", \"reviews\": 16}, {\"text\": \"bay\", \"reviews\": 12}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "48",
+        "rankingDenominator": "2493.0",
+        "locationString": "Tampa, Florida",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"34678\", \"name\": \"Tampa\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28930\", \"name\": \"Florida\", \"abbreviation\": \"FL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8248",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::388777.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "6660.0",
+        "avg_cost": "46.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"2117 E 7th Ave\", \"street2\": null, \"city\": \"Tampa\", \"state\": \"FL\", \"country\": \"United States\", \"postalcode\": \"33605-3903\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/cc/20/9f/the-columbia-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/52/91/18/the-patio-dining-room.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/cc/22/89/the-columbia-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/11/e1/60/07/the-columbia-s-sangria.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/fa/da/e0/the-columbia-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/fa/da/d5/the-columbia-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/cb/04/19/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/b7/84/8a/columbia-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/b7/84/65/columbia-restaurant.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Valet Parking",
+          "Free off-street parking",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music",
+          "Waterfront",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "388777.0",
+        "longitude": "-82.435326",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/11/52/91/18/the-patio-dining-room.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "20.0",
+        "Range.1": "60.00 - 150.00",
+        "rankingString": "#37 of 2,493 Restaurants in Tampa",
+        "openNowText": "Closed Now",
+        "City": "Tampa",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "13.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Spanish"
+        ],
+        "localName": "Columbia Restaurant",
+        "input": "Tampa",
+        "phone": "+1 813-248-4961",
+        "State": "Florida",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g34678-d388777-Reviews-Columbia_Restaurant-Tampa_Florida.html",
+        "localAddress": "2117 E 7th Ave, 33605-3903",
+        "Rest-MidRange": "92.5",
+        "name": "Columbia Restaurant",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.109184265",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232194453&geo=388777&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311335547&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8-vzUMXTlEc-teMON-O6Vn8FBTTamGW4pTO_9GaxF9YQ&cs=11cfc94e3c181704546a7d6ffb6ae8b91_aB0\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "27.959866",
+        "menuWebUrl": "http://www.columbiarestaurant.com/Menus-By-Location",
+        "description": "The Hernandez-Gonzmart family opened this landmark Columbia Restaurant in Tampa's historic Ybor City in 1905. Today, it’s Florida’s Oldest Restaurant and the world's largest Spanish restaurant. Fourth and fifth generation family members work hard to preserve the family legacy that Casimiro Hernandez, Sr., created more than 115 years ago when he opened the Columbia as a corner cafe frequented by local cigar workers. Join the celebrities, tourists and locals who flock to the Columbia and make your next meal an experience to remember.",
+        "photoCount": "2686.0",
+        "ratingHistogram": "{\"count1\": 187, \"count2\": 278, \"count3\": 646, \"count4\": 1545, \"count5\": 4004}",
+        "email": "colybor@columbiarestaurant.com",
+        "website": "https://www.columbiarestaurant.com/",
+        "rankingPosition": "37.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "2117 E 7th Ave, Tampa, FL 33605-3903",
+        "neighborhoodLocations": "[{\"id\": \"20484056\", \"name\": \"Historic Ybor\"}]",
+        "dishes": [
+          "Filet Mignon",
+          "Cannelloni",
+          "Cheesecake",
+          "Crab",
+          "Lobster",
+          "Paella",
+          "Ribs",
+          "Shrimp",
+          "Tapas",
+          "Salad",
+          "Cuban Sandwich",
+          "Calamari",
+          "Key lime pie",
+          "Bread Pudding",
+          "Mussels",
+          "Croquettes",
+          "Scallops",
+          "Gazpacho",
+          "Beef",
+          "Cakes",
+          "Fish",
+          "Pork",
+          "Soup",
+          "Snapper",
+          "Mahi Mahi",
+          "Flan",
+          "Empanadas",
+          "Chorizo",
+          "Puddings",
+          "Ropa Vieja",
+          "Plantains",
+          "Empanada",
+          "Cake",
+          "Black Beans"
+        ],
+        "reviewTags": "[{\"text\": \"paella\", \"reviews\": 457}, {\"text\": \"salad\", \"reviews\": 1633}, {\"text\": \"tapas\", \"reviews\": 401}, {\"text\": \"cuban sandwich\", \"reviews\": 457}, {\"text\": \"the white chocolate bread pudding\", \"reviews\": 76}, {\"text\": \"flan\", \"reviews\": 245}, {\"text\": \"ropa vieja\", \"reviews\": 88}, {\"text\": \"yellow rice\", \"reviews\": 119}, {\"text\": \"roast pork\", \"reviews\": 77}, {\"text\": \"shrimp\", \"reviews\": 178}, {\"text\": \"plantains\", \"reviews\": 69}, {\"text\": \"steak\", \"reviews\": 148}, {\"text\": \"cakes\", \"reviews\": 65}, {\"text\": \"flamenco show\", \"reviews\": 328}, {\"text\": \"ybor city\", \"reviews\": 896}, {\"text\": \"spanish restaurant\", \"reviews\": 130}, {\"text\": \"original columbia\", \"reviews\": 73}, {\"text\": \"dining rooms\", \"reviews\": 150}, {\"text\": \"made table side\", \"reviews\": 68}, {\"text\": \"spanish bean soup\", \"reviews\": 64}, {\"text\": \"beautiful restaurant\", \"reviews\": 97}, {\"text\": \"our waiter\", \"reviews\": 277}, {\"text\": \"tampa area\", \"reviews\": 144}, {\"text\": \"visiting tampa\", \"reviews\": 99}, {\"text\": \"sangria\", \"reviews\": 985}, {\"text\": \"pitcher\", \"reviews\": 223}, {\"text\": \"boliche\", \"reviews\": 63}, {\"text\": \"tableside\", \"reviews\": 138}, {\"text\": \"entrees\", \"reviews\": 309}, {\"text\": \"florida\", \"reviews\": 238}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "48",
+        "rankingDenominator": "2493.0",
+        "locationString": "Tampa, Florida",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"34678\", \"name\": \"Tampa\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28930\", \"name\": \"Florida\", \"abbreviation\": \"FL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8252",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::109450",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.043141,
+        "distance_m": 4439.13,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::1145399",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.006115,
+        "distance_m": 638.89,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::1963506",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.057163,
+        "distance_m": 5819.55,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::2078476",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.043487,
+        "distance_m": 4424.66,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::2650465",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.158407,
+        "distance_m": 15795.31,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Attraction::7317600",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.048429,
+        "distance_m": 4961.62,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.026505,
+        "distance_m": 2662.36,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.04632,
+        "distance_m": 4702.07,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::3537931.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::3537931.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::3537931.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.043384,
+        "distance_m": 4480.83,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::51043145.0",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.064685,
+        "distance_m": 6382.9,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Attraction::1963506",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Attraction::1963506",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "antique stores",
+          "aquariums",
+          "architectural buildings",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "breweries",
+          "canyons",
+          "castles",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "city tours",
+          "cultural tours",
+          "disney parks & activities",
+          "farmers markets",
+          "farms",
+          "food tours",
+          "forests",
+          "game & entertainment centers",
+          "gardens",
+          "government buildings",
+          "hiking & camping tours",
+          "hiking trails",
+          "historic sites",
+          "historic walking areas",
+          "historical & heritage tours",
+          "history museums",
+          "horseback riding tours",
+          "kayaking & canoeing",
+          "lookouts",
+          "marinas",
+          "military museums",
+          "monuments & statues",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "neighborhoods",
+          "other ranches & farms",
+          "parks",
+          "playgrounds",
+          "points of interest & landmarks",
+          "ranches",
+          "sacred & religious sites",
+          "scenic drives",
+          "scenic railroads",
+          "scenic walking areas",
+          "science museums",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "state parks",
+          "theaters",
+          "walking tours",
+          "water parks",
+          "zoos"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Attraction::2078476",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::2078476->Attraction::109450"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.060909,
+        "distance_m": 6031.27,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.006031,
+        "distance_m": 607.67,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.001336,
+        "distance_m": 145.27,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Restaurant::388777.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::109450",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.031729,
+        "distance_m": 3195.05,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Attraction::7317600",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.024766,
+        "distance_m": 2553.36,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.052281,
+        "distance_m": 5323.97,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.049475,
+        "distance_m": 5117.19,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Restaurant::388777.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::1145399",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.069915,
+        "distance_m": 6917.2,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Attraction::109450",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Attraction::109450",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "antique stores",
+          "aquariums",
+          "architectural buildings",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "breweries",
+          "canyons",
+          "castles",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "city tours",
+          "cultural tours",
+          "disney parks & activities",
+          "farmers markets",
+          "farms",
+          "food tours",
+          "forests",
+          "game & entertainment centers",
+          "gardens",
+          "government buildings",
+          "hiking & camping tours",
+          "hiking trails",
+          "historic sites",
+          "historic walking areas",
+          "historical & heritage tours",
+          "history museums",
+          "horseback riding tours",
+          "kayaking & canoeing",
+          "lookouts",
+          "marinas",
+          "military museums",
+          "monuments & statues",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "neighborhoods",
+          "other ranches & farms",
+          "parks",
+          "playgrounds",
+          "points of interest & landmarks",
+          "ranches",
+          "sacred & religious sites",
+          "scenic drives",
+          "scenic railroads",
+          "scenic walking areas",
+          "science museums",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "state parks",
+          "theaters",
+          "walking tours",
+          "water parks",
+          "zoos"
+        ],
+        "reciprocal_of": "Attraction::109450->Attraction::1963506"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Attraction::2078476",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::2078476->Attraction::1963506"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.075613,
+        "distance_m": 7490.39,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Restaurant::1989331.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.010919,
+        "distance_m": 1126.06,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.015016,
+        "distance_m": 1482.2,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1963506",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.022754,
+        "distance_m": 2413.84,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Attraction::109450",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Attraction::1963506",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.062709,
+        "distance_m": 6188.08,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002973,
+        "distance_m": 293.91,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.005425,
+        "distance_m": 580.7,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Restaurant::388777.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::2078476",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.028114,
+        "distance_m": 2812.92,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2650465",
+      "target": "Flight::F1012966",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::2650465",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.140317,
+        "distance_m": 14170.98,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2650465",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.204182,
+        "distance_m": 20433.8,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2650465",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.200059,
+        "distance_m": 20076.92,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2650465",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.222538,
+        "distance_m": 22109.81,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Attraction::1145399",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::1145399->Attraction::7317600"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Restaurant::1371112.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Restaurant::1371112.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.066436,
+        "distance_m": 6580.95,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Restaurant::1989331.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.004283,
+        "distance_m": 476.21,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Restaurant::3537931.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.00589,
+        "distance_m": 579.18,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::7317600",
+      "target": "Restaurant::388777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.02793,
+        "distance_m": 2855.38,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F3203280",
+      "target": "Accommodation::51043145.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Accommodation::51043145.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Accommodation::51043145.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 8,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Attraction::2078476",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 4,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Attraction::7317600",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 6,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Flight::F3203280",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Restaurant::1371112.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 7,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Restaurant::3537931.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 3,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::1",
+      "target": "Restaurant::388777.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "order": 5,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Accommodation::51043145.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Accommodation::51043145.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Attraction::109450",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Attraction::1963506",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Restaurant::1989331.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Restaurant::3537931.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::2",
+      "target": "Restaurant::388777.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Accommodation::51043145.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Attraction::1145399",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Attraction::2650465",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Flight::F1012966",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 6,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Restaurant::3537931.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_74::option_001::3",
+      "target": "Restaurant::388777.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "Accommodation::51043145.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "Flight::F1012966",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "Flight::F3203280",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "PlanDay::idx_74::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "PlanDay::idx_74::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_74::option_001",
+      "target": "PlanDay::idx_74::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_74",
+      "target": "PlanOption::idx_74::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 854.75
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Accommodation::51043145.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 7,
+        "to_order": 8
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::109450",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.060909,
+        "distance_m": 6031.27,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::1145399",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.024766,
+        "distance_m": 2553.36,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::1963506",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.075613,
+        "distance_m": 7490.39,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::2078476",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.062709,
+        "distance_m": 6188.08,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::2650465",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.140317,
+        "distance_m": 14170.98,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1371112.0",
+      "target": "Attraction::7317600",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.066436,
+        "distance_m": 6580.95,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Accommodation::51043145.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::109450",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.006031,
+        "distance_m": 607.67,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::1145399",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.052281,
+        "distance_m": 5323.97,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::1963506",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.010919,
+        "distance_m": 1126.06,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::2078476",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002973,
+        "distance_m": 293.91,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::2650465",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.204182,
+        "distance_m": 20433.8,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1989331.0",
+      "target": "Attraction::7317600",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.004283,
+        "distance_m": 476.21,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::109450",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.001336,
+        "distance_m": 145.27,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::109450",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::1145399",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.049475,
+        "distance_m": 5117.19,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::1145399",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::1963506",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.015016,
+        "distance_m": 1482.2,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::2078476",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.005425,
+        "distance_m": 580.7,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::2078476",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::2650465",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.200059,
+        "distance_m": 20076.92,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::3537931.0",
+      "target": "Attraction::7317600",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.00589,
+        "distance_m": 579.18,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::109450",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.031729,
+        "distance_m": 3195.05,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::1145399",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.069915,
+        "distance_m": 6917.2,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::1963506",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.022754,
+        "distance_m": 2413.84,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::1963506",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-19",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::2078476",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.028114,
+        "distance_m": 2812.92,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::2650465",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.222538,
+        "distance_m": 22109.81,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::2650465",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-20",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::7317600",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.02793,
+        "distance_m": 2855.38,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::388777.0",
+      "target": "Attraction::7317600",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-18",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F3203280",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::51043145.0",
+      "label": "Accommodation",
+      "name": "2 Blocks from Bucs Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 3,
+      "slot": "breakfast",
+      "node_key": "Restaurant::3537931.0",
+      "label": "Restaurant",
+      "name": "Oxford Exchange",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 4,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::2078476",
+      "label": "Attraction",
+      "name": "Glazer Children's Museum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 5,
+      "slot": "lunch",
+      "node_key": "Restaurant::388777.0",
+      "label": "Restaurant",
+      "name": "Columbia Restaurant",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 6,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::7317600",
+      "label": "Attraction",
+      "name": "Tampa Riverwalk",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 7,
+      "slot": "dinner",
+      "node_key": "Restaurant::1371112.0",
+      "label": "Restaurant",
+      "name": "Ocean Prime",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-18",
+      "order": 8,
+      "slot": "accommodation",
+      "node_key": "Accommodation::51043145.0",
+      "label": "Accommodation",
+      "name": "2 Blocks from Bucs Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::51043145.0",
+      "label": "Accommodation",
+      "name": "2 Blocks from Bucs Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::3537931.0",
+      "label": "Restaurant",
+      "name": "Oxford Exchange",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::109450",
+      "label": "Attraction",
+      "name": "Henry B. Plant Museum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::388777.0",
+      "label": "Restaurant",
+      "name": "Columbia Restaurant",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::1963506",
+      "label": "Attraction",
+      "name": "Tampa Bay History Center",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::1989331.0",
+      "label": "Restaurant",
+      "name": "Bavaro's Pizza Napoletana & Pastaria",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-19",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::51043145.0",
+      "label": "Accommodation",
+      "name": "2 Blocks from Bucs Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::51043145.0",
+      "label": "Accommodation",
+      "name": "2 Blocks from Bucs Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::3537931.0",
+      "label": "Restaurant",
+      "name": "Oxford Exchange",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::1145399",
+      "label": "Attraction",
+      "name": "Raymond James Stadium",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::388777.0",
+      "label": "Restaurant",
+      "name": "Columbia Restaurant",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::2650465",
+      "label": "Attraction",
+      "name": "Horse Power for Kids & Animal Sanctuary",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-20",
+      "order": 6,
+      "slot": "return_flight",
+      "node_key": "Flight::F1012966",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

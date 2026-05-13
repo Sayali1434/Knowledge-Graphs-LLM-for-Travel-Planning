@@ -1,0 +1,102 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This plan optimizes the trip by selecting the best feasible flights, accommodation, and activities while respecting the given constraints and preferences.\",\n  \"stay_node_key\": \"Accommodation::5.82e+17\",\n  \"outbound_flight_node_key\": \"Flight::F1701163\",\n  \"return_flight_node_key\": \"Flight::F1695043\",\n  \"estimated_total_cost\": 1350.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-07\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": null,\n        \"morning_attraction\": null,\n        \"lunch\": null,\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"The outbound flight arrives too late to allow any local activities. The day will be lightened with the accommodation as the primary focus.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-08\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::398582.0\",\n        \"morning_attraction\": \"Attraction::1771645\",\n        \"lunch\": \"Restaurant::2103722.0\",\n        \"afternoon_attraction\": \"Attraction::2367131\",\n        \"dinner\": \"Restaurant::793793.0\"\n      },\n      \"notes\": \"A full day in Charlotte with a balanced schedule of activities and meals.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-09\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::6627541.0\",\n        \"morning_attraction\": \"Attraction::2228276\",\n        \"lunch\": \"Restaurant::461886.0\",\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"The return flight is early, allowing for a morning-only plan with a short attraction and breakfast.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This plan optimizes the trip by selecting the best feasible flights, accommodation, and activities while respecting the given constraints and preferences.",
+    "stay_node_key": "Accommodation::5.82e+17",
+    "outbound_flight_node_key": "Flight::F1701163",
+    "return_flight_node_key": "Flight::F1695043",
+    "estimated_total_cost": 1350.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-07",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": null,
+          "lunch": null,
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": null
+        },
+        "notes": "The outbound flight arrives too late to allow any local activities. The day will be lightened with the accommodation as the primary focus."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-08",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::6627541.0",
+          "morning_attraction": "Attraction::1771645",
+          "lunch": "Restaurant::2103722.0",
+          "afternoon_attraction": "Attraction::2367131",
+          "dinner": "Restaurant::793793.0",
+          "event": null
+        },
+        "notes": "A full day in Charlotte with a balanced schedule of activities and meals."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-09",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::6627541.0",
+          "morning_attraction": "Attraction::2228276",
+          "lunch": "Restaurant::461886.0",
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": null
+        },
+        "notes": "The return flight is early, allowing for a morning-only plan with a short attraction and breakfast."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 1210.0,
+      "selected_node_keys": [
+        "Accommodation::5.82e+17",
+        "Flight::F1701163",
+        "Flight::F1695043",
+        "Restaurant::6627541.0",
+        "Attraction::1771645",
+        "Restaurant::2103722.0",
+        "Attraction::2367131",
+        "Restaurant::793793.0",
+        "Restaurant::6627541.0",
+        "Attraction::2228276",
+        "Restaurant::461886.0"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 1,
+        "lunch": 8,
+        "dinner": 10
+      },
+      "day_1_local_activity_start": "20:17",
+      "last_day_latest_local_activity_finish": "16:55",
+      "day_1_expected_slots": [],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch"
+      ],
+      "auto_repairs": [
+        "day_2.breakfast: replaced Restaurant::398582.0 with Restaurant::6627541.0"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_66.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_66_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_66_graph.cypher"
+  }
+}

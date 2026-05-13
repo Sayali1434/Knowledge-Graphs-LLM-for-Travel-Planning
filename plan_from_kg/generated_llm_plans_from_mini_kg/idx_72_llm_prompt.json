@@ -1,0 +1,2881 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_72\", \"query_text\": \"Plan a 3-day trip for 4 people traveling from Dallas to Cleveland from November 8th to November 10th, 2024, with a budget of $3,300. Accommodations should be an entire home. Include dining options featuring French, Mexican, American, and Latin cuisines, and plan activities such as shopping and visiting casinos or gambling venues.\", \"request\": {\"org\": \"Dallas\", \"dest\": \"Cleveland\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-08', '2024-11-09', '2024-11-10']\", \"people_number\": 4, \"local_constraint\": \"{'house rule': None, 'cuisine': ['French', 'Mexican', 'American', 'Latin'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': ['Shopping', 'Casinos & Gambling']}\", \"budget\": 3300, \"query\": \"Plan a 3-day trip for 4 people traveling from Dallas to Cleveland from November 8th to November 10th, 2024, with a budget of $3,300. Accommodations should be an entire home. Include dining options featuring French, Mexican, American, and Latin cuisines, and plan activities such as shopping and visiting casinos or gambling venues.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-08\", \"2024-11-09\", \"2024-11-10\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": null, \"cuisine\": \"French, Mexican, American, Latin\", \"room type\": \"entire home\", \"transportation\": null, \"event\": null, \"attraction\": \"Shopping, Casinos & Gambling\"}, \"nodes\": [{\"node_key\": \"Flight::F0217840\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-08\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Cleveland\", \"DepTime\": \"09:03\", \"ArrTime\": \"12:40\", \"Price\": 254}}, {\"node_key\": \"Flight::F1947119\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-08\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Cleveland\", \"DepTime\": \"09:57\", \"ArrTime\": \"13:28\", \"Price\": 325}}, {\"node_key\": \"Flight::F1500607\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-08\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Cleveland\", \"DepTime\": \"09:24\", \"ArrTime\": \"13:07\", \"Price\": 348}}, {\"node_key\": \"Flight::F2860694\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-08\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Cleveland\", \"DepTime\": \"09:20\", \"ArrTime\": \"12:51\", \"Price\": 350}}, {\"node_key\": \"Flight::F3704548\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-08\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Cleveland\", \"DepTime\": \"11:25\", \"ArrTime\": \"14:48\", \"Price\": 441}}, {\"node_key\": \"Flight::F2860846\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-10\", \"OriginCityName\": \"Cleveland\", \"DestCityName\": \"Dallas\", \"DepTime\": \"20:51\", \"ArrTime\": \"22:21\", \"Price\": 258}}, {\"node_key\": \"Flight::F2592434\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-10\", \"OriginCityName\": \"Cleveland\", \"DestCityName\": \"Dallas\", \"DepTime\": \"20:47\", \"ArrTime\": \"22:18\", \"Price\": 276}}, {\"node_key\": \"Flight::F3721027\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-10\", \"OriginCityName\": \"Cleveland\", \"DestCityName\": \"Dallas\", \"DepTime\": \"20:14\", \"ArrTime\": \"22:15\", \"Price\": 297}}, {\"node_key\": \"Flight::F1500763\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-10\", \"OriginCityName\": \"Cleveland\", \"DestCityName\": \"Dallas\", \"DepTime\": \"19:39\", \"ArrTime\": \"21:21\", \"Price\": 365}}, {\"node_key\": \"Flight::F1381318\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-10\", \"OriginCityName\": \"Cleveland\", \"DestCityName\": \"Dallas\", \"DepTime\": \"20:45\", \"ArrTime\": \"22:20\", \"Price\": 385}}, {\"node_key\": \"Accommodation::42786119.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42786119.0\", \"name\": \"The Studio at Gordon Square\", \"City\": \"Cleveland\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$74 per night\", \"originalPrice\": null, \"price\": \"$74\", \"qualifier\": \"night\", \"total\": \"$368 total\"}, \"rating\": {\"label\": \"4.87 out of 5 average rating,  461 reviews\", \"localizedLabel\": \"4.87 (461)\", \"average\": 4.87, \"reviewsCount\": 461}, \"coordinates\": {\"latitude\": 41.48102, \"longitude\": -81.73543}}}, {\"node_key\": \"Accommodation::13967283.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"13967283.0\", \"name\": \"Prime Location in Ohio City + Full House Access!!!\", \"City\": \"Cleveland\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$44 per night, originally $70\", \"originalPrice\": \"$70\", \"price\": \"$44\", \"qualifier\": \"night\", \"total\": \"$219 total\"}, \"rating\": {\"label\": \"4.84 out of 5 average rating,  485 reviews\", \"localizedLabel\": \"4.84 (485)\", \"average\": 4.84, \"reviewsCount\": 485}, \"coordinates\": {\"latitude\": 41.48632, \"longitude\": -81.70697}}}, {\"node_key\": \"Accommodation::9.17e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.17e+17\", \"name\": \"1BR Studio Gym | Sauna | 8 Min to Browns Stadium\", \"City\": \"Cleveland\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$87 per night, originally $133\", \"originalPrice\": \"$133\", \"price\": \"$87\", \"qualifier\": \"night\", \"total\": \"$435 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  65 reviews\", \"localizedLabel\": \"4.91 (65)\", \"average\": 4.91, \"reviewsCount\": 65}, \"coordinates\": {\"latitude\": 41.5012603, \"longitude\": -81.6774473}}}, {\"node_key\": \"Accommodation::9.85e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.85e+17\", \"name\": \"Historic Little Italy Garden Apartment\", \"City\": \"Cleveland\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$89 per night, originally $98\", \"originalPrice\": \"$98\", \"price\": \"$89\", \"qualifier\": \"night\", \"total\": \"$444 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  153 reviews\", \"localizedLabel\": \"4.93 (153)\", \"average\": 4.93, \"reviewsCount\": 153}, \"coordinates\": {\"latitude\": 41.509646095879575, \"longitude\": -81.59554984420538}}}, {\"node_key\": \"Attraction::272156\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"272156\", \"name\": \"West Side Market\", \"City\": \"Cleveland\", \"subtype\": [\"Flea & Street Markets\", \"Historic Sites\"], \"subcategories\": [\"Shopping\", \"Sights & Landmarks\"], \"visit_duration\": \"2.25\", \"rating\": \"4.5\", \"rankingString\": \"#18 of 345 things to do in Cleveland\", \"address\": \"1979 W 25th St, Cleveland, OH 44113\", \"description\": \"Built in 1912, this thriving public market offers fresh produce, meat, dairy products and a delicious variety of prepared foods.\"}}, {\"node_key\": \"Attraction::3177308\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3177308\", \"name\": \"JACK Cleveland Casino\", \"City\": \"Cleveland\", \"subtype\": [\"Casinos\"], \"subcategories\": [\"Casinos & Gambling\", \"Fun & Games\"], \"visit_duration\": \"2.0\", \"rating\": \"4.0\", \"rankingString\": \"#39 of 345 things to do in Cleveland\", \"address\": \"100 Public Sq, Cleveland, OH 44113-2208\", \"description\": \"Originally recognized as Horseshoe Casino Cleveland, we opened as Ohio's first full-service casino inside the historic Higbee Building in downtown Cleveland, OH in May 2012. Adding to the city's impressive sports, entertainment and cultural attractions, JACK Cleveland Casino welcomed more than give million guests to the casino in its first year of operations. The $350 million gaming destination employs 1,600 team members and features 1,600+ slot machines 89 table games and a large Poker room;...\"}}, {\"node_key\": \"Attraction::145312\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"145312\", \"name\": \"Old Arcade\", \"City\": \"Cleveland\", \"subtype\": [\"Architectural Buildings\", \"Shopping Malls\"], \"subcategories\": [\"Shopping\", \"Sights & Landmarks\"], \"visit_duration\": \"2.25\", \"rating\": \"4.0\", \"rankingString\": \"#29 of 345 things to do in Cleveland\", \"address\": \"401 Euclid Avenue Downtown, Cleveland, OH 44115\", \"description\": \"This is Cleveland's most architecturally interesting structure, a 19th-century-style marketplace 5 stories high, with a skylight.\"}}, {\"node_key\": \"Restaurant::396521.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"396521.0\", \"name\": \"Slyman's Deli\", \"City\": \"Cleveland\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Deli\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3106 Saint Clair Ave NE, Cleveland, OH 44114-4007\", \"hours\": {\"weekRanges\": [[], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 870, \"closeHours\": \"14:30\"}], []], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1510798.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1510798.0\", \"name\": \"L'Albatros Brasserie + Bar\", \"City\": \"Cleveland\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"French\", \"European\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"11401 Bellflower Rd., Cleveland, OH 44106-3961\", \"hours\": {\"weekRanges\": [[{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4846426.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4846426.0\", \"name\": \"Townhall\", \"City\": \"Cleveland\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Healthy\", \"Gastropub\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1909 W 25th St, Cleveland, OH 44113-3418\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1590, \"closeHours\": \"02:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1590, \"closeHours\": \"02:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::12394745.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"12394745.0\", \"name\": \"Marble Room Steaks and Raw Bar\", \"City\": \"Cleveland\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Seafood\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"623 Euclid Ave, Cleveland, OH 44114-3001\", \"hours\": {\"weekRanges\": [[], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::627578.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"627578.0\", \"name\": \"Momocho\", \"City\": \"Cleveland\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Mexican\", \"Latin\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1835 Fulton Rd, Cleveland, OH 44113-3035\", \"hours\": {\"weekRanges\": [[], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::486077.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"486077.0\", \"name\": \"Lucky's Cafe\", \"City\": \"Cleveland\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"777 Starkweather Ave, Cleveland, OH 44113-4617\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4185452.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4185452.0\", \"name\": \"Cleveland Chop\", \"City\": \"Cleveland\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"824 W St Clair Ave, Cleveland, OH 44113-1266\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::7178363.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"7178363.0\", \"name\": \"The Bourbon Street Barrel Room\", \"City\": \"Cleveland\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Cajun & Creole\", \"Bar\", \"Seafood\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2393 Professor Ave, Cleveland, OH 44113-4629\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [], [], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::3611147.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3611147.0\", \"name\": \"Grumpy's Cafe\", \"City\": \"Cleveland\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2621 W 14th St, Cleveland, OH 44113-4408\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1969067.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1969067.0\", \"name\": \"Dante\", \"City\": \"Cleveland\", \"mealTypes\": [\"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\", \"American\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2247 Professor Ave, Cleveland, OH 44113-4466\", \"hours\": {\"weekRanges\": [[], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1500, \"closeHours\": \"01:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::272156\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 109.58}, {\"source\": \"Restaurant::4846426.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 109.58}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 134.86}, {\"source\": \"Restaurant::12394745.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 134.86}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 263.05}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 347.49}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 372.13}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 386.39}, {\"source\": \"Restaurant::12394745.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 386.39}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 513.3}, {\"source\": \"Restaurant::4185452.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 513.3}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 573.8}, {\"source\": \"Restaurant::627578.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 573.8}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 716.13}, {\"source\": \"Restaurant::4185452.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 716.13}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 931.07}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 957.36}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1092.17}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1327.33}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1359.94}, {\"source\": \"Restaurant::3611147.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1359.94}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1390.84}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1429.72}, {\"source\": \"Restaurant::1969067.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1429.72}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1595.07}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1608.03}, {\"source\": \"Restaurant::7178363.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1608.03}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1653.35}, {\"source\": \"Restaurant::4185452.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1653.35}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1721.1}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1736.0}, {\"source\": \"Restaurant::4846426.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1736.0}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1788.4}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1794.61}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1808.03}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1846.89}, {\"source\": \"Restaurant::486077.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1846.89}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1956.23}, {\"source\": \"Restaurant::1969067.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1956.23}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1977.68}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1988.17}, {\"source\": \"Restaurant::4846426.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1988.17}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2049.47}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2069.77}, {\"source\": \"Restaurant::1969067.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2069.77}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2070.54}, {\"source\": \"Restaurant::12394745.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2070.54}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2135.72}, {\"source\": \"Restaurant::627578.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2135.72}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2147.04}, {\"source\": \"Restaurant::396521.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2147.04}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2152.07}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2161.02}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2173.91}, {\"source\": \"Restaurant::7178363.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2173.91}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2218.98}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2278.35}, {\"source\": \"Restaurant::7178363.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2278.35}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2306.62}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2396.95}, {\"source\": \"Restaurant::627578.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2396.95}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2411.9}, {\"source\": \"Restaurant::396521.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2411.9}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2449.9}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2452.26}, {\"source\": \"Restaurant::3611147.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2452.26}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2479.58}, {\"source\": \"Restaurant::486077.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2479.58}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2577.54}, {\"source\": \"Restaurant::486077.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2577.54}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2611.26}, {\"source\": \"Restaurant::3611147.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2611.26}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2652.4}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2687.7}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2734.81}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2806.41}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2841.55}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2975.66}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3306.72}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3655.71}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3735.31}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4036.91}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4088.28}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4090.21}, {\"source\": \"Restaurant::396521.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4090.21}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4190.95}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4218.32}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4298.94}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4377.35}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4423.22}, {\"source\": \"Accommodation::9.17e+17\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6029.86}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6314.71}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::396521.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6411.55}, {\"source\": \"Attraction::145312\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7120.17}, {\"source\": \"Restaurant::1510798.0\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7120.17}, {\"source\": \"Attraction::3177308\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7356.37}, {\"source\": \"Restaurant::1510798.0\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7356.37}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::12394745.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7840.66}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Attraction::145312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7975.46}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::486077.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8122.7}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::7178363.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8135.75}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::1969067.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8180.07}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Attraction::3177308\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8205.45}, {\"source\": \"Attraction::272156\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8583.13}, {\"source\": \"Restaurant::1510798.0\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8583.13}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::4185452.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8691.06}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::3611147.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8762.75}, {\"source\": \"Accommodation::13967283.0\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8839.07}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Attraction::272156\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 9364.81}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::4846426.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9437.3}, {\"source\": \"Accommodation::9.85e+17\", \"target\": \"Restaurant::627578.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9932.6}, {\"source\": \"Accommodation::42786119.0\", \"target\": \"Restaurant::1510798.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11275.52}, {\"source\": \"Restaurant::12394745.0\", \"target\": \"Restaurant::4185452.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::4185452.0\", \"target\": \"Restaurant::12394745.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::3611147.0\", \"target\": \"Restaurant::486077.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::486077.0\", \"target\": \"Restaurant::3611147.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Attraction::272156\", \"target\": \"Attraction::145312\", \"type\": \"SIMILAR_SUBCATEGORY\", \"distance_m\": null}, {\"source\": \"Attraction::145312\", \"target\": \"Attraction::272156\", \"type\": \"SIMILAR_SUBCATEGORY\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::rZ7HnEZ1AKQ_4S\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHPmSo0\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHPmSo0\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHPmSo0\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJOSIk\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJOSIk\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJOSIk\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJOSIk\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJdNQm\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJdNQm\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJdNQm\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJcdtx\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJcdtx\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJcdtx\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHEVdsi\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHEVdsi\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHEVdsi\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::rZ7HnEZ1AK4IF0\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHPmSo0\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJcdtx\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHJdNQm\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::G5e0Z9zHEVdsi\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_GENRE_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::rZ7HnEZ1AKQ_4S\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::rZ7HnEZ1AK48rf\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::Z7r9jZ1A7k4a7\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::rZ7HnEZ1AK4IF0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::vvG1zZb49KDdSL\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::rZ7HnEZ1AK4IF0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::rZ7HnEZ1AK48rf\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::Z7r9jZ1A7k4a7\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::vvG1zZb49KDdSL\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AKQ_4S\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::rZ7HnEZ1AK48rf\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::Z7r9jZ1A7k4a7\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::vvG1zZb49KDdSL\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK4IF0\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::rZ7HnEZ1AK4IF0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::rZ7HnEZ1AK48rf\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::vvG1zZb49KDdSL\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::G5e0Z9zHJcdtx\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::Z7r9jZ1A7k4a7\", \"target\": \"Event::G5e0Z9zHJdNQm\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::rZ7HnEZ1AK4IF0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::Z7r9jZ1A7k4a7\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::vvG1zZb49KDdSL\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::G5e0Z9zHEVdsi\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::G5e0Z9zHJOSIk\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}, {\"source\": \"Event::rZ7HnEZ1AK48rf\", \"target\": \"Event::G5e0Z9zHPmSo0\", \"type\": \"SIMILAR_SEG_NAME\", \"distance_m\": null}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-08\", \"2024-11-09\", \"2024-11-10\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F0217840\", \"dep_time\": \"09:03\", \"arr_time\": \"12:40\", \"local_activity_start_after_arrival_buffer\": \"13:10\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F1947119\", \"dep_time\": \"09:57\", \"arr_time\": \"13:28\", \"local_activity_start_after_arrival_buffer\": \"13:58\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F1500607\", \"dep_time\": \"09:24\", \"arr_time\": \"13:07\", \"local_activity_start_after_arrival_buffer\": \"13:37\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2860694\", \"dep_time\": \"09:20\", \"arr_time\": \"12:51\", \"local_activity_start_after_arrival_buffer\": \"13:21\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F3704548\", \"dep_time\": \"11:25\", \"arr_time\": \"14:48\", \"local_activity_start_after_arrival_buffer\": \"15:18\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2860846\", \"dep_time\": \"20:51\", \"arr_time\": \"22:21\", \"latest_local_activity_finish_before_airport_buffer\": \"18:51\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2592434\", \"dep_time\": \"20:47\", \"arr_time\": \"22:18\", \"latest_local_activity_finish_before_airport_buffer\": \"18:47\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F3721027\", \"dep_time\": \"20:14\", \"arr_time\": \"22:15\", \"latest_local_activity_finish_before_airport_buffer\": \"18:14\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1500763\", \"dep_time\": \"19:39\", \"arr_time\": \"21:21\", \"latest_local_activity_finish_before_airport_buffer\": \"17:39\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1381318\", \"dep_time\": \"20:45\", \"arr_time\": \"22:20\", \"latest_local_activity_finish_before_airport_buffer\": \"18:45\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::396521.0\", \"Restaurant::486077.0\", \"Restaurant::3611147.0\"], \"lunch\": [\"Restaurant::396521.0\", \"Restaurant::1510798.0\", \"Restaurant::4846426.0\", \"Restaurant::486077.0\", \"Restaurant::4185452.0\", \"Restaurant::7178363.0\", \"Restaurant::3611147.0\"], \"dinner\": [\"Restaurant::1510798.0\", \"Restaurant::4846426.0\", \"Restaurant::12394745.0\", \"Restaurant::627578.0\", \"Restaurant::4185452.0\", \"Restaurant::7178363.0\", \"Restaurant::1969067.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::272156\", \"Attraction::3177308\", \"Attraction::145312\"], \"afternoon_attraction\": [\"Attraction::272156\", \"Attraction::3177308\", \"Attraction::145312\"]}, \"event_slots_by_date\": {\"2024-11-08\": [], \"2024-11-09\": [], \"2024-11-10\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::396521.0\", \"name\": \"Slyman's Deli\"}, {\"node_key\": \"Restaurant::486077.0\", \"name\": \"Lucky's Cafe\"}, {\"node_key\": \"Restaurant::3611147.0\", \"name\": \"Grumpy's Cafe\"}], \"lunch\": [{\"node_key\": \"Restaurant::396521.0\", \"name\": \"Slyman's Deli\"}, {\"node_key\": \"Restaurant::1510798.0\", \"name\": \"L'Albatros Brasserie + Bar\"}, {\"node_key\": \"Restaurant::4846426.0\", \"name\": \"Townhall\"}, {\"node_key\": \"Restaurant::486077.0\", \"name\": \"Lucky's Cafe\"}, {\"node_key\": \"Restaurant::4185452.0\", \"name\": \"Cleveland Chop\"}, {\"node_key\": \"Restaurant::7178363.0\", \"name\": \"The Bourbon Street Barrel Room\"}, {\"node_key\": \"Restaurant::3611147.0\", \"name\": \"Grumpy's Cafe\"}], \"dinner\": [{\"node_key\": \"Restaurant::1510798.0\", \"name\": \"L'Albatros Brasserie + Bar\"}, {\"node_key\": \"Restaurant::4846426.0\", \"name\": \"Townhall\"}, {\"node_key\": \"Restaurant::12394745.0\", \"name\": \"Marble Room Steaks and Raw Bar\"}, {\"node_key\": \"Restaurant::627578.0\", \"name\": \"Momocho\"}, {\"node_key\": \"Restaurant::4185452.0\", \"name\": \"Cleveland Chop\"}, {\"node_key\": \"Restaurant::7178363.0\", \"name\": \"The Bourbon Street Barrel Room\"}, {\"node_key\": \"Restaurant::1969067.0\", \"name\": \"Dante\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-08\": [], \"2024-11-09\": [], \"2024-11-10\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-08\", \"required_slots\": {\"Flight::F0217840\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F1947119\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F1500607\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2860694\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F3704548\": [\"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-09\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-10\", \"required_slots\": {\"Flight::F2860846\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2592434\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F3721027\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1500763\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1381318\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-08\": [], \"2024-11-09\": [], \"2024-11-10\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_72",
+    "query_text": "Plan a 3-day trip for 4 people traveling from Dallas to Cleveland from November 8th to November 10th, 2024, with a budget of $3,300. Accommodations should be an entire home. Include dining options featuring French, Mexican, American, and Latin cuisines, and plan activities such as shopping and visiting casinos or gambling venues.",
+    "request": {
+      "org": "Dallas",
+      "dest": "Cleveland",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-08', '2024-11-09', '2024-11-10']",
+      "people_number": 4,
+      "local_constraint": "{'house rule': None, 'cuisine': ['French', 'Mexican', 'American', 'Latin'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': ['Shopping', 'Casinos & Gambling']}",
+      "budget": 3300,
+      "query": "Plan a 3-day trip for 4 people traveling from Dallas to Cleveland from November 8th to November 10th, 2024, with a budget of $3,300. Accommodations should be an entire home. Include dining options featuring French, Mexican, American, and Latin cuisines, and plan activities such as shopping and visiting casinos or gambling venues.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-08",
+      "2024-11-09",
+      "2024-11-10"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": "French, Mexican, American, Latin",
+      "room type": "entire home",
+      "transportation": null,
+      "event": null,
+      "attraction": "Shopping, Casinos & Gambling"
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F0217840",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-08",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Cleveland",
+          "DepTime": "09:03",
+          "ArrTime": "12:40",
+          "Price": 254
+        }
+      },
+      {
+        "node_key": "Flight::F1947119",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-08",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Cleveland",
+          "DepTime": "09:57",
+          "ArrTime": "13:28",
+          "Price": 325
+        }
+      },
+      {
+        "node_key": "Flight::F1500607",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-08",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Cleveland",
+          "DepTime": "09:24",
+          "ArrTime": "13:07",
+          "Price": 348
+        }
+      },
+      {
+        "node_key": "Flight::F2860694",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-08",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Cleveland",
+          "DepTime": "09:20",
+          "ArrTime": "12:51",
+          "Price": 350
+        }
+      },
+      {
+        "node_key": "Flight::F3704548",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-08",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Cleveland",
+          "DepTime": "11:25",
+          "ArrTime": "14:48",
+          "Price": 441
+        }
+      },
+      {
+        "node_key": "Flight::F2860846",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-10",
+          "OriginCityName": "Cleveland",
+          "DestCityName": "Dallas",
+          "DepTime": "20:51",
+          "ArrTime": "22:21",
+          "Price": 258
+        }
+      },
+      {
+        "node_key": "Flight::F2592434",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-10",
+          "OriginCityName": "Cleveland",
+          "DestCityName": "Dallas",
+          "DepTime": "20:47",
+          "ArrTime": "22:18",
+          "Price": 276
+        }
+      },
+      {
+        "node_key": "Flight::F3721027",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-10",
+          "OriginCityName": "Cleveland",
+          "DestCityName": "Dallas",
+          "DepTime": "20:14",
+          "ArrTime": "22:15",
+          "Price": 297
+        }
+      },
+      {
+        "node_key": "Flight::F1500763",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-10",
+          "OriginCityName": "Cleveland",
+          "DestCityName": "Dallas",
+          "DepTime": "19:39",
+          "ArrTime": "21:21",
+          "Price": 365
+        }
+      },
+      {
+        "node_key": "Flight::F1381318",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-10",
+          "OriginCityName": "Cleveland",
+          "DestCityName": "Dallas",
+          "DepTime": "20:45",
+          "ArrTime": "22:20",
+          "Price": 385
+        }
+      },
+      {
+        "node_key": "Accommodation::42786119.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42786119.0",
+          "name": "The Studio at Gordon Square",
+          "City": "Cleveland",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$74 per night",
+            "originalPrice": null,
+            "price": "$74",
+            "qualifier": "night",
+            "total": "$368 total"
+          },
+          "rating": {
+            "label": "4.87 out of 5 average rating,  461 reviews",
+            "localizedLabel": "4.87 (461)",
+            "average": 4.87,
+            "reviewsCount": 461
+          },
+          "coordinates": {
+            "latitude": 41.48102,
+            "longitude": -81.73543
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::13967283.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "13967283.0",
+          "name": "Prime Location in Ohio City + Full House Access!!!",
+          "City": "Cleveland",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$44 per night, originally $70",
+            "originalPrice": "$70",
+            "price": "$44",
+            "qualifier": "night",
+            "total": "$219 total"
+          },
+          "rating": {
+            "label": "4.84 out of 5 average rating,  485 reviews",
+            "localizedLabel": "4.84 (485)",
+            "average": 4.84,
+            "reviewsCount": 485
+          },
+          "coordinates": {
+            "latitude": 41.48632,
+            "longitude": -81.70697
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.17e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.17e+17",
+          "name": "1BR Studio Gym | Sauna | 8 Min to Browns Stadium",
+          "City": "Cleveland",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$87 per night, originally $133",
+            "originalPrice": "$133",
+            "price": "$87",
+            "qualifier": "night",
+            "total": "$435 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  65 reviews",
+            "localizedLabel": "4.91 (65)",
+            "average": 4.91,
+            "reviewsCount": 65
+          },
+          "coordinates": {
+            "latitude": 41.5012603,
+            "longitude": -81.6774473
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.85e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.85e+17",
+          "name": "Historic Little Italy Garden Apartment",
+          "City": "Cleveland",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$89 per night, originally $98",
+            "originalPrice": "$98",
+            "price": "$89",
+            "qualifier": "night",
+            "total": "$444 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  153 reviews",
+            "localizedLabel": "4.93 (153)",
+            "average": 4.93,
+            "reviewsCount": 153
+          },
+          "coordinates": {
+            "latitude": 41.509646095879575,
+            "longitude": -81.59554984420538
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::272156",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "272156",
+          "name": "West Side Market",
+          "City": "Cleveland",
+          "subtype": [
+            "Flea & Street Markets",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "2.25",
+          "rating": "4.5",
+          "rankingString": "#18 of 345 things to do in Cleveland",
+          "address": "1979 W 25th St, Cleveland, OH 44113",
+          "description": "Built in 1912, this thriving public market offers fresh produce, meat, dairy products and a delicious variety of prepared foods."
+        }
+      },
+      {
+        "node_key": "Attraction::3177308",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3177308",
+          "name": "JACK Cleveland Casino",
+          "City": "Cleveland",
+          "subtype": [
+            "Casinos"
+          ],
+          "subcategories": [
+            "Casinos & Gambling",
+            "Fun & Games"
+          ],
+          "visit_duration": "2.0",
+          "rating": "4.0",
+          "rankingString": "#39 of 345 things to do in Cleveland",
+          "address": "100 Public Sq, Cleveland, OH 44113-2208",
+          "description": "Originally recognized as Horseshoe Casino Cleveland, we opened as Ohio's first full-service casino inside the historic Higbee Building in downtown Cleveland, OH in May 2012. Adding to the city's impressive sports, entertainment and cultural attractions, JACK Cleveland Casino welcomed more than give million guests to the casino in its first year of operations. The $350 million gaming destination employs 1,600 team members and features 1,600+ slot machines 89 table games and a large Poker room;..."
+        }
+      },
+      {
+        "node_key": "Attraction::145312",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "145312",
+          "name": "Old Arcade",
+          "City": "Cleveland",
+          "subtype": [
+            "Architectural Buildings",
+            "Shopping Malls"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "2.25",
+          "rating": "4.0",
+          "rankingString": "#29 of 345 things to do in Cleveland",
+          "address": "401 Euclid Avenue Downtown, Cleveland, OH 44115",
+          "description": "This is Cleveland's most architecturally interesting structure, a 19th-century-style marketplace 5 stories high, with a skylight."
+        }
+      },
+      {
+        "node_key": "Restaurant::396521.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "396521.0",
+          "name": "Slyman's Deli",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Deli"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3106 Saint Clair Ave NE, Cleveland, OH 44114-4007",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              []
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1510798.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1510798.0",
+          "name": "L'Albatros Brasserie + Bar",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "French",
+            "European"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "11401 Bellflower Rd., Cleveland, OH 44106-3961",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4846426.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4846426.0",
+          "name": "Townhall",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Healthy",
+            "Gastropub"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1909 W 25th St, Cleveland, OH 44113-3418",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1590,
+                  "closeHours": "02:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::12394745.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "12394745.0",
+          "name": "Marble Room Steaks and Raw Bar",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "623 Euclid Ave, Cleveland, OH 44114-3001",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::627578.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "627578.0",
+          "name": "Momocho",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Latin"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1835 Fulton Rd, Cleveland, OH 44113-3035",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::486077.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "486077.0",
+          "name": "Lucky's Cafe",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "777 Starkweather Ave, Cleveland, OH 44113-4617",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4185452.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4185452.0",
+          "name": "Cleveland Chop",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "824 W St Clair Ave, Cleveland, OH 44113-1266",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::7178363.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "7178363.0",
+          "name": "The Bourbon Street Barrel Room",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cajun & Creole",
+            "Bar",
+            "Seafood"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2393 Professor Ave, Cleveland, OH 44113-4629",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3611147.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3611147.0",
+          "name": "Grumpy's Cafe",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2621 W 14th St, Cleveland, OH 44113-4408",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1969067.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1969067.0",
+          "name": "Dante",
+          "City": "Cleveland",
+          "mealTypes": [
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "American"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2247 Professor Ave, Cleveland, OH 44113-4466",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 109.58
+      },
+      {
+        "source": "Restaurant::4846426.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 109.58
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 134.86
+      },
+      {
+        "source": "Restaurant::12394745.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 134.86
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 263.05
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 347.49
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 372.13
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 386.39
+      },
+      {
+        "source": "Restaurant::12394745.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 386.39
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 513.3
+      },
+      {
+        "source": "Restaurant::4185452.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 513.3
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 573.8
+      },
+      {
+        "source": "Restaurant::627578.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 573.8
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 716.13
+      },
+      {
+        "source": "Restaurant::4185452.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 716.13
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 931.07
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 957.36
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1092.17
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1327.33
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1359.94
+      },
+      {
+        "source": "Restaurant::3611147.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1359.94
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1390.84
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1429.72
+      },
+      {
+        "source": "Restaurant::1969067.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1429.72
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1595.07
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1608.03
+      },
+      {
+        "source": "Restaurant::7178363.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1608.03
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1653.35
+      },
+      {
+        "source": "Restaurant::4185452.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1653.35
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1721.1
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1736.0
+      },
+      {
+        "source": "Restaurant::4846426.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1736.0
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1788.4
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1794.61
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1808.03
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1846.89
+      },
+      {
+        "source": "Restaurant::486077.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1846.89
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1956.23
+      },
+      {
+        "source": "Restaurant::1969067.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1956.23
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1977.68
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1988.17
+      },
+      {
+        "source": "Restaurant::4846426.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1988.17
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2049.47
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2069.77
+      },
+      {
+        "source": "Restaurant::1969067.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2069.77
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2070.54
+      },
+      {
+        "source": "Restaurant::12394745.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2070.54
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2135.72
+      },
+      {
+        "source": "Restaurant::627578.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2135.72
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2147.04
+      },
+      {
+        "source": "Restaurant::396521.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2147.04
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2152.07
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2161.02
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2173.91
+      },
+      {
+        "source": "Restaurant::7178363.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2173.91
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2218.98
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2278.35
+      },
+      {
+        "source": "Restaurant::7178363.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2278.35
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2306.62
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2396.95
+      },
+      {
+        "source": "Restaurant::627578.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2396.95
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2411.9
+      },
+      {
+        "source": "Restaurant::396521.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2411.9
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2449.9
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2452.26
+      },
+      {
+        "source": "Restaurant::3611147.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2452.26
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2479.58
+      },
+      {
+        "source": "Restaurant::486077.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2479.58
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2577.54
+      },
+      {
+        "source": "Restaurant::486077.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2577.54
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2611.26
+      },
+      {
+        "source": "Restaurant::3611147.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2611.26
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2652.4
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2687.7
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2734.81
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2806.41
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2841.55
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2975.66
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3306.72
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3655.71
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3735.31
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4036.91
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4088.28
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4090.21
+      },
+      {
+        "source": "Restaurant::396521.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4090.21
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4190.95
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4218.32
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4298.94
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4377.35
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4423.22
+      },
+      {
+        "source": "Accommodation::9.17e+17",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6029.86
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6314.71
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::396521.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6411.55
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7120.17
+      },
+      {
+        "source": "Restaurant::1510798.0",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7120.17
+      },
+      {
+        "source": "Attraction::3177308",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7356.37
+      },
+      {
+        "source": "Restaurant::1510798.0",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7356.37
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::12394745.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7840.66
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Attraction::145312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7975.46
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::486077.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8122.7
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::7178363.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8135.75
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::1969067.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8180.07
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Attraction::3177308",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8205.45
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8583.13
+      },
+      {
+        "source": "Restaurant::1510798.0",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8583.13
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::4185452.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8691.06
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::3611147.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8762.75
+      },
+      {
+        "source": "Accommodation::13967283.0",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8839.07
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Attraction::272156",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 9364.81
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::4846426.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9437.3
+      },
+      {
+        "source": "Accommodation::9.85e+17",
+        "target": "Restaurant::627578.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9932.6
+      },
+      {
+        "source": "Accommodation::42786119.0",
+        "target": "Restaurant::1510798.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11275.52
+      },
+      {
+        "source": "Restaurant::12394745.0",
+        "target": "Restaurant::4185452.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::4185452.0",
+        "target": "Restaurant::12394745.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::3611147.0",
+        "target": "Restaurant::486077.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::486077.0",
+        "target": "Restaurant::3611147.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Attraction::272156",
+        "target": "Attraction::145312",
+        "type": "SIMILAR_SUBCATEGORY",
+        "distance_m": null
+      },
+      {
+        "source": "Attraction::145312",
+        "target": "Attraction::272156",
+        "type": "SIMILAR_SUBCATEGORY",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::rZ7HnEZ1AKQ_4S",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHPmSo0",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHPmSo0",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHPmSo0",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJOSIk",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJOSIk",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJOSIk",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJOSIk",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJdNQm",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJdNQm",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJdNQm",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJcdtx",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJcdtx",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJcdtx",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHEVdsi",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHEVdsi",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHEVdsi",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::rZ7HnEZ1AK4IF0",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHPmSo0",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJcdtx",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHJdNQm",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::G5e0Z9zHEVdsi",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_GENRE_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::rZ7HnEZ1AKQ_4S",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::rZ7HnEZ1AK48rf",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::Z7r9jZ1A7k4a7",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::rZ7HnEZ1AK4IF0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::vvG1zZb49KDdSL",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::rZ7HnEZ1AK4IF0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::rZ7HnEZ1AK48rf",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::Z7r9jZ1A7k4a7",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::vvG1zZb49KDdSL",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AKQ_4S",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::rZ7HnEZ1AK48rf",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::Z7r9jZ1A7k4a7",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::vvG1zZb49KDdSL",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK4IF0",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::rZ7HnEZ1AK4IF0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::rZ7HnEZ1AK48rf",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::vvG1zZb49KDdSL",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::G5e0Z9zHJcdtx",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::Z7r9jZ1A7k4a7",
+        "target": "Event::G5e0Z9zHJdNQm",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::rZ7HnEZ1AK4IF0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::Z7r9jZ1A7k4a7",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::vvG1zZb49KDdSL",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::G5e0Z9zHEVdsi",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::G5e0Z9zHJOSIk",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      },
+      {
+        "source": "Event::rZ7HnEZ1AK48rf",
+        "target": "Event::G5e0Z9zHPmSo0",
+        "type": "SIMILAR_SEG_NAME",
+        "distance_m": null
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-08",
+        "2024-11-09",
+        "2024-11-10"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F0217840",
+          "dep_time": "09:03",
+          "arr_time": "12:40",
+          "local_activity_start_after_arrival_buffer": "13:10",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F1947119",
+          "dep_time": "09:57",
+          "arr_time": "13:28",
+          "local_activity_start_after_arrival_buffer": "13:58",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F1500607",
+          "dep_time": "09:24",
+          "arr_time": "13:07",
+          "local_activity_start_after_arrival_buffer": "13:37",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2860694",
+          "dep_time": "09:20",
+          "arr_time": "12:51",
+          "local_activity_start_after_arrival_buffer": "13:21",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F3704548",
+          "dep_time": "11:25",
+          "arr_time": "14:48",
+          "local_activity_start_after_arrival_buffer": "15:18",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2860846",
+          "dep_time": "20:51",
+          "arr_time": "22:21",
+          "latest_local_activity_finish_before_airport_buffer": "18:51",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2592434",
+          "dep_time": "20:47",
+          "arr_time": "22:18",
+          "latest_local_activity_finish_before_airport_buffer": "18:47",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F3721027",
+          "dep_time": "20:14",
+          "arr_time": "22:15",
+          "latest_local_activity_finish_before_airport_buffer": "18:14",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1500763",
+          "dep_time": "19:39",
+          "arr_time": "21:21",
+          "latest_local_activity_finish_before_airport_buffer": "17:39",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1381318",
+          "dep_time": "20:45",
+          "arr_time": "22:20",
+          "latest_local_activity_finish_before_airport_buffer": "18:45",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::396521.0",
+          "Restaurant::486077.0",
+          "Restaurant::3611147.0"
+        ],
+        "lunch": [
+          "Restaurant::396521.0",
+          "Restaurant::1510798.0",
+          "Restaurant::4846426.0",
+          "Restaurant::486077.0",
+          "Restaurant::4185452.0",
+          "Restaurant::7178363.0",
+          "Restaurant::3611147.0"
+        ],
+        "dinner": [
+          "Restaurant::1510798.0",
+          "Restaurant::4846426.0",
+          "Restaurant::12394745.0",
+          "Restaurant::627578.0",
+          "Restaurant::4185452.0",
+          "Restaurant::7178363.0",
+          "Restaurant::1969067.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::272156",
+          "Attraction::3177308",
+          "Attraction::145312"
+        ],
+        "afternoon_attraction": [
+          "Attraction::272156",
+          "Attraction::3177308",
+          "Attraction::145312"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-08": [],
+        "2024-11-09": [],
+        "2024-11-10": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::396521.0",
+            "name": "Slyman's Deli"
+          },
+          {
+            "node_key": "Restaurant::486077.0",
+            "name": "Lucky's Cafe"
+          },
+          {
+            "node_key": "Restaurant::3611147.0",
+            "name": "Grumpy's Cafe"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::396521.0",
+            "name": "Slyman's Deli"
+          },
+          {
+            "node_key": "Restaurant::1510798.0",
+            "name": "L'Albatros Brasserie + Bar"
+          },
+          {
+            "node_key": "Restaurant::4846426.0",
+            "name": "Townhall"
+          },
+          {
+            "node_key": "Restaurant::486077.0",
+            "name": "Lucky's Cafe"
+          },
+          {
+            "node_key": "Restaurant::4185452.0",
+            "name": "Cleveland Chop"
+          },
+          {
+            "node_key": "Restaurant::7178363.0",
+            "name": "The Bourbon Street Barrel Room"
+          },
+          {
+            "node_key": "Restaurant::3611147.0",
+            "name": "Grumpy's Cafe"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::1510798.0",
+            "name": "L'Albatros Brasserie + Bar"
+          },
+          {
+            "node_key": "Restaurant::4846426.0",
+            "name": "Townhall"
+          },
+          {
+            "node_key": "Restaurant::12394745.0",
+            "name": "Marble Room Steaks and Raw Bar"
+          },
+          {
+            "node_key": "Restaurant::627578.0",
+            "name": "Momocho"
+          },
+          {
+            "node_key": "Restaurant::4185452.0",
+            "name": "Cleveland Chop"
+          },
+          {
+            "node_key": "Restaurant::7178363.0",
+            "name": "The Bourbon Street Barrel Room"
+          },
+          {
+            "node_key": "Restaurant::1969067.0",
+            "name": "Dante"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-08": [],
+        "2024-11-09": [],
+        "2024-11-10": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-08",
+          "required_slots": {
+            "Flight::F0217840": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1947119": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1500607": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2860694": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3704548": [
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-09",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-10",
+          "required_slots": {
+            "Flight::F2860846": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2592434": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F3721027": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1500763": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1381318": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-08": [],
+      "2024-11-09": [],
+      "2024-11-10": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

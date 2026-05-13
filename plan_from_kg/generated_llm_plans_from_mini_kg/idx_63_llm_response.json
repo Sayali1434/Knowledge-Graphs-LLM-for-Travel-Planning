@@ -1,0 +1,106 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This itinerary optimizes the use of available flights, accommodations, and attractions while staying within the budget and adhering to the traveler's preferences.\",\n  \"stay_node_key\": \"Accommodation::42770861.0\",\n  \"outbound_flight_node_key\": \"Flight::F2580987\",\n  \"return_flight_node_key\": \"Flight::F2125390\",\n  \"estimated_total_cost\": 1373.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-02\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::6561484.0\",\n        \"morning_attraction\": \"Attraction::126588\",\n        \"lunch\": \"Restaurant::2249367.0\",\n        \"afternoon_attraction\": \"Attraction::4020985\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::1493697.0\"\n      },\n      \"notes\": \"Day 1 includes the outbound flight, breakfast, morning attraction, lunch, and dinner. The afternoon attraction is chosen based on proximity and visit duration.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-03\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::6561484.0\",\n        \"morning_attraction\": \"Attraction::318472\",\n        \"lunch\": \"Restaurant::783958.0\",\n        \"afternoon_attraction\": \"Attraction::2258302\",\n        \"dinner\": \"Restaurant::1493311.0\"\n      },\n      \"notes\": \"Day 2 is a full non-travel day with breakfast, morning attraction, lunch, afternoon attraction, and dinner. The attractions are chosen based on proximity and diversity.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-04\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::6561484.0\",\n        \"morning_attraction\": \"Attraction::527037\",\n        \"lunch\": \"Restaurant::1493697.0\",\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Day 3 includes the return flight, breakfast, morning attraction, and lunch. Dinner is skipped as the return flight is too early.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This itinerary optimizes the use of available flights, accommodations, and attractions while staying within the budget and adhering to the traveler's preferences.",
+    "stay_node_key": "Accommodation::42770861.0",
+    "outbound_flight_node_key": "Flight::F2580987",
+    "return_flight_node_key": "Flight::F2125390",
+    "estimated_total_cost": 1373.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-02",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::6561484.0",
+          "morning_attraction": "Attraction::126588",
+          "lunch": "Restaurant::2249367.0",
+          "afternoon_attraction": "Attraction::4020985",
+          "event": null,
+          "dinner": "Restaurant::1493697.0"
+        },
+        "notes": "Day 1 includes the outbound flight, breakfast, morning attraction, lunch, and dinner. The afternoon attraction is chosen based on proximity and visit duration."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-03",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::6561484.0",
+          "morning_attraction": "Attraction::318472",
+          "lunch": "Restaurant::783958.0",
+          "afternoon_attraction": "Attraction::2258302",
+          "dinner": "Restaurant::1493311.0",
+          "event": null
+        },
+        "notes": "Day 2 is a full non-travel day with breakfast, morning attraction, lunch, afternoon attraction, and dinner. The attractions are chosen based on proximity and diversity."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-04",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::6561484.0",
+          "morning_attraction": "Attraction::527037",
+          "lunch": "Restaurant::1493697.0",
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Day 3 includes the return flight, breakfast, morning attraction, and lunch. Dinner is skipped as the return flight is too early."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 977.0,
+      "selected_node_keys": [
+        "Accommodation::42770861.0",
+        "Flight::F2580987",
+        "Flight::F2125390",
+        "Restaurant::6561484.0",
+        "Attraction::126588",
+        "Restaurant::2249367.0",
+        "Attraction::4020985",
+        "Restaurant::1493697.0",
+        "Restaurant::6561484.0",
+        "Attraction::318472",
+        "Restaurant::783958.0",
+        "Attraction::2258302",
+        "Restaurant::1493311.0",
+        "Restaurant::6561484.0",
+        "Attraction::527037",
+        "Restaurant::1493697.0"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 3,
+        "lunch": 9,
+        "dinner": 10
+      },
+      "day_1_local_activity_start": "14:31",
+      "last_day_latest_local_activity_finish": "12:54",
+      "day_1_expected_slots": [
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_63.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_63_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_63_graph.cypher"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "issues": [
+    "Last day should include afternoon_attraction because selected return flight leaves late enough for local activity until 20:36."
+  ],
+  "diagnostics": {
+    "estimated_total_cost": 1090.0,
+    "selected_node_keys": [
+      "Accommodation::3269390.0",
+      "Flight::F2879280",
+      "Flight::F1518675",
+      "Restaurant::463486.0",
+      "Attraction::109350",
+      "Restaurant::484242.0",
+      "Restaurant::1635070.0",
+      "Attraction::3184389",
+      "Restaurant::484242.0",
+      "Attraction::141275",
+      "Restaurant::463486.0",
+      "Restaurant::1635070.0",
+      "Attraction::146840",
+      "Restaurant::484242.0"
+    ],
+    "meal_slot_candidate_counts": {
+      "breakfast": 3,
+      "lunch": 7,
+      "dinner": 9
+    },
+    "day_1_local_activity_start": "10:34",
+    "last_day_latest_local_activity_finish": "20:36",
+    "day_1_expected_slots": [
+      "lunch",
+      "afternoon_attraction",
+      "dinner"
+    ],
+    "last_day_expected_slots": [
+      "breakfast",
+      "morning_attraction",
+      "lunch",
+      "afternoon_attraction"
+    ],
+    "auto_repairs": [
+      "day_2.breakfast: replaced Restaurant::463486.0 with Restaurant::1635070.0",
+      "day_3.breakfast: replaced Restaurant::463486.0 with Restaurant::1635070.0"
+    ]
+  },
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "The revised plan ensures that no attractions are repeated and adheres to the meal slot and event constraints.",
+    "stay_node_key": "Accommodation::3269390.0",
+    "outbound_flight_node_key": "Flight::F2879280",
+    "return_flight_node_key": "Flight::F1518675",
+    "estimated_total_cost": 1090.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-06",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": null,
+          "lunch": "Restaurant::463486.0",
+          "afternoon_attraction": "Attraction::109350",
+          "event": null,
+          "dinner": "Restaurant::484242.0"
+        },
+        "notes": "Outbound flight arrives late, so lunch and an attraction are scheduled."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-07",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::1635070.0",
+          "morning_attraction": "Attraction::3184389",
+          "lunch": "Restaurant::484242.0",
+          "afternoon_attraction": "Attraction::141275",
+          "event": null,
+          "dinner": "Restaurant::463486.0"
+        },
+        "notes": "Full non-travel day with diverse activities."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-08",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::1635070.0",
+          "morning_attraction": "Attraction::146840",
+          "lunch": "Restaurant::484242.0",
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Return flight is late, so focus on morning activities."
+      }
+    ]
+  },
+  "raw_response": "{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"The revised plan ensures that no attractions are repeated and adheres to the meal slot and event constraints.\",\n  \"stay_node_key\": \"Accommodation::3269390.0\",\n  \"outbound_flight_node_key\": \"Flight::F2879280\",\n  \"return_flight_node_key\": \"Flight::F1518675\",\n  \"estimated_total_cost\": 1090.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-06\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": null,\n        \"morning_attraction\": null,\n        \"lunch\": \"Restaurant::463486.0\",\n        \"afternoon_attraction\": \"Attraction::109350\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::484242.0\"\n      },\n      \"notes\": \"Outbound flight arrives late, so lunch and an attraction are scheduled.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-07\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::463486.0\",\n        \"morning_attraction\": \"Attraction::3184389\",\n        \"lunch\": \"Restaurant::484242.0\",\n        \"afternoon_attraction\": \"Attraction::141275\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::463486.0\"\n      },\n      \"notes\": \"Full non-travel day with diverse activities.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-08\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::463486.0\",\n        \"morning_attraction\": \"Attraction::146840\",\n        \"lunch\": \"Restaurant::484242.0\",\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Return flight is late, so focus on morning activities.\"\n    }\n  ]\n}"
+}

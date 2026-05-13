@@ -1,0 +1,3119 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_71\", \"query_text\": \"Plan a 3-day trip for 7 people traveling from St. Louis to Seattle from November 21st to November 23rd, 2024, with a budget of $9,450. Accommodations should allow pets, and the itinerary should include dining options featuring American, French, Mediterranean, and Greek cuisines. Transportation should not involve self-driving.\", \"request\": {\"org\": \"St. Louis\", \"dest\": \"Seattle\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-21', '2024-11-22', '2024-11-23']\", \"people_number\": 7, \"local_constraint\": \"{'house rule': 'pets', 'cuisine': ['American', 'French', 'Mediterranean', 'Greek'], 'room type': None, 'transportation': 'no self-driving', 'event': None, 'attraction': None}\", \"budget\": 9450, \"query\": \"Plan a 3-day trip for 7 people traveling from St. Louis to Seattle from November 21st to November 23rd, 2024, with a budget of $9,450. Accommodations should allow pets, and the itinerary should include dining options featuring American, French, Mediterranean, and Greek cuisines. Transportation should not involve self-driving.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Economical Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-21\", \"2024-11-22\", \"2024-11-23\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Adventure\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": \"pets\", \"cuisine\": \"American, French, Mediterranean, Greek\", \"room type\": null, \"transportation\": \"no self-driving\", \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F1981804\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"St. Louis\", \"DestCityName\": \"Seattle\", \"DepTime\": \"07:22\", \"ArrTime\": \"09:37\", \"Price\": 344}}, {\"node_key\": \"Flight::F0253112\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"St. Louis\", \"DestCityName\": \"Seattle\", \"DepTime\": \"06:56\", \"ArrTime\": \"09:22\", \"Price\": 439}}, {\"node_key\": \"Flight::F0813571\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"St. Louis\", \"DestCityName\": \"Seattle\", \"DepTime\": \"17:06\", \"ArrTime\": \"19:45\", \"Price\": 562}}, {\"node_key\": \"Flight::F1527003\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"St. Louis\", \"DestCityName\": \"Seattle\", \"DepTime\": \"06:56\", \"ArrTime\": \"09:14\", \"Price\": 666}}, {\"node_key\": \"Flight::F1981876\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-21\", \"OriginCityName\": \"St. Louis\", \"DestCityName\": \"Seattle\", \"DepTime\": \"17:08\", \"ArrTime\": \"19:19\", \"Price\": 807}}, {\"node_key\": \"Flight::F1983044\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Seattle\", \"DestCityName\": \"St. Louis\", \"DepTime\": \"18:00\", \"ArrTime\": \"23:37\", \"Price\": 355}}, {\"node_key\": \"Flight::F1528351\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Seattle\", \"DestCityName\": \"St. Louis\", \"DepTime\": \"18:17\", \"ArrTime\": \"23:45\", \"Price\": 379}}, {\"node_key\": \"Flight::F0254494\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Seattle\", \"DestCityName\": \"St. Louis\", \"DepTime\": \"14:04\", \"ArrTime\": \"19:58\", \"Price\": 632}}, {\"node_key\": \"Flight::F2889665\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Seattle\", \"DestCityName\": \"St. Louis\", \"DepTime\": \"18:07\", \"ArrTime\": \"23:43\", \"Price\": 648}}, {\"node_key\": \"Flight::F0254417\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Seattle\", \"DestCityName\": \"St. Louis\", \"DepTime\": \"18:02\", \"ArrTime\": \"00:07\", \"Price\": 826}}, {\"node_key\": \"Accommodation::48447536.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"48447536.0\", \"name\": \"Peaceful Classic Seattle Neighborhood\", \"City\": \"Seattle\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$80 per night\", \"originalPrice\": null, \"price\": \"$80\", \"qualifier\": \"night\", \"total\": \"$397 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  288 reviews\", \"localizedLabel\": \"4.95 (288)\", \"average\": 4.95, \"reviewsCount\": 288}, \"coordinates\": {\"latitude\": 47.68619, \"longitude\": -122.32183}}}, {\"node_key\": \"Accommodation::54131555.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"54131555.0\", \"name\": \"Cozy Studio with Kitchenette and Laundry\", \"City\": \"Seattle\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No pets & No visitors\", \"pricing\": {\"label\": \"$123 per night, originally $135\", \"originalPrice\": \"$135\", \"price\": \"$123\", \"qualifier\": \"night\", \"total\": \"$611 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  120 reviews\", \"localizedLabel\": \"4.93 (120)\", \"average\": 4.93, \"reviewsCount\": 120}, \"coordinates\": {\"latitude\": 47.52099, \"longitude\": -122.34899}}}, {\"node_key\": \"Accommodation::20141183.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"20141183.0\", \"name\": \"Queen Anne Courtyard Suite\", \"City\": \"Seattle\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$145 per night, originally $157\", \"originalPrice\": \"$157\", \"price\": \"$145\", \"qualifier\": \"night\", \"total\": \"$722 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  411 reviews\", \"localizedLabel\": \"5.0 (411)\", \"average\": 5, \"reviewsCount\": 411}, \"coordinates\": {\"latitude\": 47.63611, \"longitude\": -122.35632}}}, {\"node_key\": \"Accommodation::21699076.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21699076.0\", \"name\": \"2-King Executive Penthouse Near Pike & Waterfront\", \"City\": \"Seattle\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No smoking & No pets\", \"pricing\": {\"label\": \"$206 per night, originally $332\", \"originalPrice\": \"$332\", \"price\": \"$206\", \"qualifier\": \"night\", \"total\": \"$1,030 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  422 reviews\", \"localizedLabel\": \"4.93 (422)\", \"average\": 4.93, \"reviewsCount\": 422}, \"coordinates\": {\"latitude\": 47.60691, \"longitude\": -122.33871}}}, {\"node_key\": \"Accommodation::20497066.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"20497066.0\", \"name\": \"Pike Place Market Apt Water View and Balcony\", \"City\": \"Seattle\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$222 per night, originally $276\", \"originalPrice\": \"$276\", \"price\": \"$222\", \"qualifier\": \"night\", \"total\": \"$1,107 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  737 reviews\", \"localizedLabel\": \"4.93 (737)\", \"average\": 4.93, \"reviewsCount\": 737}, \"coordinates\": {\"latitude\": 47.60626, \"longitude\": -122.34187}}}, {\"node_key\": \"Attraction::3184389\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3184389\", \"name\": \"Chihuly Garden and Glass\", \"City\": \"Seattle\", \"subtype\": [\"Art Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 836 things to do in Seattle\", \"address\": \"305 Harrison Street, Seattle, WA 98109-4623\", \"description\": \"This must-see museum exhibits creative and colorful blown glass sculptures of renowned artist Dale Chihuly. Eight indoor galleries and lush landscaped gardens feature a mix of new and past significant works. They are awe-inspiring whether you visit during the day, or in the evening when the sculptures are lit up. The highlight here is a 100-foot-long glass sculpture suspended in a glass conservatory—one of his largest ever. Located at the base of the iconic Space Needle, you might want to buy...\"}}, {\"node_key\": \"Attraction::103584\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103584\", \"name\": \"Pike Place Market\", \"City\": \"Seattle\", \"subtype\": [\"Farmers Markets\"], \"subcategories\": [\"Shopping\", \"Food & Drink\"], \"visit_duration\": \"2.0\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 836 things to do in Seattle\", \"address\": \"85 Pike St, Seattle, WA 98101\", \"description\": \"The Pike Place Market has been a defining Seattle icon for more than a century. Considered by many “the soul of Seattle,” the Market spans nine historic acres in the center of downtown where everyday locals and tourists alike shop, visit, eat and discover. Founded in 1907, the Market is one of the oldest and largest continuously operating public markets in the United States and is brought to life by the hundreds of farmers, crafters, small businesses, and residents that call it “home”. For mo...\"}}, {\"node_key\": \"Attraction::123109\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"123109\", \"name\": \"Space Needle\", \"City\": \"Seattle\", \"subtype\": [\"Observation Decks & Towers\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 836 things to do in Seattle\", \"address\": \"400 Broad Street, Seattle, WA 98109-4607\", \"description\": \"Located in the Lower Queen Anne neighborhood, this iconic landmark and observation tower was built for the 1962 World’s Fair. Perch on the glass benches known as “Skyrisers” and gaze out of floor-to-ceiling windows, snap a selfie at the outdoor deck, or head upstairs to The Loupe, an indoor lounge featuring the world’s first and only rotating glass floor. Here, you’ll be greeted with 360-degree views of the downtown Seattle skyline, Mount Rainier, Elliot Bay, and the Olympic and Cascade Mount...\"}}, {\"node_key\": \"Attraction::563102\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"563102\", \"name\": \"Washington State Ferries\", \"City\": \"Seattle\", \"subtype\": [\"Ferries\"], \"subcategories\": [\"Transportation\"], \"visit_duration\": \"1.5\", \"rating\": \"4.5\", \"rankingString\": \"#26 of 836 things to do in Seattle\", \"address\": \"801 Alaskan Way Pier 52, Seattle, WA 98104-1410\"}}, {\"node_key\": \"Attraction::109350\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109350\", \"name\": \"The Museum of Flight\", \"City\": \"Seattle\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 836 things to do in Seattle\", \"address\": \"9404 East Marginal Way South, Seattle, WA 98108-4046\", \"description\": \"Walk the aisle of JFK's Air Force One and climb aboard the Concorde at Seattle’s Museum of Flight. Built around Boeing’s original factory, it is the world’s largest air and space museum. Here, you can learn everything about the history of aviation, from the Wright Brothers and the exploration of Mars, to revolutionary aircrafts and spy planes. You’ll get to barrel-roll a Mustang, land on the moon, soar over Puget Sound in a simulator, and even sit at the controls of the fastest jet on Earth. ...\"}}, {\"node_key\": \"Attraction::531952\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"531952\", \"name\": \"T-Mobile Park\", \"City\": \"Seattle\", \"subtype\": [\"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#16 of 836 things to do in Seattle\", \"address\": \"1250 1st Ave S, Seattle, WA 98134-1216\"}}, {\"node_key\": \"Attraction::1050677\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1050677\", \"name\": \"Kerry Park\", \"City\": \"Seattle\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 836 things to do in Seattle\", \"address\": \"211 W Highland Dr Queen Ann Hill, Seattle, WA 98119-3529\", \"description\": \"Get a postcard view of downtown Seattle and Elliott Bay against the backdrop of snow-capped Mount Rainier from this beautiful terraced park. You'll also get spectacular views of the Space Needle, a 605-foot-tall observation tower. Take pictures and lounge or have a picnic on the lawn. The best time to visit is during sunrise, or at night to admire the buildings and ferries at the bay glow with lights. Though located in the quiet Queen Anne neighborhood, Kerry Park is less than a mile away fro...\"}}, {\"node_key\": \"Attraction::319153\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"319153\", \"name\": \"Hiram M. Chittenden Locks\", \"City\": \"Seattle\", \"subtype\": [\"Points of Interest & Landmarks\", \"Piers & Boardwalks\", \"Bodies of Water\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 836 things to do in Seattle\", \"address\": \"3015 NW 54th St, Seattle, WA 98107-4213\", \"description\": \"The Hiram M. Chittenden Locks (locally known as the Ballard Locks) is a waterway system that connects the saltwater of the Puget Sound to the fresh water of the Ship Canal, which sits about 20 feet above sea level. Boats enter the locks, the gates close and the water rises or falls to the level of the destination waterway. Watching boats pass through the locks, exploring the 7 acres of botanical gardens and looking for fish on the fish ladder is fun and free entertainment that draws locals an...\"}}, {\"node_key\": \"Attraction::143564\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"143564\", \"name\": \"Sky View Observatory\", \"City\": \"Seattle\", \"subtype\": [\"Observation Decks & Towers\", \"Architectural Buildings\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#29 of 836 things to do in Seattle\", \"address\": \"700 4th Ave 73rd Floor, Columbia Center, Seattle, WA 98104-7097\", \"description\": \"Private View Packages Now Available! Experience Sky View Observatory exclusively for 1-Hour for yourself and up to 4 people - 5 People total! * Temporarily Closed for General Admission.* Sky View Observatory in downtown Seattle is the ideal first stop on your visit to the Emerald City. Here you can map out your entire Pacific Northwest experience! Sky View is located on the 73rd floor of Columbia Center. At 902 feet, it offers the tallest public viewing area in the Pacific Northwest. The 360-...\"}}, {\"node_key\": \"Attraction::558679\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"558679\", \"name\": \"Seattle Public Library\", \"City\": \"Seattle\", \"subtype\": [\"Libraries\", \"Architectural Buildings\"], \"subcategories\": [\"Sights & Landmarks\", \"Traveler Resources\"], \"visit_duration\": \"2.0\", \"rating\": \"4.5\", \"rankingString\": \"#21 of 836 things to do in Seattle\", \"address\": \"1000 4th Ave, Seattle, WA 98104-1109\"}}, {\"node_key\": \"Restaurant::484242.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"484242.0\", \"name\": \"Lola\", \"City\": \"Seattle\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Mediterranean\", \"Greek\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2000 B 4th Ave, Seattle, WA 98121-2415\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::661032.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"661032.0\", \"name\": \"Purple Cafe and Wine Bar\", \"City\": \"Seattle\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Wine Bar\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1225 4th Ave, Seattle, WA 98101-3005\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::432552.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"432552.0\", \"name\": \"Canlis Restaurant\", \"City\": \"Seattle\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Contemporary\"], \"avg_cost\": \"80.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2576 Aurora Ave N, Seattle, WA 98109\"}}, {\"node_key\": \"Restaurant::433088.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"433088.0\", \"name\": \"Six Seven Restaurant\", \"City\": \"Seattle\", \"mealTypes\": [\"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"80.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2411 Alaskan Way, Seattle, WA 98121-1313\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::432704.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"432704.0\", \"name\": \"Bacco Cafe\", \"City\": \"Seattle\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"86 Pine St Corner of 1st Ave & Stewart Street, Seattle, WA 98101-1531\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::463481.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"463481.0\", \"name\": \"Duke's Seafood South Lake Union\", \"City\": \"Seattle\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1111 Fairview Ave N, Seattle, WA 98109\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::432607.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"432607.0\", \"name\": \"Matt's in the Market\", \"City\": \"Seattle\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Seafood\", \"Contemporary\"], \"avg_cost\": \"80.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"94 Pike St Ste 32, Seattle, WA 98101-2066\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::1516303.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1516303.0\", \"name\": \"Tilikum Place Cafe\", \"City\": \"Seattle\", \"mealTypes\": [\"Dinner\", \"Brunch\"], \"cuisines\": [\"French\", \"American\", \"Gastropub\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"407 Cedar St, Seattle, WA 98121-1519\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [], [], [], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::479059.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"479059.0\", \"name\": \"Chinook's\", \"City\": \"Seattle\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"50.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1900 W Nickerson St Ste 103, Seattle, WA 98119-1661\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::433073.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"433073.0\", \"name\": \"El Gaucho Seattle\", \"City\": \"Seattle\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"80.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2200 Western Ave Ste. 101 cross street: Blanchard, Seattle, WA 98121-1921\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::103584\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 50.28}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 50.28}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 110.15}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 110.15}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 257.24}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 257.24}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 260.94}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 302.06}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 302.06}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 304.13}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 308.02}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 308.02}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 308.26}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 310.0}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 319.15}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 368.99}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 368.99}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 405.4}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 424.44}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 466.27}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 466.27}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 480.18}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 480.18}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 490.02}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 514.01}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 514.01}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 520.12}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 520.12}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 554.94}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 653.66}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 672.81}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 672.81}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 674.79}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 674.79}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 704.8}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 727.54}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 742.47}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 785.3}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 786.17}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 788.99}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 788.99}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 793.44}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 793.44}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 820.94}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 851.12}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 886.19}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 886.19}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 906.29}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 906.29}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 928.92}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 928.92}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 931.13}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 931.13}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 931.63}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 931.63}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 944.15}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 944.15}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 987.08}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 987.08}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1016.33}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1016.33}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1031.37}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1052.01}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1052.01}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::432552.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1056.58}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1070.59}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1070.59}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1097.09}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1097.09}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1146.77}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1146.77}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1181.14}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1197.48}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1197.48}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1201.7}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1201.7}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226.08}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226.08}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1298.64}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1298.64}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1343.32}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1343.32}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1358.87}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1358.87}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1368.31}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1397.01}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1405.78}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1405.78}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1443.48}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1443.48}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1452.87}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1452.87}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1473.5}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1473.5}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1503.49}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1503.49}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1535.13}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1578.41}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1578.41}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1602.96}, {\"source\": \"Attraction::319153\", \"target\": \"Restaurant::479059.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1628.71}, {\"source\": \"Restaurant::479059.0\", \"target\": \"Attraction::319153\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1628.71}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1631.09}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1631.09}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1675.73}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1689.34}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1689.34}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1700.49}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1700.49}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1703.53}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1707.46}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1707.46}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1725.35}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1750.64}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1750.64}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1764.26}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1773.91}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1785.88}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1794.99}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::432552.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1807.79}, {\"source\": \"Restaurant::432552.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1807.79}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1816.31}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1823.1}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1823.1}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1833.46}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1833.46}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1858.02}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1858.02}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1915.17}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1956.73}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1956.73}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1968.49}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1968.49}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1987.93}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1987.93}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2000.71}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2037.07}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2037.07}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2123.14}, {\"source\": \"Attraction::103584\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2150.31}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::103584\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2150.31}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2171.8}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2171.8}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2180.04}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2180.04}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2350.61}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2350.61}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2350.77}, {\"source\": \"Attraction::558679\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2354.41}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::558679\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2354.41}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2468.4}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2485.99}, {\"source\": \"Restaurant::484242.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2485.99}, {\"source\": \"Attraction::3184389\", \"target\": \"Restaurant::432552.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2511.1}, {\"source\": \"Restaurant::432552.0\", \"target\": \"Attraction::3184389\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2511.1}, {\"source\": \"Attraction::123109\", \"target\": \"Restaurant::432552.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2520.17}, {\"source\": \"Restaurant::432552.0\", \"target\": \"Attraction::123109\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2520.17}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2536.46}, {\"source\": \"Restaurant::433073.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2536.46}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2565.01}, {\"source\": \"Restaurant::432704.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2565.01}, {\"source\": \"Attraction::143564\", \"target\": \"Restaurant::463481.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2622.86}, {\"source\": \"Restaurant::463481.0\", \"target\": \"Attraction::143564\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2622.86}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2658.57}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::432607.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2709.11}, {\"source\": \"Restaurant::432607.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2709.11}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::433073.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2759.26}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::433088.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2760.09}, {\"source\": \"Restaurant::433088.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2760.09}, {\"source\": \"Attraction::563102\", \"target\": \"Restaurant::432552.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2770.25}, {\"source\": \"Restaurant::432552.0\", \"target\": \"Attraction::563102\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2770.25}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::484242.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2829.26}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::479059.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2858.16}, {\"source\": \"Accommodation::20497066.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2914.08}, {\"source\": \"Accommodation::21699076.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2970.04}, {\"source\": \"Attraction::1050677\", \"target\": \"Restaurant::661032.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3030.9}, {\"source\": \"Restaurant::661032.0\", \"target\": \"Attraction::1050677\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3030.9}, {\"source\": \"Accommodation::20141183.0\", \"target\": \"Restaurant::432704.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3103.91}, {\"source\": \"Attraction::531952\", \"target\": \"Restaurant::1516303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3160.86}, {\"source\": \"Restaurant::1516303.0\", \"target\": \"Attraction::531952\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3160.86}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-21\", \"2024-11-22\", \"2024-11-23\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1981804\", \"dep_time\": \"07:22\", \"arr_time\": \"09:37\", \"local_activity_start_after_arrival_buffer\": \"10:07\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0253112\", \"dep_time\": \"06:56\", \"arr_time\": \"09:22\", \"local_activity_start_after_arrival_buffer\": \"09:52\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0813571\", \"dep_time\": \"17:06\", \"arr_time\": \"19:45\", \"local_activity_start_after_arrival_buffer\": \"20:15\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F1527003\", \"dep_time\": \"06:56\", \"arr_time\": \"09:14\", \"local_activity_start_after_arrival_buffer\": \"09:44\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1981876\", \"dep_time\": \"17:08\", \"arr_time\": \"19:19\", \"local_activity_start_after_arrival_buffer\": \"19:49\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F1983044\", \"dep_time\": \"18:00\", \"arr_time\": \"23:37\", \"latest_local_activity_finish_before_airport_buffer\": \"16:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1528351\", \"dep_time\": \"18:17\", \"arr_time\": \"23:45\", \"latest_local_activity_finish_before_airport_buffer\": \"16:17\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F0254494\", \"dep_time\": \"14:04\", \"arr_time\": \"19:58\", \"latest_local_activity_finish_before_airport_buffer\": \"12:04\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F2889665\", \"dep_time\": \"18:07\", \"arr_time\": \"23:43\", \"latest_local_activity_finish_before_airport_buffer\": \"16:07\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F0254417\", \"dep_time\": \"18:02\", \"arr_time\": \"00:07\", \"latest_local_activity_finish_before_airport_buffer\": \"16:02\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::484242.0\", \"Restaurant::432704.0\", \"Restaurant::479059.0\"], \"lunch\": [\"Restaurant::484242.0\", \"Restaurant::661032.0\", \"Restaurant::432704.0\", \"Restaurant::463481.0\", \"Restaurant::432607.0\", \"Restaurant::479059.0\"], \"dinner\": [\"Restaurant::484242.0\", \"Restaurant::661032.0\", \"Restaurant::432552.0\", \"Restaurant::433088.0\", \"Restaurant::463481.0\", \"Restaurant::432607.0\", \"Restaurant::1516303.0\", \"Restaurant::479059.0\", \"Restaurant::433073.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::3184389\", \"Attraction::103584\", \"Attraction::123109\", \"Attraction::563102\", \"Attraction::109350\", \"Attraction::531952\", \"Attraction::1050677\", \"Attraction::319153\", \"Attraction::143564\", \"Attraction::558679\"], \"afternoon_attraction\": [\"Attraction::3184389\", \"Attraction::103584\", \"Attraction::123109\", \"Attraction::563102\", \"Attraction::109350\", \"Attraction::531952\", \"Attraction::1050677\", \"Attraction::319153\", \"Attraction::143564\", \"Attraction::558679\"]}, \"event_slots_by_date\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::484242.0\", \"name\": \"Lola\"}, {\"node_key\": \"Restaurant::432704.0\", \"name\": \"Bacco Cafe\"}, {\"node_key\": \"Restaurant::479059.0\", \"name\": \"Chinook's\"}], \"lunch\": [{\"node_key\": \"Restaurant::484242.0\", \"name\": \"Lola\"}, {\"node_key\": \"Restaurant::661032.0\", \"name\": \"Purple Cafe and Wine Bar\"}, {\"node_key\": \"Restaurant::432704.0\", \"name\": \"Bacco Cafe\"}, {\"node_key\": \"Restaurant::463481.0\", \"name\": \"Duke's Seafood South Lake Union\"}, {\"node_key\": \"Restaurant::432607.0\", \"name\": \"Matt's in the Market\"}, {\"node_key\": \"Restaurant::479059.0\", \"name\": \"Chinook's\"}], \"dinner\": [{\"node_key\": \"Restaurant::484242.0\", \"name\": \"Lola\"}, {\"node_key\": \"Restaurant::661032.0\", \"name\": \"Purple Cafe and Wine Bar\"}, {\"node_key\": \"Restaurant::432552.0\", \"name\": \"Canlis Restaurant\"}, {\"node_key\": \"Restaurant::433088.0\", \"name\": \"Six Seven Restaurant\"}, {\"node_key\": \"Restaurant::463481.0\", \"name\": \"Duke's Seafood South Lake Union\"}, {\"node_key\": \"Restaurant::432607.0\", \"name\": \"Matt's in the Market\"}, {\"node_key\": \"Restaurant::1516303.0\", \"name\": \"Tilikum Place Cafe\"}, {\"node_key\": \"Restaurant::479059.0\", \"name\": \"Chinook's\"}, {\"node_key\": \"Restaurant::433073.0\", \"name\": \"El Gaucho Seattle\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-21\", \"required_slots\": {\"Flight::F1981804\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0253112\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0813571\": [], \"Flight::F1527003\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1981876\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-22\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-23\", \"required_slots\": {\"Flight::F1983044\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1528351\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F0254494\": [\"breakfast\", \"morning_attraction\"], \"Flight::F2889665\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F0254417\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-21\": [], \"2024-11-22\": [], \"2024-11-23\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_71",
+    "query_text": "Plan a 3-day trip for 7 people traveling from St. Louis to Seattle from November 21st to November 23rd, 2024, with a budget of $9,450. Accommodations should allow pets, and the itinerary should include dining options featuring American, French, Mediterranean, and Greek cuisines. Transportation should not involve self-driving.",
+    "request": {
+      "org": "St. Louis",
+      "dest": "Seattle",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-21', '2024-11-22', '2024-11-23']",
+      "people_number": 7,
+      "local_constraint": "{'house rule': 'pets', 'cuisine': ['American', 'French', 'Mediterranean', 'Greek'], 'room type': None, 'transportation': 'no self-driving', 'event': None, 'attraction': None}",
+      "budget": 9450,
+      "query": "Plan a 3-day trip for 7 people traveling from St. Louis to Seattle from November 21st to November 23rd, 2024, with a budget of $9,450. Accommodations should allow pets, and the itinerary should include dining options featuring American, French, Mediterranean, and Greek cuisines. Transportation should not involve self-driving.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Economical Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-21",
+      "2024-11-22",
+      "2024-11-23"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Adventure",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": "pets",
+      "cuisine": "American, French, Mediterranean, Greek",
+      "room type": null,
+      "transportation": "no self-driving",
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1981804",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "St. Louis",
+          "DestCityName": "Seattle",
+          "DepTime": "07:22",
+          "ArrTime": "09:37",
+          "Price": 344
+        }
+      },
+      {
+        "node_key": "Flight::F0253112",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "St. Louis",
+          "DestCityName": "Seattle",
+          "DepTime": "06:56",
+          "ArrTime": "09:22",
+          "Price": 439
+        }
+      },
+      {
+        "node_key": "Flight::F0813571",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "St. Louis",
+          "DestCityName": "Seattle",
+          "DepTime": "17:06",
+          "ArrTime": "19:45",
+          "Price": 562
+        }
+      },
+      {
+        "node_key": "Flight::F1527003",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "St. Louis",
+          "DestCityName": "Seattle",
+          "DepTime": "06:56",
+          "ArrTime": "09:14",
+          "Price": 666
+        }
+      },
+      {
+        "node_key": "Flight::F1981876",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-21",
+          "OriginCityName": "St. Louis",
+          "DestCityName": "Seattle",
+          "DepTime": "17:08",
+          "ArrTime": "19:19",
+          "Price": 807
+        }
+      },
+      {
+        "node_key": "Flight::F1983044",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Seattle",
+          "DestCityName": "St. Louis",
+          "DepTime": "18:00",
+          "ArrTime": "23:37",
+          "Price": 355
+        }
+      },
+      {
+        "node_key": "Flight::F1528351",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Seattle",
+          "DestCityName": "St. Louis",
+          "DepTime": "18:17",
+          "ArrTime": "23:45",
+          "Price": 379
+        }
+      },
+      {
+        "node_key": "Flight::F0254494",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Seattle",
+          "DestCityName": "St. Louis",
+          "DepTime": "14:04",
+          "ArrTime": "19:58",
+          "Price": 632
+        }
+      },
+      {
+        "node_key": "Flight::F2889665",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Seattle",
+          "DestCityName": "St. Louis",
+          "DepTime": "18:07",
+          "ArrTime": "23:43",
+          "Price": 648
+        }
+      },
+      {
+        "node_key": "Flight::F0254417",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Seattle",
+          "DestCityName": "St. Louis",
+          "DepTime": "18:02",
+          "ArrTime": "00:07",
+          "Price": 826
+        }
+      },
+      {
+        "node_key": "Accommodation::48447536.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "48447536.0",
+          "name": "Peaceful Classic Seattle Neighborhood",
+          "City": "Seattle",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$80 per night",
+            "originalPrice": null,
+            "price": "$80",
+            "qualifier": "night",
+            "total": "$397 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  288 reviews",
+            "localizedLabel": "4.95 (288)",
+            "average": 4.95,
+            "reviewsCount": 288
+          },
+          "coordinates": {
+            "latitude": 47.68619,
+            "longitude": -122.32183
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::54131555.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "54131555.0",
+          "name": "Cozy Studio with Kitchenette and Laundry",
+          "City": "Seattle",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No pets & No visitors",
+          "pricing": {
+            "label": "$123 per night, originally $135",
+            "originalPrice": "$135",
+            "price": "$123",
+            "qualifier": "night",
+            "total": "$611 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  120 reviews",
+            "localizedLabel": "4.93 (120)",
+            "average": 4.93,
+            "reviewsCount": 120
+          },
+          "coordinates": {
+            "latitude": 47.52099,
+            "longitude": -122.34899
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::20141183.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "20141183.0",
+          "name": "Queen Anne Courtyard Suite",
+          "City": "Seattle",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$145 per night, originally $157",
+            "originalPrice": "$157",
+            "price": "$145",
+            "qualifier": "night",
+            "total": "$722 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  411 reviews",
+            "localizedLabel": "5.0 (411)",
+            "average": 5,
+            "reviewsCount": 411
+          },
+          "coordinates": {
+            "latitude": 47.63611,
+            "longitude": -122.35632
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::21699076.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21699076.0",
+          "name": "2-King Executive Penthouse Near Pike & Waterfront",
+          "City": "Seattle",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No smoking & No pets",
+          "pricing": {
+            "label": "$206 per night, originally $332",
+            "originalPrice": "$332",
+            "price": "$206",
+            "qualifier": "night",
+            "total": "$1,030 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  422 reviews",
+            "localizedLabel": "4.93 (422)",
+            "average": 4.93,
+            "reviewsCount": 422
+          },
+          "coordinates": {
+            "latitude": 47.60691,
+            "longitude": -122.33871
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::20497066.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "20497066.0",
+          "name": "Pike Place Market Apt Water View and Balcony",
+          "City": "Seattle",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$222 per night, originally $276",
+            "originalPrice": "$276",
+            "price": "$222",
+            "qualifier": "night",
+            "total": "$1,107 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  737 reviews",
+            "localizedLabel": "4.93 (737)",
+            "average": 4.93,
+            "reviewsCount": 737
+          },
+          "coordinates": {
+            "latitude": 47.60626,
+            "longitude": -122.34187
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::3184389",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3184389",
+          "name": "Chihuly Garden and Glass",
+          "City": "Seattle",
+          "subtype": [
+            "Art Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 836 things to do in Seattle",
+          "address": "305 Harrison Street, Seattle, WA 98109-4623",
+          "description": "This must-see museum exhibits creative and colorful blown glass sculptures of renowned artist Dale Chihuly. Eight indoor galleries and lush landscaped gardens feature a mix of new and past significant works. They are awe-inspiring whether you visit during the day, or in the evening when the sculptures are lit up. The highlight here is a 100-foot-long glass sculpture suspended in a glass conservatory—one of his largest ever. Located at the base of the iconic Space Needle, you might want to buy..."
+        }
+      },
+      {
+        "node_key": "Attraction::103584",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103584",
+          "name": "Pike Place Market",
+          "City": "Seattle",
+          "subtype": [
+            "Farmers Markets"
+          ],
+          "subcategories": [
+            "Shopping",
+            "Food & Drink"
+          ],
+          "visit_duration": "2.0",
+          "rating": "4.5",
+          "rankingString": "#3 of 836 things to do in Seattle",
+          "address": "85 Pike St, Seattle, WA 98101",
+          "description": "The Pike Place Market has been a defining Seattle icon for more than a century. Considered by many “the soul of Seattle,” the Market spans nine historic acres in the center of downtown where everyday locals and tourists alike shop, visit, eat and discover. Founded in 1907, the Market is one of the oldest and largest continuously operating public markets in the United States and is brought to life by the hundreds of farmers, crafters, small businesses, and residents that call it “home”. For mo..."
+        }
+      },
+      {
+        "node_key": "Attraction::123109",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "123109",
+          "name": "Space Needle",
+          "City": "Seattle",
+          "subtype": [
+            "Observation Decks & Towers",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 836 things to do in Seattle",
+          "address": "400 Broad Street, Seattle, WA 98109-4607",
+          "description": "Located in the Lower Queen Anne neighborhood, this iconic landmark and observation tower was built for the 1962 World’s Fair. Perch on the glass benches known as “Skyrisers” and gaze out of floor-to-ceiling windows, snap a selfie at the outdoor deck, or head upstairs to The Loupe, an indoor lounge featuring the world’s first and only rotating glass floor. Here, you’ll be greeted with 360-degree views of the downtown Seattle skyline, Mount Rainier, Elliot Bay, and the Olympic and Cascade Mount..."
+        }
+      },
+      {
+        "node_key": "Attraction::563102",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "563102",
+          "name": "Washington State Ferries",
+          "City": "Seattle",
+          "subtype": [
+            "Ferries"
+          ],
+          "subcategories": [
+            "Transportation"
+          ],
+          "visit_duration": "1.5",
+          "rating": "4.5",
+          "rankingString": "#26 of 836 things to do in Seattle",
+          "address": "801 Alaskan Way Pier 52, Seattle, WA 98104-1410"
+        }
+      },
+      {
+        "node_key": "Attraction::109350",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109350",
+          "name": "The Museum of Flight",
+          "City": "Seattle",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 836 things to do in Seattle",
+          "address": "9404 East Marginal Way South, Seattle, WA 98108-4046",
+          "description": "Walk the aisle of JFK's Air Force One and climb aboard the Concorde at Seattle’s Museum of Flight. Built around Boeing’s original factory, it is the world’s largest air and space museum. Here, you can learn everything about the history of aviation, from the Wright Brothers and the exploration of Mars, to revolutionary aircrafts and spy planes. You’ll get to barrel-roll a Mustang, land on the moon, soar over Puget Sound in a simulator, and even sit at the controls of the fastest jet on Earth. ..."
+        }
+      },
+      {
+        "node_key": "Attraction::531952",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "531952",
+          "name": "T-Mobile Park",
+          "City": "Seattle",
+          "subtype": [
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#16 of 836 things to do in Seattle",
+          "address": "1250 1st Ave S, Seattle, WA 98134-1216"
+        }
+      },
+      {
+        "node_key": "Attraction::1050677",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1050677",
+          "name": "Kerry Park",
+          "City": "Seattle",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#6 of 836 things to do in Seattle",
+          "address": "211 W Highland Dr Queen Ann Hill, Seattle, WA 98119-3529",
+          "description": "Get a postcard view of downtown Seattle and Elliott Bay against the backdrop of snow-capped Mount Rainier from this beautiful terraced park. You'll also get spectacular views of the Space Needle, a 605-foot-tall observation tower. Take pictures and lounge or have a picnic on the lawn. The best time to visit is during sunrise, or at night to admire the buildings and ferries at the bay glow with lights. Though located in the quiet Queen Anne neighborhood, Kerry Park is less than a mile away fro..."
+        }
+      },
+      {
+        "node_key": "Attraction::319153",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "319153",
+          "name": "Hiram M. Chittenden Locks",
+          "City": "Seattle",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Piers & Boardwalks",
+            "Bodies of Water"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#9 of 836 things to do in Seattle",
+          "address": "3015 NW 54th St, Seattle, WA 98107-4213",
+          "description": "The Hiram M. Chittenden Locks (locally known as the Ballard Locks) is a waterway system that connects the saltwater of the Puget Sound to the fresh water of the Ship Canal, which sits about 20 feet above sea level. Boats enter the locks, the gates close and the water rises or falls to the level of the destination waterway. Watching boats pass through the locks, exploring the 7 acres of botanical gardens and looking for fish on the fish ladder is fun and free entertainment that draws locals an..."
+        }
+      },
+      {
+        "node_key": "Attraction::143564",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "143564",
+          "name": "Sky View Observatory",
+          "City": "Seattle",
+          "subtype": [
+            "Observation Decks & Towers",
+            "Architectural Buildings"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#29 of 836 things to do in Seattle",
+          "address": "700 4th Ave 73rd Floor, Columbia Center, Seattle, WA 98104-7097",
+          "description": "Private View Packages Now Available! Experience Sky View Observatory exclusively for 1-Hour for yourself and up to 4 people - 5 People total! * Temporarily Closed for General Admission.* Sky View Observatory in downtown Seattle is the ideal first stop on your visit to the Emerald City. Here you can map out your entire Pacific Northwest experience! Sky View is located on the 73rd floor of Columbia Center. At 902 feet, it offers the tallest public viewing area in the Pacific Northwest. The 360-..."
+        }
+      },
+      {
+        "node_key": "Attraction::558679",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "558679",
+          "name": "Seattle Public Library",
+          "City": "Seattle",
+          "subtype": [
+            "Libraries",
+            "Architectural Buildings"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Traveler Resources"
+          ],
+          "visit_duration": "2.0",
+          "rating": "4.5",
+          "rankingString": "#21 of 836 things to do in Seattle",
+          "address": "1000 4th Ave, Seattle, WA 98104-1109"
+        }
+      },
+      {
+        "node_key": "Restaurant::484242.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "484242.0",
+          "name": "Lola",
+          "City": "Seattle",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Mediterranean",
+            "Greek"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2000 B 4th Ave, Seattle, WA 98121-2415",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::661032.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "661032.0",
+          "name": "Purple Cafe and Wine Bar",
+          "City": "Seattle",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Wine Bar"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1225 4th Ave, Seattle, WA 98101-3005",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::432552.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "432552.0",
+          "name": "Canlis Restaurant",
+          "City": "Seattle",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Contemporary"
+          ],
+          "avg_cost": "80.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2576 Aurora Ave N, Seattle, WA 98109"
+        }
+      },
+      {
+        "node_key": "Restaurant::433088.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "433088.0",
+          "name": "Six Seven Restaurant",
+          "City": "Seattle",
+          "mealTypes": [
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "80.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2411 Alaskan Way, Seattle, WA 98121-1313",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::432704.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "432704.0",
+          "name": "Bacco Cafe",
+          "City": "Seattle",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "86 Pine St Corner of 1st Ave & Stewart Street, Seattle, WA 98101-1531",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::463481.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "463481.0",
+          "name": "Duke's Seafood South Lake Union",
+          "City": "Seattle",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1111 Fairview Ave N, Seattle, WA 98109",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::432607.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "432607.0",
+          "name": "Matt's in the Market",
+          "City": "Seattle",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "Contemporary"
+          ],
+          "avg_cost": "80.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "94 Pike St Ste 32, Seattle, WA 98101-2066",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1516303.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1516303.0",
+          "name": "Tilikum Place Cafe",
+          "City": "Seattle",
+          "mealTypes": [
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "French",
+            "American",
+            "Gastropub"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "407 Cedar St, Seattle, WA 98121-1519",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [],
+              [],
+              [],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::479059.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "479059.0",
+          "name": "Chinook's",
+          "City": "Seattle",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "50.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1900 W Nickerson St Ste 103, Seattle, WA 98119-1661",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::433073.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "433073.0",
+          "name": "El Gaucho Seattle",
+          "City": "Seattle",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "80.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2200 Western Ave Ste. 101 cross street: Blanchard, Seattle, WA 98121-1921",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 50.28
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 50.28
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 110.15
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 110.15
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 257.24
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 257.24
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 260.94
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 302.06
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 302.06
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 304.13
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 308.02
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 308.02
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 308.26
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 310.0
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 319.15
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 368.99
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 368.99
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 405.4
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 424.44
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 466.27
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 466.27
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 480.18
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 480.18
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 490.02
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 514.01
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 514.01
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 520.12
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 520.12
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 554.94
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 653.66
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 672.81
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 672.81
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 674.79
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 674.79
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 704.8
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 727.54
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 742.47
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 785.3
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 786.17
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 788.99
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 788.99
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 793.44
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 793.44
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 820.94
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 851.12
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 886.19
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 886.19
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 906.29
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 906.29
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 928.92
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 928.92
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 931.13
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 931.13
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 931.63
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 931.63
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 944.15
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 944.15
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 987.08
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 987.08
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1016.33
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1016.33
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1031.37
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1052.01
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1052.01
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::432552.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1056.58
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1070.59
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1070.59
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1097.09
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1097.09
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1146.77
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1146.77
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1181.14
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1197.48
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1197.48
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1201.7
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1201.7
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226.08
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226.08
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1298.64
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1298.64
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1343.32
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1343.32
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1358.87
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1358.87
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1368.31
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1397.01
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1405.78
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1405.78
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1443.48
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1443.48
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1452.87
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1452.87
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1473.5
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1473.5
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1503.49
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1503.49
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1535.13
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1578.41
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1578.41
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1602.96
+      },
+      {
+        "source": "Attraction::319153",
+        "target": "Restaurant::479059.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1628.71
+      },
+      {
+        "source": "Restaurant::479059.0",
+        "target": "Attraction::319153",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1628.71
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1631.09
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1631.09
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1675.73
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1689.34
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1689.34
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1700.49
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1700.49
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1703.53
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1707.46
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1707.46
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1725.35
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1750.64
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1750.64
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1764.26
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1773.91
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1785.88
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1794.99
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::432552.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1807.79
+      },
+      {
+        "source": "Restaurant::432552.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1807.79
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1816.31
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1823.1
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1823.1
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1833.46
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1833.46
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1858.02
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1858.02
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1915.17
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1956.73
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1956.73
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1968.49
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1968.49
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1987.93
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1987.93
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2000.71
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2037.07
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2037.07
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2123.14
+      },
+      {
+        "source": "Attraction::103584",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2150.31
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::103584",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2150.31
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2171.8
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2171.8
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2180.04
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2180.04
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2350.61
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2350.61
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2350.77
+      },
+      {
+        "source": "Attraction::558679",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2354.41
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::558679",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2354.41
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2468.4
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2485.99
+      },
+      {
+        "source": "Restaurant::484242.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2485.99
+      },
+      {
+        "source": "Attraction::3184389",
+        "target": "Restaurant::432552.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2511.1
+      },
+      {
+        "source": "Restaurant::432552.0",
+        "target": "Attraction::3184389",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2511.1
+      },
+      {
+        "source": "Attraction::123109",
+        "target": "Restaurant::432552.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2520.17
+      },
+      {
+        "source": "Restaurant::432552.0",
+        "target": "Attraction::123109",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2520.17
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2536.46
+      },
+      {
+        "source": "Restaurant::433073.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2536.46
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2565.01
+      },
+      {
+        "source": "Restaurant::432704.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2565.01
+      },
+      {
+        "source": "Attraction::143564",
+        "target": "Restaurant::463481.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2622.86
+      },
+      {
+        "source": "Restaurant::463481.0",
+        "target": "Attraction::143564",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2622.86
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2658.57
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::432607.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2709.11
+      },
+      {
+        "source": "Restaurant::432607.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2709.11
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::433073.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2759.26
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::433088.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2760.09
+      },
+      {
+        "source": "Restaurant::433088.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2760.09
+      },
+      {
+        "source": "Attraction::563102",
+        "target": "Restaurant::432552.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2770.25
+      },
+      {
+        "source": "Restaurant::432552.0",
+        "target": "Attraction::563102",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2770.25
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::484242.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2829.26
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::479059.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2858.16
+      },
+      {
+        "source": "Accommodation::20497066.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2914.08
+      },
+      {
+        "source": "Accommodation::21699076.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2970.04
+      },
+      {
+        "source": "Attraction::1050677",
+        "target": "Restaurant::661032.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3030.9
+      },
+      {
+        "source": "Restaurant::661032.0",
+        "target": "Attraction::1050677",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3030.9
+      },
+      {
+        "source": "Accommodation::20141183.0",
+        "target": "Restaurant::432704.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3103.91
+      },
+      {
+        "source": "Attraction::531952",
+        "target": "Restaurant::1516303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3160.86
+      },
+      {
+        "source": "Restaurant::1516303.0",
+        "target": "Attraction::531952",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3160.86
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-21",
+        "2024-11-22",
+        "2024-11-23"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1981804",
+          "dep_time": "07:22",
+          "arr_time": "09:37",
+          "local_activity_start_after_arrival_buffer": "10:07",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0253112",
+          "dep_time": "06:56",
+          "arr_time": "09:22",
+          "local_activity_start_after_arrival_buffer": "09:52",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0813571",
+          "dep_time": "17:06",
+          "arr_time": "19:45",
+          "local_activity_start_after_arrival_buffer": "20:15",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F1527003",
+          "dep_time": "06:56",
+          "arr_time": "09:14",
+          "local_activity_start_after_arrival_buffer": "09:44",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1981876",
+          "dep_time": "17:08",
+          "arr_time": "19:19",
+          "local_activity_start_after_arrival_buffer": "19:49",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F1983044",
+          "dep_time": "18:00",
+          "arr_time": "23:37",
+          "latest_local_activity_finish_before_airport_buffer": "16:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1528351",
+          "dep_time": "18:17",
+          "arr_time": "23:45",
+          "latest_local_activity_finish_before_airport_buffer": "16:17",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F0254494",
+          "dep_time": "14:04",
+          "arr_time": "19:58",
+          "latest_local_activity_finish_before_airport_buffer": "12:04",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F2889665",
+          "dep_time": "18:07",
+          "arr_time": "23:43",
+          "latest_local_activity_finish_before_airport_buffer": "16:07",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F0254417",
+          "dep_time": "18:02",
+          "arr_time": "00:07",
+          "latest_local_activity_finish_before_airport_buffer": "16:02",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::484242.0",
+          "Restaurant::432704.0",
+          "Restaurant::479059.0"
+        ],
+        "lunch": [
+          "Restaurant::484242.0",
+          "Restaurant::661032.0",
+          "Restaurant::432704.0",
+          "Restaurant::463481.0",
+          "Restaurant::432607.0",
+          "Restaurant::479059.0"
+        ],
+        "dinner": [
+          "Restaurant::484242.0",
+          "Restaurant::661032.0",
+          "Restaurant::432552.0",
+          "Restaurant::433088.0",
+          "Restaurant::463481.0",
+          "Restaurant::432607.0",
+          "Restaurant::1516303.0",
+          "Restaurant::479059.0",
+          "Restaurant::433073.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::3184389",
+          "Attraction::103584",
+          "Attraction::123109",
+          "Attraction::563102",
+          "Attraction::109350",
+          "Attraction::531952",
+          "Attraction::1050677",
+          "Attraction::319153",
+          "Attraction::143564",
+          "Attraction::558679"
+        ],
+        "afternoon_attraction": [
+          "Attraction::3184389",
+          "Attraction::103584",
+          "Attraction::123109",
+          "Attraction::563102",
+          "Attraction::109350",
+          "Attraction::531952",
+          "Attraction::1050677",
+          "Attraction::319153",
+          "Attraction::143564",
+          "Attraction::558679"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-21": [],
+        "2024-11-22": [],
+        "2024-11-23": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::484242.0",
+            "name": "Lola"
+          },
+          {
+            "node_key": "Restaurant::432704.0",
+            "name": "Bacco Cafe"
+          },
+          {
+            "node_key": "Restaurant::479059.0",
+            "name": "Chinook's"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::484242.0",
+            "name": "Lola"
+          },
+          {
+            "node_key": "Restaurant::661032.0",
+            "name": "Purple Cafe and Wine Bar"
+          },
+          {
+            "node_key": "Restaurant::432704.0",
+            "name": "Bacco Cafe"
+          },
+          {
+            "node_key": "Restaurant::463481.0",
+            "name": "Duke's Seafood South Lake Union"
+          },
+          {
+            "node_key": "Restaurant::432607.0",
+            "name": "Matt's in the Market"
+          },
+          {
+            "node_key": "Restaurant::479059.0",
+            "name": "Chinook's"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::484242.0",
+            "name": "Lola"
+          },
+          {
+            "node_key": "Restaurant::661032.0",
+            "name": "Purple Cafe and Wine Bar"
+          },
+          {
+            "node_key": "Restaurant::432552.0",
+            "name": "Canlis Restaurant"
+          },
+          {
+            "node_key": "Restaurant::433088.0",
+            "name": "Six Seven Restaurant"
+          },
+          {
+            "node_key": "Restaurant::463481.0",
+            "name": "Duke's Seafood South Lake Union"
+          },
+          {
+            "node_key": "Restaurant::432607.0",
+            "name": "Matt's in the Market"
+          },
+          {
+            "node_key": "Restaurant::1516303.0",
+            "name": "Tilikum Place Cafe"
+          },
+          {
+            "node_key": "Restaurant::479059.0",
+            "name": "Chinook's"
+          },
+          {
+            "node_key": "Restaurant::433073.0",
+            "name": "El Gaucho Seattle"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-21": [],
+        "2024-11-22": [],
+        "2024-11-23": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-21",
+          "required_slots": {
+            "Flight::F1981804": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0253112": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0813571": [],
+            "Flight::F1527003": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1981876": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-22",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-23",
+          "required_slots": {
+            "Flight::F1983044": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1528351": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F0254494": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F2889665": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F0254417": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-21": [],
+      "2024-11-22": [],
+      "2024-11-23": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

@@ -1,0 +1,3612 @@
+{
+  "query_id": "idx_63",
+  "query_text": "Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.",
+  "request": {
+    "org": "Boston",
+    "dest": "Wilmington",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-02', '2024-11-03', '2024-11-04']",
+    "people_number": 4,
+    "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': 'Sights & Landmarks', 'transportation': None}",
+    "budget": 4500,
+    "query": "Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.",
+    "level": "medium",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Economical Traveler; Location Preference: Cities"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Cultural Exploration",
+    "spending_preference": "Economical Traveler",
+    "location_preference": "Cities"
+  },
+  "constraints": {
+    "house rule": null,
+    "cuisine": null,
+    "room type": null,
+    "event": null,
+    "attraction": "Sights & Landmarks",
+    "transportation": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This itinerary optimizes the use of available flights, accommodations, and attractions while staying within the budget and adhering to the traveler's preferences.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 4500.0,
+    "min_estimated_total_cost": 977.0,
+    "max_estimated_total_cost": 977.0,
+    "best_option_remaining_budget": 3523.0
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 977.0,
+      "stay": {
+        "node_key": "Accommodation::42770861.0",
+        "label": "Accommodation",
+        "name": "Chic Loft | Downtown | Front & Market",
+        "id": "42770861.0",
+        "City": "Wilmington",
+        "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+      },
+      "outbound": {
+        "node_key": "Flight::F2580987",
+        "label": "Flight",
+        "name": "F2580987: Boston to Wilmington, 11:54-14:01",
+        "Flight Number": "F2580987",
+        "FlightDate": "2024-11-02",
+        "OriginCityName": "Boston",
+        "DestCityName": "Wilmington",
+        "Price": 276,
+        "DepTime": "11:54",
+        "ArrTime": "14:01"
+      },
+      "return": {
+        "node_key": "Flight::F2125390",
+        "label": "Flight",
+        "name": "F2125390: Wilmington to Boston, 14:54-16:46",
+        "Flight Number": "F2125390",
+        "FlightDate": "2024-11-04",
+        "OriginCityName": "Wilmington",
+        "DestCityName": "Boston",
+        "Price": 153,
+        "DepTime": "14:54",
+        "ArrTime": "16:46"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-02",
+          "current_city": "Wilmington",
+          "llm_notes": "Day 1 includes the outbound flight, breakfast, morning attraction, lunch, and dinner. The afternoon attraction is chosen based on proximity and visit duration.",
+          "outbound_flight": {
+            "node_key": "Flight::F2580987",
+            "label": "Flight",
+            "name": "F2580987: Boston to Wilmington, 11:54-14:01",
+            "Flight Number": "F2580987",
+            "FlightDate": "2024-11-02",
+            "OriginCityName": "Boston",
+            "DestCityName": "Wilmington",
+            "Price": 276,
+            "DepTime": "11:54",
+            "ArrTime": "14:01"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::42770861.0",
+            "label": "Accommodation",
+            "name": "Chic Loft | Downtown | Front & Market",
+            "id": "42770861.0",
+            "City": "Wilmington",
+            "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::6561484.0",
+            "label": "Restaurant",
+            "name": "The Peppered Cupcake",
+            "id": "6561484.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "5.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::126588",
+            "label": "Attraction",
+            "name": "Battleship North Carolina",
+            "id": "126588",
+            "City": "Wilmington",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::2249367.0",
+            "label": "Restaurant",
+            "name": "Genki Sushi",
+            "id": "2249367.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "5.0"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::4020985",
+            "label": "Attraction",
+            "name": "Riverwalk",
+            "id": "4020985",
+            "City": "Wilmington",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1493697.0",
+            "label": "Restaurant",
+            "name": "Copper Penny",
+            "id": "1493697.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::42770861.0",
+            "label": "Accommodation",
+            "name": "Chic Loft | Downtown | Front & Market",
+            "id": "42770861.0",
+            "City": "Wilmington",
+            "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-03",
+          "current_city": "Wilmington",
+          "llm_notes": "Day 2 is a full non-travel day with breakfast, morning attraction, lunch, afternoon attraction, and dinner. The attractions are chosen based on proximity and diversity.",
+          "start_accommodation": {
+            "node_key": "Accommodation::42770861.0",
+            "label": "Accommodation",
+            "name": "Chic Loft | Downtown | Front & Market",
+            "id": "42770861.0",
+            "City": "Wilmington",
+            "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::6561484.0",
+            "label": "Restaurant",
+            "name": "The Peppered Cupcake",
+            "id": "6561484.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "5.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::318472",
+            "label": "Attraction",
+            "name": "Airlie Gardens",
+            "id": "318472",
+            "City": "Wilmington",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::783958.0",
+            "label": "Restaurant",
+            "name": "Front Street Brewery",
+            "id": "783958.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::2258302",
+            "label": "Attraction",
+            "name": "Bellamy Mansion",
+            "id": "2258302",
+            "City": "Wilmington",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1493311.0",
+            "label": "Restaurant",
+            "name": "Caprice Bistro",
+            "id": "1493311.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::42770861.0",
+            "label": "Accommodation",
+            "name": "Chic Loft | Downtown | Front & Market",
+            "id": "42770861.0",
+            "City": "Wilmington",
+            "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-04",
+          "current_city": "Wilmington",
+          "llm_notes": "Day 3 includes the return flight, breakfast, morning attraction, and lunch. Dinner is skipped as the return flight is too early.",
+          "start_accommodation": {
+            "node_key": "Accommodation::42770861.0",
+            "label": "Accommodation",
+            "name": "Chic Loft | Downtown | Front & Market",
+            "id": "42770861.0",
+            "City": "Wilmington",
+            "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::6561484.0",
+            "label": "Restaurant",
+            "name": "The Peppered Cupcake",
+            "id": "6561484.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "5.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::527037",
+            "label": "Attraction",
+            "name": "Burgwin-Wright House and Gardens",
+            "id": "527037",
+            "City": "Wilmington",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::1493697.0",
+            "label": "Restaurant",
+            "name": "Copper Penny",
+            "id": "1493697.0",
+            "City": "Wilmington",
+            "avg_cost": "32.5",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F2125390",
+            "label": "Flight",
+            "name": "F2125390: Wilmington to Boston, 14:54-16:46",
+            "Flight Number": "F2125390",
+            "FlightDate": "2024-11-04",
+            "OriginCityName": "Wilmington",
+            "DestCityName": "Boston",
+            "Price": 153,
+            "DepTime": "14:54",
+            "ArrTime": "16:46"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_63",
+    "node_count": 45,
+    "edge_count": 658,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::42770861.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "7",
+        "house_rules": "No parties",
+        "State": "North Carolina",
+        "name": "Chic Loft | Downtown | Front & Market",
+        "coordinates": "{\"latitude\": 34.23521041870117, \"longitude\": -77.94835662841797}",
+        "rating": "{\"label\": \"4.95 out of 5 average rating,  255 reviews\", \"localizedLabel\": \"4.95 (255)\", \"average\": 4.95, \"reviewsCount\": 255}",
+        "id": "42770861.0",
+        "City": "Wilmington",
+        "title": "Loft in Wilmington",
+        "url": "https://www.airbnb.com/rooms/42770861?locale=en-US&currency=USD&check_in=2024-11-30&check_out=2024-12-05",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$144 per night\", \"originalPrice\": null, \"price\": \"$144\", \"qualifier\": \"night\", \"total\": \"$718 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:398",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::126588",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "3625",
+        "latitude": "34.23644",
+        "rating": "4.5",
+        "description": "As you walk the decks of the NORTH CAROLINA, imagine yourself in the South Pacific during WWII searching the sky for enemy aircraft, anticipating what may happen next. Step aboard the most decorated US Battleship of WWII! Explore nine decks, crew's quarters, gun turrets, and much more. Discover where history comes alive. Located at the junctions of highways 17, 76, 74, 421 on the Cape Fear River across from historic downtown Wilmington. Open every day!",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1 Battleship Rd\", \"street2\": null, \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-2577\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.24\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FEagles-Island-50-minute-Narrated-Boat-Cruise%2Fd33417-351021P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=f315a598de9ae6951&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=126588&clt=TD&from=api&nt=true\", \"price\": \"$24.00\", \"roundedUpPrice\": \"$24\", \"offerType\": null, \"title\": \"Eagles Island 50 minute Narrated Boat Cruise\", \"productCode\": \"351021P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0e/c9/d0/fb.jpg\", \"description\": null, \"primaryCategory\": \"Day Cruises\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2F2-Hour-Wilmington-Small-Group-Tour-on-an-Electric-Bike%2Fd33417-362424P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=95253a79316083c40&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=126588&clt=TD&from=api&nt=true\", \"price\": \"$60.00\", \"roundedUpPrice\": \"$60\", \"offerType\": null, \"title\": \"2-Hr, 30-Min Tour de Wilmington E-Bike Tour/Sightseeing/History\", \"productCode\": \"362424P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/e1/97/e7.jpg\", \"description\": null, \"primaryCategory\": \"Self-guided Tours & Rentals\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FPrivate-Tiki-Boat-Tour-on-Cape-Fear-River%2Fd33417-41798P6%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=198a6118398f57a48&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=126588&clt=TD&from=api&nt=true\", \"price\": \"$299.00\", \"roundedUpPrice\": \"$299\", \"offerType\": null, \"title\": \"Private Tiki Boat Tour on Cape Fear River\", \"productCode\": \"41798P6\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/e7/2c/43.jpg\", \"description\": null, \"primaryCategory\": \"Nature & Wildlife\"}]}",
+        "subtype": [
+          "Ships"
+        ],
+        "ratingHistogram": "{\"count1\": 6, \"count2\": 7, \"count3\": 91, \"count4\": 767, \"count5\": 2754}",
+        "location_contains_city": "True",
+        "id": "126588",
+        "longitude": "-77.95376",
+        "website": "http://www.battleshipnc.com",
+        "rankingPosition": "1.0",
+        "address": "1 Battleship Rd, Wilmington, NC 28401-2577",
+        "neighborhoodLocations": [],
+        "rankingString": "#1 of 154 things to do in Wilmington",
+        "City": "Wilmington",
+        "localName": "Battleship North Carolina",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g49673-d126588-Reviews-Battleship_North_Carolina-Wilmington_North_Carolina.html",
+        "localAddress": "1 Battleship Rd, 28401-2577",
+        "rankingDenominator": "154.0",
+        "name": "Battleship North Carolina",
+        "locationString": "Wilmington, North Carolina",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.260690212"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2787",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::2258302",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "645",
+        "latitude": "34.23603",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"503 Market St\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-4634\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.25\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FE-Bike-Adventure-to-Wilmingtons-Historic-sites-and-Breweries%2Fd33417-327593P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=6c46ab87db1fb91f8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=2258302&clt=TD&from=api&nt=true\", \"price\": \"$85.00\", \"roundedUpPrice\": \"$85\", \"offerType\": null, \"title\": \"E-Bike Adventure to Wilmington's Historic sites & Breweries (4hr)\", \"productCode\": \"327593P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0d/0b/de/2a.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FHistory-and-Architecture-Walking-Tour%2Fd33417-346852P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=5caac8a9af5856e9f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=2258302&clt=TD&from=api&nt=true\", \"price\": \"$25.00\", \"roundedUpPrice\": \"$25\", \"offerType\": null, \"title\": \"History and Architecture Walking Tour \", \"productCode\": \"346852P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/47/71/91.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FWilmington-Wine-and-History-Stroll%2Fd33417-346852P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=aa7d3552f1bf181e9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=2258302&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \"Wilmington Wine and History Stroll\", \"productCode\": \"346852P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/90/97/7e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Specialty Museums",
+          "Historic Sites",
+          "Architectural Buildings"
+        ],
+        "ratingHistogram": "{\"count1\": 1, \"count2\": 11, \"count3\": 38, \"count4\": 186, \"count5\": 409}",
+        "location_contains_city": "True",
+        "id": "2258302",
+        "longitude": "-77.942986",
+        "website": "http://www.bellamymansion.org",
+        "rankingPosition": "3.0",
+        "address": "503 Market St, Wilmington, NC 28401-4634",
+        "neighborhoodLocations": [],
+        "rankingString": "#3 of 154 things to do in Wilmington",
+        "City": "Wilmington",
+        "localName": "Bellamy Mansion",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g49673-d2258302-Reviews-Bellamy_Mansion-Wilmington_North_Carolina.html",
+        "localAddress": "503 Market St, 28401-4634",
+        "rankingDenominator": "154.0",
+        "name": "Bellamy Mansion",
+        "locationString": "Wilmington, North Carolina",
+        "subcategories": [
+          "Sights & Landmarks",
+          "Museums"
+        ],
+        "rawRanking": "4.086565971"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2794",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::318472",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1137",
+        "latitude": "34.218296",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"300 Airlie Rd\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28403-3706\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.65\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2F3-Hour-E-Bike-Airlie-Gardens-Tour-Sightseeing-Botanical-Gardens%2Fd33417-362424P7%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=deee0f597ded4b414&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=318472&clt=TD&from=api&nt=true\", \"price\": \"$65.00\", \"roundedUpPrice\": \"$65\", \"offerType\": null, \"title\": \"3-Hour Wilmington, NC E-Bike Airlie Gardens Tour\", \"productCode\": \"362424P7\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/d9/20/d8.jpg\", \"description\": null, \"primaryCategory\": \"4WD, ATV & Off-Road Tours\"}]}",
+        "subtype": [
+          "Historic Sites"
+        ],
+        "ratingHistogram": "{\"count1\": 6, \"count2\": 12, \"count3\": 55, \"count4\": 252, \"count5\": 812}",
+        "location_contains_city": "True",
+        "id": "318472",
+        "longitude": "-77.83024",
+        "website": "http://www.airliegardens.org/",
+        "rankingPosition": "2.0",
+        "address": "300 Airlie Rd, Wilmington, NC 28403-3706",
+        "neighborhoodLocations": [],
+        "rankingString": "#2 of 154 things to do in Wilmington",
+        "City": "Wilmington",
+        "localName": "Airlie Gardens",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g49673-d318472-Reviews-Airlie_Gardens-Wilmington_North_Carolina.html",
+        "localAddress": "300 Airlie Rd, 28403-3706",
+        "rankingDenominator": "154.0",
+        "name": "Airlie Gardens",
+        "locationString": "Wilmington, North Carolina",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.168931007"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2786",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::4020985",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1460",
+        "latitude": "34.23523",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"S Water st\", \"street2\": null, \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.30\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FE-Bike-Adventure-to-Wilmingtons-Historic-sites-and-Breweries%2Fd33417-327593P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=6c46ab87db1fb91f8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=4020985&clt=TD&from=api&nt=true\", \"price\": \"$85.00\", \"roundedUpPrice\": \"$85\", \"offerType\": null, \"title\": \"E-Bike Adventure to Wilmington's Historic sites & Breweries (4hr)\", \"productCode\": \"327593P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0d/0b/de/2a.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FWilmington-Wine-and-History-Stroll%2Fd33417-346852P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=aa7d3552f1bf181e9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=4020985&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \"Wilmington Wine and History Stroll\", \"productCode\": \"346852P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/90/97/7e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FHalf-Day-E-Bike-Tour-of-ONE-TREE-HILL-Filming-Locations%2Fd33417-327593P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=2cbb05464569a4478&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=4020985&clt=TD&from=api&nt=true\", \"price\": \"$85.00\", \"roundedUpPrice\": \"$85\", \"offerType\": null, \"title\": \"Half-Day E-Bike Tour of the Filming Locations in One Tree Hill\", \"productCode\": \"327593P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/00/85/2e.jpg\", \"description\": null, \"primaryCategory\": \"Movie & TV Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FChicago%2FMust-have-Chicago-photos%2Fd673-304493P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=d2802fec21fa2153a&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=4020985&clt=TD&from=api&nt=true\", \"price\": \"$179.00\", \"roundedUpPrice\": \"$179\", \"offerType\": null, \"title\": \"1 Hour Photoshoot in Chicago\", \"productCode\": \"304493P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/81/6c/b7.jpg\", \"description\": null, \"primaryCategory\": \"Honeymoon Packages\"}]}",
+        "subtype": [
+          "Points of Interest & Landmarks"
+        ],
+        "ratingHistogram": "{\"count1\": 10, \"count2\": 24, \"count3\": 162, \"count4\": 447, \"count5\": 817}",
+        "location_contains_city": "True",
+        "id": "4020985",
+        "longitude": "-77.94994",
+        "website": "http://www.wilmingtondowntown.com/go/riverwalk",
+        "rankingPosition": "8.0",
+        "address": "S Water st, Wilmington, NC 28401",
+        "neighborhoodLocations": [],
+        "rankingString": "#8 of 154 things to do in Wilmington",
+        "City": "Wilmington",
+        "localName": "Riverwalk",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g49673-d4020985-Reviews-Riverwalk-Wilmington_North_Carolina.html",
+        "localAddress": "S Water st, 28401",
+        "rankingDenominator": "154.0",
+        "name": "Riverwalk",
+        "locationString": "Wilmington, North Carolina",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.928658485"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2792",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::527037",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "128",
+        "latitude": "34.235207",
+        "rating": "4.5",
+        "description": "Built in 1770, the Burgwin-Wright House & Gardens is the only structure in Wilmington from the colonial era open to the public. Operated as a museum house, it offers visitors a unique opportunity to experience what life was like in the 18th century. All rooms have been restored and showcase hundreds of objects. Occupying an acre, gardens consist of seven areas, including an orchard, a kitchen garden and a rose garden. Built using the walls of a former city jail as a foundation, circa 1744, the house retains many vestiges of its previous incarnation such as outdoor and sub-basement jail cells and a freestanding kitchen house with a massive hearth complete with period cooking utensils. Guided tours include the stories about the people who lived and worked here and the women’s organization that saved this landmark from the wrecking ball. Open Mon.-Sat. 10am-4pm, guided tours are hourly with the last tour at 3pm. The visitor center houses a gift shop, art gallery and exhibit hall.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"224 Market St\", \"street2\": null, \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-4444\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.25\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FHistory-and-Architecture-Walking-Tour%2Fd33417-346852P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=5caac8a9af5856e9f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=527037&clt=TD&from=api&nt=true\", \"price\": \"$25.00\", \"roundedUpPrice\": \"$25\", \"offerType\": null, \"title\": \"History and Architecture Walking Tour \", \"productCode\": \"346852P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/47/71/91.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2F2-Hour-Wilmington-Small-Group-Tour-on-an-Electric-Bike%2Fd33417-362424P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=95253a79316083c40&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=527037&clt=TD&from=api&nt=true\", \"price\": \"$60.00\", \"roundedUpPrice\": \"$60\", \"offerType\": null, \"title\": \"2-Hr, 30-Min Tour de Wilmington E-Bike Tour/Sightseeing/History\", \"productCode\": \"362424P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/e1/97/e7.jpg\", \"description\": null, \"primaryCategory\": \"Self-guided Tours & Rentals\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FWilmington%2FWilmington-Wine-and-History-Stroll%2Fd33417-346852P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=aa7d3552f1bf181e9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=527037&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \"Wilmington Wine and History Stroll\", \"productCode\": \"346852P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/90/97/7e.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Specialty Museums",
+          "Art Galleries",
+          "Historic Sites",
+          "Gardens",
+          "History Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 0, \"count2\": 0, \"count3\": 7, \"count4\": 33, \"count5\": 88}",
+        "location_contains_city": "True",
+        "id": "527037",
+        "longitude": "-77.94629",
+        "website": "http://burgwinwrighthouse.com/",
+        "rankingPosition": "14.0",
+        "address": "224 Market St, Wilmington, NC 28401-4444",
+        "neighborhoodLocations": [],
+        "rankingString": "#14 of 154 things to do in Wilmington",
+        "City": "Wilmington",
+        "localName": "Burgwin-Wright House and Gardens",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g49673-d527037-Reviews-Burgwin_Wright_House_and_Gardens-Wilmington_North_Carolina.html",
+        "localAddress": "224 Market St, 28401-4444",
+        "rankingDenominator": "154.0",
+        "name": "Burgwin-Wright House and Gardens",
+        "locationString": "Wilmington, North Carolina",
+        "subcategories": [
+          "Shopping",
+          "Sights & Landmarks",
+          "Museums",
+          "Nature & Parks"
+        ],
+        "rawRanking": "3.651867867"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:2776",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Boston",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Boston"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Wilmington",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Wilmington"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F2125390",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F2125390",
+        "Price": 153,
+        "DepTime": "14:54",
+        "ArrTime": "16:46",
+        "ActualElapsedTime": "1 hours 52 minutes",
+        "FlightDate": "2024-11-04",
+        "OriginCityName": "Wilmington",
+        "DestCityName": "Boston",
+        "Distance": 672.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F2580987",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F2580987",
+        "Price": 276,
+        "DepTime": "11:54",
+        "ArrTime": "14:01",
+        "ActualElapsedTime": "2 hours 7 minutes",
+        "FlightDate": "2024-11-02",
+        "OriginCityName": "Boston",
+        "DestCityName": "Wilmington",
+        "Distance": 672.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_63::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "current_city": "Wilmington"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_63::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "current_city": "Wilmington"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_63::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "current_city": "Wilmington"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_63::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 977.0,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::42770861.0",
+        "outbound_node_key": "Flight::F2580987",
+        "return_node_key": "Flight::F2125390"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_63",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_63",
+        "query": "Plan a 3-day trip for 4 people from Boston to Wilmington from November 2nd to November 4th, 2024, with a budget of $4,500. Include visits to sights and landmarks.",
+        "days": 3,
+        "origin_city": "Boston",
+        "destination_city": "Wilmington",
+        "budget": 4500.0,
+        "source_mini_kg_query_id": "idx_63"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::1493311.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1150.0",
+        "avg_cost": "32.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"10 Market St\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-4454\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/78/5f/c9/caprice-bistro.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/ca/91/ce/outside.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/96/3f/bb/cheers.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c8/18/99/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c8/18/98/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c8/18/97/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c8/18/96/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/9f/05/63/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/3b/27/f8/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/3b/27/f7/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/a7/bd/32/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/86/outside-view.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/85/pork-chop-special.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/81/pate-maison.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/7f/braised-lamb-shank-cassoulet.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/46/2e/b1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/46/2e/b0/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/e9/da/80/caprice-bistro.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/e9/da/7f/caprice-bistro.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/89/2a/5a/0711201854-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/b3/fd/bc/caprice-bistro.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/c0/9d/7e/yummy.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/0d/c4/2a/14-juillet.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/7f/braised-lamb-shank-cassoulet.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/81/pate-maison.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/85/pork-chop-special.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1f/36/3d/86/outside-view.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/e9/da/7f/caprice-bistro.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/e9/da/80/caprice-bistro.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/8d/b5/7a/caprice-bistro.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Seating",
+          "Street Parking",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Non-smoking restaurants",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1493311.0",
+        "longitude": "-77.9494",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/02/78/5f/c9/caprice-bistro.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "15.0",
+        "Range.1": "40.00 - 120.00",
+        "rankingString": "#3 of 656 Restaurants in Wilmington",
+        "openNowText": "Closed today",
+        "City": "Wilmington",
+        "mealTypes": [
+          "Dinner"
+        ],
+        "Range": "12.00 - 20.00",
+        "cuisines": [
+          "French",
+          "Belgian"
+        ],
+        "localName": "Caprice Bistro",
+        "input": "Wilmington",
+        "phone": "+1 910-815-0810",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g49673-d1493311-Reviews-Caprice_Bistro-Wilmington_North_Carolina.html",
+        "localAddress": "10 Market St, 28401-4454",
+        "Rest-MidRange": "65.0",
+        "name": "Caprice Bistro",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.570098400115967",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232172177&geo=1493311&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311332654&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8vnRfwDjJvQ6By2s-WFZimMy_5156hw5buO5wHtBk-_I&cs=12826e33b36f296c354fd3ce9adf72f3b_Eze\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.23513",
+        "menuWebUrl": "https://www.capricebistro.com/dinner-menu",
+        "description": "French bistro style with a Belgian twist.",
+        "photoCount": "160.0",
+        "ratingHistogram": "{\"count1\": 7, \"count2\": 13, \"count3\": 46, \"count4\": 219, \"count5\": 865}",
+        "email": "capricebistro@yahoo.com",
+        "website": "http://www.capricebistro.com/",
+        "rankingPosition": "3.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "10 Market St, Wilmington, NC 28401-4454",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Baguette",
+          "Beef Bourguignon",
+          "Pork Tenderloin",
+          "Ribs",
+          "Shrimp",
+          "Salad",
+          "Calamari",
+          "Mussels",
+          "Crepes",
+          "Macarons",
+          "Profiteroles",
+          "Escargot",
+          "Steak Frites",
+          "Macaroons",
+          "Duck Confit",
+          "Coq au Vin",
+          "Pork Cheeks",
+          "Scallops",
+          "Swordfish",
+          "Salmon",
+          "Beef",
+          "Cassoulet",
+          "Duck",
+          "Chocolate mousse",
+          "Creme Brulee",
+          "Confit",
+          "Lamb",
+          "Pesto",
+          "Fish",
+          "Pork",
+          "Trout",
+          "Pate",
+          "Soup",
+          "Rabbit",
+          "Short Ribs",
+          "Lamb Shank",
+          "Sausage",
+          "Cake",
+          "Flounder",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"escargot\", \"reviews\": 99}, {\"text\": \"beef bourguignon\", \"reviews\": 27}, {\"text\": \"profiteroles\", \"reviews\": 29}, {\"text\": \"trout\", \"reviews\": 49}, {\"text\": \"shrimp\", \"reviews\": 19}, {\"text\": \"french cuisine\", \"reviews\": 29}, {\"text\": \"cream sauce\", \"reviews\": 17}, {\"text\": \"market street\", \"reviews\": 24}, {\"text\": \"wine list\", \"reviews\": 25}, {\"text\": \"wilmington area\", \"reviews\": 16}, {\"text\": \"waterzooi\", \"reviews\": 94}, {\"text\": \"downtown\", \"reviews\": 97}, {\"text\": \"waterfront\", \"reviews\": 19}, {\"text\": \"waitstaff\", \"reviews\": 14}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "26",
+        "rankingDenominator": "656.0",
+        "locationString": "Wilmington, North Carolina",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"49673\", \"name\": \"Wilmington\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"659485\", \"name\": \"North Carolina Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28954\", \"name\": \"North Carolina\", \"abbreviation\": \"NC\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7534",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::1493697.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1184.0",
+        "avg_cost": "32.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"109 Chestnut St\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-3940\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/50/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/61/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/86/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/d2/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/c1/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/ae/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/8c/1c/1d/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/f3/a6/4b/photo2jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/f3/a6/4a/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/55/3c/1c/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/13/62/a6/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/68/db/e2/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2d/b1/d1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/3f/5b/f6/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/3f/5b/f5/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/fb/2f/0d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/49/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/43/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/3f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/39/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/68/db/c0/copper-penny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/ea/0a/02/southwest-burgerfantastic.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/96/e2/40/good-selection-of-quality.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/75/copper-penny.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/77/guy-ate-here.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/7a/fish-and-chips-1099-on.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/7c/note-bene-you-are-limited.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/7e/975-health-inspection.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/80/copper-penny-in-ale-we.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/90/46/82/hot-pork-sandwich-1329.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/32/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/39/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/3f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/43/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2e/49/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/fb/2f/0d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/30/34/e9/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/30/34/ea/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/30/34/eb/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/c9/3a/b6/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/2d/b1/d1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/f4/20210406-181913-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/f5/20210406-185331-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/f6/20210406-185339-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/f7/20210406-185442-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/f9/20210406-185852-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/fa/20210406-191226-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/d4/d1/fb/20210406-191228-largejpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Street Parking",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Non-smoking restaurants",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Gluten free options"
+        ],
+        "id": "1493697.0",
+        "longitude": "-77.94841",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/07/49/41/61/copper-penny.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "15.0",
+        "Range.1": "40.00 - 120.00",
+        "rankingString": "#9 of 656 Restaurants in Wilmington",
+        "openNowText": "Closed Now",
+        "City": "Wilmington",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "12.00 - 20.00",
+        "cuisines": [
+          "American",
+          "Bar",
+          "Pub"
+        ],
+        "localName": "Copper Penny",
+        "input": "Wilmington",
+        "phone": "+1 910-762-1373",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g49673-d1493697-Reviews-Copper_Penny-Wilmington_North_Carolina.html",
+        "localAddress": "109 Chestnut St, 28401-3940",
+        "Rest-MidRange": "65.0",
+        "name": "Copper Penny",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.390035629272461",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.237877",
+        "menuWebUrl": "http://www.copperpennync.com/menu",
+        "photoCount": "191.0",
+        "ratingHistogram": "{\"count1\": 14, \"count2\": 19, \"count3\": 71, \"count4\": 364, \"count5\": 716}",
+        "email": "copperpennync@gmail.com",
+        "website": "https://www.facebook.com/CopperPennyNC/",
+        "rankingPosition": "9.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "109 Chestnut St, Wilmington, NC 28401-3940",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Pasta",
+          "Chicken Wings",
+          "Crab",
+          "Fish & Chips",
+          "Burger",
+          "Shrimp",
+          "Salad",
+          "Wings",
+          "Chili",
+          "Grilled cheese",
+          "Nachos",
+          "Philly Cheesesteak",
+          "Chicken Sandwich",
+          "Bacon Sandwich",
+          "Salmon",
+          "Beef",
+          "Pesto",
+          "Fish",
+          "Pork",
+          "Chicken Tenders",
+          "Soup",
+          "Onion Rings",
+          "Potato Chips",
+          "Homemade Chips",
+          "Coleslaw",
+          "Sweet Potato Fries",
+          "Fried",
+          "Tomato Soup",
+          "Spring Rolls"
+        ],
+        "reviewTags": "[{\"text\": \"onion rings\", \"reviews\": 85}, {\"text\": \"wings\", \"reviews\": 103}, {\"text\": \"burger\", \"reviews\": 164}, {\"text\": \"sandwiches\", \"reviews\": 85}, {\"text\": \"fish and chips\", \"reviews\": 56}, {\"text\": \"chicken\", \"reviews\": 21}, {\"text\": \"pub food\", \"reviews\": 40}, {\"text\": \"minute wait\", \"reviews\": 19}, {\"text\": \"service was great\", \"reviews\": 34}, {\"text\": \"worth the wait\", \"reviews\": 26}, {\"text\": \"great lunch\", \"reviews\": 20}, {\"text\": \"friday night\", \"reviews\": 15}, {\"text\": \"sat at the bar\", \"reviews\": 16}, {\"text\": \"chestnut\", \"reviews\": 41}, {\"text\": \"downtown\", \"reviews\": 126}, {\"text\": \"philadelphia\", \"reviews\": 36}, {\"text\": \"beers\", \"reviews\": 48}, {\"text\": \"slaw\", \"reviews\": 25}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "26",
+        "rankingDenominator": "656.0",
+        "locationString": "Wilmington, North Carolina",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"49673\", \"name\": \"Wilmington\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"659485\", \"name\": \"North Carolina Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28954\", \"name\": \"North Carolina\", \"abbreviation\": \"NC\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7529",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::2249367.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "532.0",
+        "avg_cost": "32.5",
+        "rating": "5.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"4724 New Centre Dr #5\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28405-3061\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/e4/cf/e4/sushi-lunch-12-1.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/87/53/f2/awarded-2-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/c1/0b/c5/teriyaki-chicken-with.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/c1/0b/be/chef-danny-makes-your.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/c1/0b/bd/home-made-coconut-cake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/c1/0b/bc/we-can-do-ya-a-boat-of.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/e8/f5/8c/genki-sushi.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/e8/f5/8b/genki-sushi.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Seating",
+          "Free off-street parking",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "2249367.0",
+        "longitude": "-77.881004",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/02/c3/b7/0c/sushi.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "15.0",
+        "Range.1": "40.00 - 120.00",
+        "rankingString": "#1 of 656 Restaurants in Wilmington",
+        "openNowText": "Closed Now",
+        "City": "Wilmington",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "12.00 - 20.00",
+        "cuisines": [
+          "Japanese",
+          "Sushi",
+          "Asian"
+        ],
+        "localName": "Genki Sushi",
+        "input": "Wilmington",
+        "phone": "+1 910-796-8687",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g49673-d2249367-Reviews-Genki_Sushi-Wilmington_North_Carolina.html",
+        "localAddress": "4724 New Centre Dr #5, 28405-3061",
+        "Rest-MidRange": "65.0",
+        "name": "Genki Sushi",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.650219917297363",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232181846&geo=2249367&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311332656&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8eiM05HiYRjpMHU7twahs_zGr4qVc9aAVc5TRFwhUzzA&cs=1b19913724fab88e115148ded06bbd58b_YMS\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.246082",
+        "menuWebUrl": "http://www.genkisushiwilmington.com/sushi-menu/",
+        "description": "NOTE****If you are reading this description, \n* Starting October 1st 2024: We will no longer be able to seat you unless your entire party has arrived and ready to sit ON TIME. We will hold your Table/Seats ONLY 10 minutes past the reservation time. *After 10 minutes, you will lose your reservation to someone who is on the waiting list. This will allow us to provide better customer service to our guests as we increase in volume, and allow the evening to flow better! \nGenki Sushi is the ONLY Authentic Japanese sushi bar and Restaurant in Wilmington and surrounding areas. We only use fresh ingredients and we make every thing in house including our very own soy sauce blend. We are located in the heart of Wilmington. We strive hard to maintain the highest quality of food, ingredients and service. We are considered \" A True taste of Japan\". Come and see what real Japanese sushi taste like! We cant wait for you to have a new place to eat sushi at, and that is with us!",
+        "photoCount": "148.0",
+        "ratingHistogram": "{\"count1\": 7, \"count2\": 5, \"count3\": 23, \"count4\": 43, \"count5\": 454}",
+        "website": "http://www.genkisushiwilmington.com",
+        "rankingPosition": "1.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "4724 New Centre Dr #5, Wilmington, NC 28405-3061",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Noodle",
+          "California Roll",
+          "Dumplings",
+          "Lobster Roll",
+          "Shrimp",
+          "Tempura",
+          "Udon & Soba (Wheat & Buckwheat Noodle)",
+          "Bento (Lunch Box)",
+          "Salad",
+          "Salmon",
+          "Tuna",
+          "Fish Soup",
+          "Udon",
+          "Gyoza",
+          "Fried rice",
+          "Sashimi",
+          "Fish",
+          "Pork",
+          "Soup",
+          "Sushi Rolls",
+          "Tofu",
+          "Nigiri",
+          "Fresh Sushi",
+          "Edamame",
+          "Cake",
+          "Maki"
+        ],
+        "reviewTags": "[{\"text\": \"sushi\", \"reviews\": 309}, {\"text\": \"spider roll\", \"reviews\": 6}, {\"text\": \"egg drop soup\", \"reviews\": 7}, {\"text\": \"tempura\", \"reviews\": 11}, {\"text\": \"coconut cake\", \"reviews\": 9}, {\"text\": \"salmon\", \"reviews\": 11}, {\"text\": \"chef danny\", \"reviews\": 32}, {\"text\": \"soy sauce\", \"reviews\": 24}, {\"text\": \"our favorite restaurant\", \"reviews\": 6}, {\"text\": \"strip mall\", \"reviews\": 11}, {\"text\": \"dining experience\", \"reviews\": 9}, {\"text\": \"lana\", \"reviews\": 25}, {\"text\": \"homemade\", \"reviews\": 36}, {\"text\": \"umami\", \"reviews\": 6}, {\"text\": \"regulars\", \"reviews\": 11}, {\"text\": \"cucumber\", \"reviews\": 7}, {\"text\": \"mouth\", \"reviews\": 7}, {\"text\": \"patrons\", \"reviews\": 7}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "26",
+        "rankingDenominator": "656.0",
+        "locationString": "Wilmington, North Carolina",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"49673\", \"name\": \"Wilmington\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"659485\", \"name\": \"North Carolina Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28954\", \"name\": \"North Carolina\", \"abbreviation\": \"NC\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7540",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::6561484.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "509.0",
+        "avg_cost": "32.5",
+        "rating": "5.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"105 S Front St\", \"street2\": null, \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/13/d1/peach-rhubarb-cobbler.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/13/d2/italian-creme.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/75/45/92/this-location-is-a-vending.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/75/44/e2/this-location-is-a-vending.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/75/2a/b9/display-and-couch-area.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/19/f7/pear-with-hot-bacon-jam.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/13/d0/ginger-pear.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/15/ed/f4/chevre-with-proscuitto.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/22/a0/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/21/80/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/17/3b/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/17/14/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/ec/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/a6/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/97/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/8d/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/72/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f7/16/60/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f4/89/a8/assortment.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f4/89/a7/vegan-chocolate-cinnamon.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/f4/82/31/store-front.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/cc/7e/d9/the-peppered-cupcake.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/ca/51/d1/instructions-board.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/dd/dd/7e/great-way-to-celebrate.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/37/c6/8c/our-first-dozen-from.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/37/c6/8d/contact-card.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/37/c6/8f/cupcakes-are-healthy.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/16/38/3b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/16/38/3c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/93/98/f2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/13/e5/6d/cupcakes.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Street Parking",
+          "Wheelchair Accessible",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Discover",
+          "Accepts Credit Cards"
+        ],
+        "dietaryRestrictions": [
+          "Gluten free options"
+        ],
+        "id": "6561484.0",
+        "longitude": "-77.9486",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/13/d1/peach-rhubarb-cobbler.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "15.0",
+        "Range.1": "40.00 - 120.00",
+        "rankingString": "#1 of 19 Bakeries in Wilmington",
+        "openNowText": "Open Now",
+        "City": "Wilmington",
+        "mealTypes": [],
+        "Range": "12.00 - 20.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "The Peppered Cupcake",
+        "input": "Wilmington",
+        "phone": "+1 910-399-1088",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g49673-d6561484-Reviews-The_Peppered_Cupcake-Wilmington_North_Carolina.html",
+        "localAddress": "105 S Front St, 28401",
+        "Rest-MidRange": "65.0",
+        "name": "The Peppered Cupcake",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.648838043212891",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Bakeries",
+          "Dessert",
+          "Quick Bites"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.233913",
+        "description": "Come try our gourmet cupcakes at our self-check gourmet cupcake boutique in the downtown historic district 7 days a week. Made from scratch with 12 plus flavors daily. We also have a Vending Machine with our cupcakes on campus at UNCW in the Fisher Student Center. Come see the unexpected in a cupcake!",
+        "photoCount": "194.0",
+        "ratingHistogram": "{\"count1\": 5, \"count2\": 6, \"count3\": 12, \"count4\": 49, \"count5\": 437}",
+        "email": "tabitha@thepepperedcupcake.com",
+        "website": "http://www.thepepperedcupcake.com",
+        "rankingPosition": "1.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "105 S Front St, Wilmington, NC 28401",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Bananas Foster",
+          "Cupcakes",
+          "Tiramisu",
+          "Creme Brulee",
+          "Cakes",
+          "Pecan Pie",
+          "Compote",
+          "Puddings",
+          "Cake"
+        ],
+        "reviewTags": "[{\"text\": \"cupcakes\", \"reviews\": 441}, {\"text\": \"banana pudding\", \"reviews\": 25}, {\"text\": \"behind the counter\", \"reviews\": 11}, {\"text\": \"visit wilmington\", \"reviews\": 6}, {\"text\": \"front street\", \"reviews\": 7}, {\"text\": \"wilmington area\", \"reviews\": 8}, {\"text\": \"frosting\", \"reviews\": 40}, {\"text\": \"tpc\", \"reviews\": 30}, {\"text\": \"yummy\", \"reviews\": 23}, {\"text\": \"bite\", \"reviews\": 12}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "26",
+        "rankingDenominator": "19.0",
+        "locationString": "Wilmington, North Carolina",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"49673\", \"name\": \"Wilmington\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"659485\", \"name\": \"North Carolina Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28954\", \"name\": \"North Carolina\", \"abbreviation\": \"NC\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7553",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::783958.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2360.0",
+        "avg_cost": "32.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"9 N. Front Street\", \"street2\": \"\", \"city\": \"Wilmington\", \"state\": \"NC\", \"country\": \"United States\", \"postalcode\": \"28401-4436\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/88/a3/cobb-salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/08/db/55/tuna-with-jalapeno-couli.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/99/50/carolina-shrimp-wrap.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/6b/f8/64/seafood-options-like.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/88/b2/pulled-chicken-nachos.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/88/97/california-burger-with.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/83/02/reuben-sandwich-with.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/82/fd/bbq-jackfruit.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/82/ed/jalapeno-chicken-salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/a8/82/e3/fried-green-tomato-and.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/f0/whiskey-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/eb/scotches-and-vodkas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/ea/downstairs-dining-area.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/e4/front-of-brewery.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/d6/brewing-equipment.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/7f/95/a8/nc-s-largest-bourbon.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/6b/f9/30/poutine-burger.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/6b/f8/87/specialty-burgers.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/6b/f8/82/tsunami-tuna.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/6b/f8/6c/daily-specials.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/50/a0/e4/killing-a-flight-of-beer.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/e6/c0/48/front-street-brewery.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/d9/c9/7a/20160704-170829-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/5c/66/26/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/1a/a9/1d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/1a/a9/1c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/1a/a9/1b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/74/b6/e0/20200625-122449-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/74/b6/df/20200625-122445-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/76/9c/29/20201226-144952-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/76/9c/2a/20201226-135618-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/b9/80/48/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/b9/80/56/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/b9/80/71/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Outdoor Seating",
+          "Seating",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "783958.0",
+        "longitude": "-77.94882",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/1a/a8/88/a3/cobb-salad.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "15.0",
+        "Range.1": "40.00 - 120.00",
+        "rankingString": "#6 of 656 Restaurants in Wilmington",
+        "openNowText": "Closed Now",
+        "City": "Wilmington",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night",
+          "Drinks"
+        ],
+        "Range": "12.00 - 20.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "Front Street Brewery",
+        "input": "Wilmington",
+        "phone": "+1 910-251-1935",
+        "State": "North Carolina",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g49673-d783958-Reviews-Front_Street_Brewery-Wilmington_North_Carolina.html",
+        "localAddress": "9 N. Front Street, 28401-4436",
+        "Rest-MidRange": "65.0",
+        "name": "Front Street Brewery",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.451222896575928",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.23582",
+        "menuWebUrl": "http://www.frontstreetbrewery.com/menu",
+        "description": "Wilmington's Original Brewery specializing in made-from-scratch dishes at affordable prices, award-winning Craft Beer, and Largest Whiskey Selection in town! A huge selection of food that ranges from sandwiches, seafood, and Southern specialties such as Shrimp & Grits. We serve a FULL menu until 10pm Sunday-Thursday and from 11:30am until 11pm Friday and Saturday. Parking available in the Market Street Parking deck with first 30 min FREE.",
+        "photoCount": "381.0",
+        "ratingHistogram": "{\"count1\": 20, \"count2\": 42, \"count3\": 175, \"count4\": 659, \"count5\": 1464}",
+        "email": "frontstreetbrewery@gmail.com",
+        "website": "http://www.frontstreetbrewery.com/",
+        "rankingPosition": "6.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}",
+        "address": "9 N. Front Street, Wilmington, NC 28401-4436",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Sandwiches",
+          "Burrito",
+          "Cheeseburger",
+          "Corned Beef",
+          "Crab",
+          "Fish & Chips",
+          "Burger",
+          "Jambalaya",
+          "Pretzel",
+          "Ribs",
+          "Shrimp",
+          "Salad",
+          "Tacos",
+          "Wings",
+          "Fried pickles",
+          "Nachos",
+          "Shrimp and Grits",
+          "Salmon",
+          "Tuna",
+          "Beef",
+          "Fish",
+          "Pork",
+          "Soup",
+          "Onion Rings",
+          "Chicken Tacos",
+          "Brisket",
+          "Cake",
+          "Fried"
+        ],
+        "reviewTags": "[{\"text\": \"pulled chicken\", \"reviews\": 51}, {\"text\": \"nachos\", \"reviews\": 105}, {\"text\": \"salad\", \"reviews\": 65}, {\"text\": \"burrito\", \"reviews\": 29}, {\"text\": \"scottish ale\", \"reviews\": 57}, {\"text\": \"beer selection\", \"reviews\": 36}, {\"text\": \"sat at the bar\", \"reviews\": 33}, {\"text\": \"server\", \"reviews\": 236}, {\"text\": \"ipa\", \"reviews\": 65}, {\"text\": \"downtown\", \"reviews\": 195}, {\"text\": \"bourbon\", \"reviews\": 43}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "26",
+        "rankingDenominator": "656.0",
+        "locationString": "Wilmington, North Carolina",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"49673\", \"name\": \"Wilmington\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"659485\", \"name\": \"North Carolina Coast\", \"abbreviation\": null, \"subcategory\": \"Region\"}, {\"id\": \"28954\", \"name\": \"North Carolina\", \"abbreviation\": \"NC\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7547",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.005542,
+        "distance_m": 515.19,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.005433,
+        "distance_m": 502.05,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.119322,
+        "distance_m": 11021.07,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.001583,
+        "distance_m": 145.57,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.002067,
+        "distance_m": 189.98,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.001046,
+        "distance_m": 96.33,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.002667,
+        "distance_m": 296.55,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.068224,
+        "distance_m": 6308.16,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::6561484.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::6561484.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::6561484.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.00132,
+        "distance_m": 145.99,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::42770861.0",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.000766,
+        "distance_m": 80.06,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Attraction::2258302",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 6,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Attraction::318472",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Attraction::4020985",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.004553,
+        "distance_m": 426.46,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.00554,
+        "distance_m": 517.11,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::2249367.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.073392,
+        "distance_m": 6773.28,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.005746,
+        "distance_m": 551.33,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126588",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.004979,
+        "distance_m": 459.33,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Attraction::126588",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 5,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Attraction::318472",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Attraction::4020985",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Attraction::527037",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.141857,
+        "rank": 6,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::1493311.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.006477,
+        "distance_m": 598.06,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.00573,
+        "distance_m": 539.25,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.062792,
+        "distance_m": 5806.13,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.006,
+        "distance_m": 567.24,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::2258302",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.005838,
+        "distance_m": 536.82,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Attraction::126588",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::126588->Attraction::318472"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Attraction::2258302",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 6,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Attraction::4020985",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.120343,
+        "distance_m": 11114.1,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.119781,
+        "distance_m": 11080.17,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.057871,
+        "distance_m": 5596.91,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.119386,
+        "distance_m": 11019.55,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::783958.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::318472",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.119868,
+        "distance_m": 11074.74,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Attraction::126588",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::126588->Attraction::4020985"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Attraction::2258302",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.055613,
+        "rank": 6,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Attraction::318472",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.000549,
+        "distance_m": 50.87,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::1493697.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.003057,
+        "distance_m": 326.21,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.069785,
+        "distance_m": 6450.66,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.001879,
+        "distance_m": 191.36,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::4020985",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.001266,
+        "distance_m": 122.08,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Attraction::2258302",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 1.141857,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::1493311.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.003111,
+        "distance_m": 286.03,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::1493697.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::1493697.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.003409,
+        "distance_m": 355.14,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::2249367.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.066186,
+        "distance_m": 6121.89,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::6561484.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002648,
+        "distance_m": 256.51,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::527037",
+      "target": "Restaurant::783958.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002603,
+        "distance_m": 242.36,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F2580987",
+      "target": "Accommodation::42770861.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Accommodation::42770861.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Accommodation::42770861.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 8,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Attraction::126588",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 4,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Attraction::4020985",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 6,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Flight::F2580987",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Restaurant::1493697.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 7,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Restaurant::2249367.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 5,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::1",
+      "target": "Restaurant::6561484.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "order": 3,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Accommodation::42770861.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Accommodation::42770861.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Attraction::2258302",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Attraction::318472",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Restaurant::1493311.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Restaurant::6561484.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::2",
+      "target": "Restaurant::783958.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::3",
+      "target": "Accommodation::42770861.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::3",
+      "target": "Attraction::527037",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::3",
+      "target": "Flight::F2125390",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::3",
+      "target": "Restaurant::1493697.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_63::option_001::3",
+      "target": "Restaurant::6561484.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "Accommodation::42770861.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "Flight::F2125390",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "Flight::F2580987",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "PlanDay::idx_63::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "PlanDay::idx_63::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_63::option_001",
+      "target": "PlanDay::idx_63::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_63",
+      "target": "PlanOption::idx_63::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 977.0
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Accommodation::42770861.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.004553,
+        "distance_m": 426.46,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.006477,
+        "distance_m": 598.06,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.120343,
+        "distance_m": 11114.1,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.000549,
+        "distance_m": 50.87,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493311.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.003111,
+        "distance_m": 286.03,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Accommodation::42770861.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 7,
+        "to_order": 8
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.00554,
+        "distance_m": 517.11,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.00573,
+        "distance_m": 539.25,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.119781,
+        "distance_m": 11080.17,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.003057,
+        "distance_m": 326.21,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.003409,
+        "distance_m": 355.14,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1493697.0",
+      "target": "Flight::F2125390",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.073392,
+        "distance_m": 6773.28,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.062792,
+        "distance_m": 5806.13,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.057871,
+        "distance_m": 5596.91,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.069785,
+        "distance_m": 6450.66,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::4020985",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2249367.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.066186,
+        "distance_m": 6121.89,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.005746,
+        "distance_m": 551.33,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::126588",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-02",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.006,
+        "distance_m": 567.24,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.119386,
+        "distance_m": 11019.55,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::318472",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.001879,
+        "distance_m": 191.36,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002648,
+        "distance_m": 256.51,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Attraction::527037",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-04",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::6561484.0",
+      "target": "Restaurant::783958.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "asian",
+          "bar",
+          "belgian",
+          "british",
+          "french",
+          "gastropub",
+          "japanese",
+          "pub",
+          "seafood",
+          "sushi",
+          "thai",
+          "vietnamese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::126588",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.004979,
+        "distance_m": 459.33,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::2258302",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.005838,
+        "distance_m": 536.82,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::2258302",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-03",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::318472",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.119868,
+        "distance_m": 11074.74,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::4020985",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.001266,
+        "distance_m": 122.08,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Attraction::527037",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002603,
+        "distance_m": 242.36,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::783958.0",
+      "target": "Restaurant::6561484.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "asian",
+          "bar",
+          "belgian",
+          "british",
+          "french",
+          "gastropub",
+          "japanese",
+          "pub",
+          "seafood",
+          "sushi",
+          "thai",
+          "vietnamese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F2580987",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::42770861.0",
+      "label": "Accommodation",
+      "name": "Chic Loft | Downtown | Front & Market",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 3,
+      "slot": "breakfast",
+      "node_key": "Restaurant::6561484.0",
+      "label": "Restaurant",
+      "name": "The Peppered Cupcake",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 4,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::126588",
+      "label": "Attraction",
+      "name": "Battleship North Carolina",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 5,
+      "slot": "lunch",
+      "node_key": "Restaurant::2249367.0",
+      "label": "Restaurant",
+      "name": "Genki Sushi",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 6,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::4020985",
+      "label": "Attraction",
+      "name": "Riverwalk",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 7,
+      "slot": "dinner",
+      "node_key": "Restaurant::1493697.0",
+      "label": "Restaurant",
+      "name": "Copper Penny",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-02",
+      "order": 8,
+      "slot": "accommodation",
+      "node_key": "Accommodation::42770861.0",
+      "label": "Accommodation",
+      "name": "Chic Loft | Downtown | Front & Market",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::42770861.0",
+      "label": "Accommodation",
+      "name": "Chic Loft | Downtown | Front & Market",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::6561484.0",
+      "label": "Restaurant",
+      "name": "The Peppered Cupcake",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::318472",
+      "label": "Attraction",
+      "name": "Airlie Gardens",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::783958.0",
+      "label": "Restaurant",
+      "name": "Front Street Brewery",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::2258302",
+      "label": "Attraction",
+      "name": "Bellamy Mansion",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::1493311.0",
+      "label": "Restaurant",
+      "name": "Caprice Bistro",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-03",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::42770861.0",
+      "label": "Accommodation",
+      "name": "Chic Loft | Downtown | Front & Market",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-04",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::42770861.0",
+      "label": "Accommodation",
+      "name": "Chic Loft | Downtown | Front & Market",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-04",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::6561484.0",
+      "label": "Restaurant",
+      "name": "The Peppered Cupcake",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-04",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::527037",
+      "label": "Attraction",
+      "name": "Burgwin-Wright House and Gardens",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-04",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::1493697.0",
+      "label": "Restaurant",
+      "name": "Copper Penny",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-04",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F2125390",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

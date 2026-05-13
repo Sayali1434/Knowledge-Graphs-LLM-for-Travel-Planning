@@ -1,0 +1,3302 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_77\", \"query_text\": \"Plan a 3-day trip for 3 people from Denver to Charlotte from November 13th to November 15th, 2024, with a budget of $4,650.\", \"request\": {\"org\": \"Denver\", \"dest\": \"Charlotte\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-13', '2024-11-14', '2024-11-15']\", \"people_number\": 3, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}\", \"budget\": 4650, \"query\": \"Plan a 3-day trip for 3 people from Denver to Charlotte from November 13th to November 15th, 2024, with a budget of $4,650.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-13\", \"2024-11-14\", \"2024-11-15\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Adventure\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"event\": null, \"attraction\": null, \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F2546399\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"01:00\", \"ArrTime\": \"06:03\", \"Price\": 371}}, {\"node_key\": \"Flight::F2804753\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"00:47\", \"ArrTime\": \"05:47\", \"Price\": 417}}, {\"node_key\": \"Flight::F1442190\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"00:45\", \"ArrTime\": \"05:37\", \"Price\": 484}}, {\"node_key\": \"Flight::F1903065\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"00:45\", \"ArrTime\": \"06:08\", \"Price\": 533}}, {\"node_key\": \"Flight::F2093468\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-13\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"00:06\", \"ArrTime\": \"05:19\", \"Price\": 546}}, {\"node_key\": \"Flight::F2823707\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Denver\", \"DepTime\": \"21:25\", \"ArrTime\": \"22:42\", \"Price\": 347}}, {\"node_key\": \"Flight::F1436775\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Denver\", \"DepTime\": \"21:21\", \"ArrTime\": \"22:32\", \"Price\": 350}}, {\"node_key\": \"Flight::F1332413\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Denver\", \"DepTime\": \"20:47\", \"ArrTime\": \"22:15\", \"Price\": 360}}, {\"node_key\": \"Flight::F2546920\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Denver\", \"DepTime\": \"20:59\", \"ArrTime\": \"22:59\", \"Price\": 508}}, {\"node_key\": \"Flight::F1921083\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-15\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Denver\", \"DepTime\": \"20:36\", \"ArrTime\": \"22:03\", \"Price\": 566}}, {\"node_key\": \"Accommodation::5.82e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.82e+17\", \"name\": \"Chic Industrial Loft in the Heart of NoDa\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$193 per night\", \"originalPrice\": null, \"price\": \"$193\", \"qualifier\": \"night\", \"total\": \"$961 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  326 reviews\", \"localizedLabel\": \"4.95 (326)\", \"average\": 4.95, \"reviewsCount\": 326}, \"coordinates\": {\"latitude\": 35.24813, \"longitude\": -80.80474}}}, {\"node_key\": \"Accommodation::46085195.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"46085195.0\", \"name\": \"Lovely Studio Apartment for 2 with a patio garden\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$93 per night\", \"originalPrice\": null, \"price\": \"$93\", \"qualifier\": \"night\", \"total\": \"$464 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  372 reviews\", \"localizedLabel\": \"4.95 (372)\", \"average\": 4.95, \"reviewsCount\": 372}, \"coordinates\": {\"latitude\": 35.17125, \"longitude\": -80.76791}}}, {\"node_key\": \"Accommodation::42363458.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42363458.0\", \"name\": \"❀ Sparkling Clean, NODA-Chic at Lightrail Station\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$106 per night\", \"originalPrice\": null, \"price\": \"$106\", \"qualifier\": \"night\", \"total\": \"$530 total\"}, \"rating\": {\"label\": \"4.86 out of 5 average rating,  330 reviews\", \"localizedLabel\": \"4.86 (330)\", \"average\": 4.86, \"reviewsCount\": 330}, \"coordinates\": {\"latitude\": 35.25049, \"longitude\": -80.79002}}}, {\"node_key\": \"Accommodation::43170147.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43170147.0\", \"name\": \"3-BDR Direct Waterfront Cottage\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$169 per night\", \"originalPrice\": null, \"price\": \"$169\", \"qualifier\": \"night\", \"total\": \"$842 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  245 reviews\", \"localizedLabel\": \"4.97 (245)\", \"average\": 4.97, \"reviewsCount\": 245}, \"coordinates\": {\"latitude\": 35.25231, \"longitude\": -81.00888}}}, {\"node_key\": \"Accommodation::5.57e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.57e+17\", \"name\": \"Cozy & Convenient Loft on Lakeshore LKN 1-Bed\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$184 per night\", \"originalPrice\": null, \"price\": \"$184\", \"qualifier\": \"night\", \"total\": \"$918 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  340 reviews\", \"localizedLabel\": \"4.99 (340)\", \"average\": 4.99, \"reviewsCount\": 340}, \"coordinates\": {\"latitude\": 35.52496, \"longitude\": -80.88503}}}, {\"node_key\": \"Accommodation::31550414.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"31550414.0\", \"name\": \"Colorful, Comfortable, Private and Unique\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$95 per night\", \"originalPrice\": null, \"price\": \"$95\", \"qualifier\": \"night\", \"total\": \"$471 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  325 reviews\", \"localizedLabel\": \"4.9 (325)\", \"average\": 4.9, \"reviewsCount\": 325}, \"coordinates\": {\"latitude\": 35.17673, \"longitude\": -80.76452}}}, {\"node_key\": \"Accommodation::39535988.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39535988.0\", \"name\": \"The best things in life come in small packages!\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$93 per night\", \"originalPrice\": null, \"price\": \"$93\", \"qualifier\": \"night\", \"total\": \"$462 total\"}, \"rating\": {\"label\": \"4.8 out of 5 average rating,  624 reviews\", \"localizedLabel\": \"4.8 (624)\", \"average\": 4.8, \"reviewsCount\": 624}, \"coordinates\": {\"latitude\": 35.25767, \"longitude\": -80.85044}}}, {\"node_key\": \"Accommodation::41799951.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"41799951.0\", \"name\": \"Tippah Treehouse Retreat\", \"City\": \"Charlotte\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$124 per night\", \"originalPrice\": null, \"price\": \"$124\", \"qualifier\": \"night\", \"total\": \"$619 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  328 reviews\", \"localizedLabel\": \"4.98 (328)\", \"average\": 4.98, \"reviewsCount\": 328}, \"coordinates\": {\"latitude\": 35.23022, \"longitude\": -80.80534}}}, {\"node_key\": \"Accommodation::2500749.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"2500749.0\", \"name\": \"Bedroom with Private Patio & Gym Near Uptown!\", \"City\": \"Charlotte\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$80 per night\", \"originalPrice\": null, \"price\": \"$80\", \"qualifier\": \"night\", \"total\": \"$400 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  108 reviews\", \"localizedLabel\": \"4.99 (108)\", \"average\": 4.99, \"reviewsCount\": 108}, \"coordinates\": {\"latitude\": 35.21824, \"longitude\": -80.88904}}}, {\"node_key\": \"Accommodation::10831994.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"10831994.0\", \"name\": \"Comfy private bed and bath\", \"City\": \"Charlotte\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$61 per night\", \"originalPrice\": null, \"price\": \"$61\", \"qualifier\": \"night\", \"total\": \"$302 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  401 reviews\", \"localizedLabel\": \"4.9 (401)\", \"average\": 4.9, \"reviewsCount\": 401}, \"coordinates\": {\"latitude\": 35.24554, \"longitude\": -80.7709}}}, {\"node_key\": \"Attraction::877925\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"877925\", \"name\": \"Billy Graham Library\", \"City\": \"Charlotte\", \"subtype\": [\"Libraries\"], \"subcategories\": [\"Traveler Resources\"], \"visit_duration\": \"1.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 399 things to do in Charlotte\", \"address\": \"4330 Westmont Dr, Charlotte, NC 28217\", \"description\": \"Journey through history with one of the most influential voices of the 20th century. Learn more about Billy Graham and his message of God’s love. Through multimedia exhibits, films, and memorabilia, you'll relive the historic moments of his life. Tour the restored Graham family home, shop in Ruth’s Attic, and enjoy lunch in the Dairy Bar. The Billy Graham Library will leave you inspired by this amazing man and his message of hope.\"}}, {\"node_key\": \"Attraction::1771645\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1771645\", \"name\": \"NASCAR Hall of Fame\", \"City\": \"Charlotte\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 399 things to do in Charlotte\", \"address\": \"400 East Martin Luther King Boulevard, Charlotte, NC 28202-2343\", \"description\": \"The NASCAR Hall of Fame is where legends live on. Where fun lives on. Where the race lives on. Enjoy amazing artifacts, interactive exhibits, simulator rides and special events at the High Octane Theater. Plus, you can grab a bite to eat in the NASCAR Hall of Fame Café or at the Buffalo Wild Wings restaurant. You also can take home a souvenir at the gift shop to help you remember it all.\"}}, {\"node_key\": \"Attraction::108892\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108892\", \"name\": \"Discovery Place Science\", \"City\": \"Charlotte\", \"subtype\": [\"Specialty Museums\", \"Science Museums\", \"Children's Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 399 things to do in Charlotte\", \"address\": \"301 N Tryon St, Charlotte, NC 28202\", \"description\": \"Hands-on science Museum in Uptown Charlotte featuring interactive exhibitions, the Carolinas' largest IMAX screen and one-of-a-kind Accenture IMAX Dome Theatre and educational programs. And don't forget: We offer summer camps and birthday parties so take advantage of both options before these spaces fill up completely!\"}}, {\"node_key\": \"Attraction::2534046\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2534046\", \"name\": \"The Bank Of America Stadium\", \"City\": \"Charlotte\", \"subtype\": [\"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#11 of 399 things to do in Charlotte\", \"address\": \"800 S. Mint Street, Charlotte, NC 28202-1518\"}}, {\"node_key\": \"Attraction::2367131\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2367131\", \"name\": \"Freedom Park\", \"City\": \"Charlotte\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 399 things to do in Charlotte\", \"address\": \"Charlotte, NC\"}}, {\"node_key\": \"Attraction::1136082\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1136082\", \"name\": \"Truist Field\", \"City\": \"Charlotte\", \"subtype\": [\"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 399 things to do in Charlotte\", \"address\": \"324 S Mint St, Charlotte, NC 28202-1465\", \"description\": \"The Charlotte Knights are the Triple-A affiliate of the Chicago White Sox. The Knights play their home games in Uptown Charlotte, NC at BB&T Ballpark.\"}}, {\"node_key\": \"Attraction::2477238\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2477238\", \"name\": \"Sullenberger Aviation Museum\", \"City\": \"Charlotte\", \"subtype\": [\"Specialty Museums\", \"Science Museums\", \"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 399 things to do in Charlotte\", \"address\": \"4108 Minuteman Way, Charlotte, NC 28208\", \"description\": \"The reimagined Sullenberger Aviation Museum reopened on June 1, 2024. The new 35,000 square foot main gallery houses two thematic areas: 1) Aviation Society is about the people and companies that make up the aerospace industry in the Carolinas and features oral histories from people who have shaped its business and culture in recent years. 2) Innovation Nation features iconic aircraft that represent significant advances in technology, design, and safetyn starting with Orville and Wilbur Wrigh...\"}}, {\"node_key\": \"Attraction::108895\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108895\", \"name\": \"Levine Museum of the New South\", \"City\": \"Charlotte\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 399 things to do in Charlotte\", \"address\": \"401 South Tryon Street, Charlotte, NC 28202\", \"description\": \"Using history to build community, Levine Museum of the New South offers rotating and traveling exhibitions that explore issues relevant to the history of the greater Charlotte metro area and spark curiosity about our world today. Their exhibitions and public programs welcome all participants to engage deeply with the diversity of our region’s communities through stories of the past that encourage productive dialogue and deepen understanding of critical contemporary issues.\"}}, {\"node_key\": \"Attraction::2228276\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2228276\", \"name\": \"Mint Museum Uptown\", \"City\": \"Charlotte\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 399 things to do in Charlotte\", \"address\": \"500 S Tryon St Levine Center for the Arts, Charlotte, NC 28202-1811\", \"description\": \"Designed by Machado and Silvetti Associates of Boston, the five-story, 145,000-square-foot facility combines inspiring architecture with cutting-edge exhibitions to provide visitors with unparalleled educational and cultural experiences. Located in the heart of Charlotte's burgeoning city center, Mint Museum Uptown is an integral part of the Levine Center for the Arts, a cultural campus that includes the Bechtler Museum of Modern Art, the Harvey B. Gantt Center for African-American Arts and C...\"}}, {\"node_key\": \"Attraction::302414\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"302414\", \"name\": \"Belk Theater at Blumenthal Performing Arts Center\", \"City\": \"Charlotte\", \"subtype\": [\"Theaters\"], \"subcategories\": [\"Concerts & Shows\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 399 things to do in Charlotte\", \"address\": \"130 N Tryon St, Charlotte, NC 28202-2100\", \"description\": \"Blumenthal Performing Arts presents the PNC Broadway Lights, featuring national touring Broadway productions and a wide range of special attractions. Additionally, the Education Department develops innovative partnerships with schools and community organizations to bring the performing arts to life for people throughout the region.\"}}, {\"node_key\": \"Restaurant::981516.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"981516.0\", \"name\": \"Charlotte Lane\", \"City\": \"Charlotte\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Seafood\", \"International\", \"Canadian\"], \"avg_cost\": \"45.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"13 Charlotte Lane Seasonal business in the historic district, Shelburne, Nova Scotia B0T 1W0 Canada\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [], [], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Halifax\"}}}, {\"node_key\": \"Restaurant::720452.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"720452.0\", \"name\": \"ROKA Charlotte Street\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Japanese\", \"Sushi\", \"Asian\", \"Grill\", \"Healthy\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"37 Charlotte Street, London W1T 1RR England\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"Europe/London\"}}}, {\"node_key\": \"Restaurant::2103722.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2103722.0\", \"name\": \"Midwood Smokehouse\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Barbecue\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1401 Central Ave Ste 101, Charlotte, NC 28205\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::821555.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"821555.0\", \"name\": \"Mac's Speed Shop\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Barbecue\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2511 South Blvd, Charlotte, NC 28203-5011\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::9603363.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"9603363.0\", \"name\": \"Charlotte’s Kitchen\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Seafood\", \"European\", \"Contemporary\", \"Healthy\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"69 Marsden Road End of Wharf, Paihia 0200 New Zealand\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"Pacific/Auckland\"}}}, {\"node_key\": \"Restaurant::398582.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"398582.0\", \"name\": \"The Capital Grille\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Seafood\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"201 N Tryon St, Charlotte, NC 28202\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::461886.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"461886.0\", \"name\": \"Cabo Fish Taco Baja Seagrill\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Mexican\", \"Southwestern\", \"Seafood\", \"International\", \"Fusion\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3201 N Davidson St, Charlotte, NC 28205-1033\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::793793.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"793793.0\", \"name\": \"The Fig Tree Restaurant\", \"City\": \"Charlotte\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Seafood\", \"European\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"1601 E 7th St, Charlotte, NC 28204-2411\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::780583.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"780583.0\", \"name\": \"Gaucho Charlotte Street\", \"City\": \"Charlotte\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Steakhouse\", \"Latin\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"60A Charlotte Street, London W1T 2NU England\", \"hours\": {\"weekRanges\": [[], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"Europe/London\"}}}, {\"node_key\": \"Restaurant::6627541.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6627541.0\", \"name\": \"Charlottes of Filey\", \"City\": \"Charlotte\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Bar\", \"British\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"40 Belle Vue Street, Filey YO14 9HY England\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 900, \"closeHours\": \"15:00\"}], [], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"Europe/London\"}}}, {\"node_key\": \"Event::G5eVZbo2lW_LY\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZbo2lW_LY\", \"name\": \"Drake White - VIP Experience Upgrade\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://livemu.sc/DrakeWhite-VIP\", \"availabilityStarts\": \"2024-08-19T20:46:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5eVZboKztUdZ\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZboKztUdZ\", \"name\": \"Drake White - VIP Experience Upgrade\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://livemu.sc/DrakeWhite-VIP\", \"availabilityStarts\": \"2024-08-20T21:40:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7Gxqp\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7Gxqp\", \"name\": \"Mac McAnally\", \"city\": \"Charlotte\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7Gxqp\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7GF8x\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7GF8x\", \"name\": \"Mac McAnally\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7GF8x\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::LvZ18_nsMIcAHcZZcDvmm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_nsMIcAHcZZcDvmm\", \"name\": \"Trap Karaoke: Columbia, SC\", \"city\": \"Charlotte\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Hip-Hop/Rap\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/trap-karaoke-columbia-sc-tickets-SF3LKM?ref=ticketmaster\", \"availabilityStarts\": \"2024-08-02T06:07:30Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5eVZb4LnkAMH\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZb4LnkAMH\", \"name\": \"Debbie Rogers Cheer Classic\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/debbie-rogers-cheer-classic-columbia-south-carolina-11-02-2024/event/2D006157EA185DFC\", \"availabilityStarts\": \"2024-10-25T16:00:00Z\", \"price\": 15, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5eVZb8EhX9ut\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZb8EhX9ut\", \"name\": \"Drake White - Low Country High Road Tour\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/drake-white-low-country-high-road-columbia-south-carolina-11-02-2024/event/2D006109DBF97369\", \"availabilityStarts\": \"2024-08-16T14:00:00Z\", \"price\": 25, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5eVZb2bzdnd5\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZb2bzdnd5\", \"name\": \"Will Moseley & Colin Stough\", \"city\": \"Charlotte\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/will-moseley-colin-stough-columbia-south-carolina-11-03-2024/event/2D0060F6380EA0CB\", \"availabilityStarts\": \"2024-07-26T15:00:00Z\", \"price\": 25, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5eVZb1hpX6I5\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZb1hpX6I5\", \"name\": \"PAW Patrol Live! \\\"Heroes Unite\\\"\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Children's Theatre\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/paw-patrol-live-heroes-unite-charlotte-north-carolina-11-02-2024/event/2D0060A6D6F87A0B\", \"availabilityStarts\": \"2024-05-24T14:00:00Z\", \"price\": 25.5, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5eVZb1hpT9If\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5eVZb1hpT9If\", \"name\": \"PAW Patrol Live! \\\"Heroes Unite\\\"\", \"city\": \"Charlotte\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Children's Theatre\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/paw-patrol-live-heroes-unite-charlotte-north-carolina-11-02-2024/event/2D0060A6D6FD7A14\", \"availabilityStarts\": \"2024-05-24T14:00:00Z\", \"price\": 25.5, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::108892\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 124.31}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 124.31}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 143.27}, {\"source\": \"Attraction::302414\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 148.21}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 148.21}, {\"source\": \"Attraction::1136082\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 635.42}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 635.42}, {\"source\": \"Attraction::108895\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 656.2}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 656.2}, {\"source\": \"Attraction::2228276\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 751.5}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 751.5}, {\"source\": \"Attraction::1771645\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 835.87}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 835.87}, {\"source\": \"Attraction::2534046\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1075.86}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1075.86}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1339.21}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1476.86}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1882.58}, {\"source\": \"Attraction::1771645\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1954.78}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1954.78}, {\"source\": \"Attraction::302414\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2090.87}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2090.87}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2192.75}, {\"source\": \"Attraction::108892\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2235.28}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2235.28}, {\"source\": \"Attraction::2367131\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2289.84}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2289.84}, {\"source\": \"Attraction::108895\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2352.72}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2352.72}, {\"source\": \"Attraction::2228276\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2465.59}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2465.59}, {\"source\": \"Attraction::302414\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2522.17}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2522.17}, {\"source\": \"Attraction::108892\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2585.24}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2585.24}, {\"source\": \"Attraction::1771645\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2594.08}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2594.08}, {\"source\": \"Attraction::1136082\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2700.41}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2700.41}, {\"source\": \"Attraction::2534046\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2741.71}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2741.71}, {\"source\": \"Attraction::1771645\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2790.31}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2790.31}, {\"source\": \"Attraction::2228276\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2807.61}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2807.61}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2813.17}, {\"source\": \"Attraction::108895\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2879.54}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2879.54}, {\"source\": \"Attraction::108895\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2918.68}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2918.68}, {\"source\": \"Attraction::2534046\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2935.07}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2935.07}, {\"source\": \"Attraction::2228276\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3040.47}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3040.47}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3150.89}, {\"source\": \"Attraction::1136082\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3167.6}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3167.6}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3170.69}, {\"source\": \"Attraction::1136082\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3176.43}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3176.43}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3215.43}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3260.93}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3262.09}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3302.58}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3304.27}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3320.47}, {\"source\": \"Attraction::2367131\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3358.77}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3358.77}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3382.08}, {\"source\": \"Attraction::302414\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3415.8}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3415.8}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3466.96}, {\"source\": \"Attraction::2534046\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3501.43}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3501.43}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3553.44}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::877925\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3587.47}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3598.34}, {\"source\": \"Attraction::108892\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3645.26}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3645.26}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3704.88}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3708.2}, {\"source\": \"Attraction::108892\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3759.47}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3759.47}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3783.41}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3812.8}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3837.7}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3874.73}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3895.41}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3906.01}, {\"source\": \"Attraction::302414\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3924.11}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3924.11}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3935.59}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3939.69}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3978.04}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3990.8}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4062.28}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4094.1}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::2477238\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4125.92}, {\"source\": \"Attraction::2367131\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4136.73}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4136.73}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4158.08}, {\"source\": \"Attraction::2367131\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4184.12}, {\"source\": \"Restaurant::2103722.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4184.12}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4222.47}, {\"source\": \"Attraction::877925\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4309.23}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::877925\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4309.23}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4354.36}, {\"source\": \"Attraction::1136082\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4419.52}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4419.52}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4433.0}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4456.75}, {\"source\": \"Attraction::1771645\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4467.61}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4467.61}, {\"source\": \"Attraction::108895\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4494.77}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4494.77}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4525.58}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4553.07}, {\"source\": \"Attraction::2228276\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4600.75}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4600.75}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4608.9}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4632.93}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4738.37}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4803.98}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4834.73}, {\"source\": \"Attraction::2534046\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4901.95}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4901.95}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5036.19}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5100.75}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5193.08}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5200.01}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5222.39}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5280.58}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5338.9}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5522.76}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5705.51}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5835.81}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5865.34}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5907.21}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6018.03}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6028.62}, {\"source\": \"Accommodation::41799951.0\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6160.46}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6214.74}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6343.08}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::108892\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6626.23}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6695.22}, {\"source\": \"Accommodation::31550414.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6722.19}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::302414\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6725.99}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6745.21}, {\"source\": \"Attraction::2477238\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6758.89}, {\"source\": \"Restaurant::821555.0\", \"target\": \"Attraction::2477238\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6758.89}, {\"source\": \"Accommodation::31550414.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6894.87}, {\"source\": \"Accommodation::46085195.0\", \"target\": \"Restaurant::2103722.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6988.56}, {\"source\": \"Attraction::2367131\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7069.93}, {\"source\": \"Restaurant::461886.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7069.93}, {\"source\": \"Accommodation::46085195.0\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7081.14}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7116.79}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7210.47}, {\"source\": \"Accommodation::46085195.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7222.73}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::108895\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7274.22}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::1136082\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7315.12}, {\"source\": \"Accommodation::31550414.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7356.25}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7384.79}, {\"source\": \"Accommodation::5.82e+17\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7387.56}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::2228276\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7393.13}, {\"source\": \"Attraction::877925\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7465.3}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::877925\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7465.3}, {\"source\": \"Accommodation::43170147.0\", \"target\": \"Attraction::2477238\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7472.55}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::2534046\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7770.9}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8157.73}, {\"source\": \"Accommodation::2500749.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8218.6}, {\"source\": \"Attraction::2477238\", \"target\": \"Restaurant::398582.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8369.3}, {\"source\": \"Restaurant::398582.0\", \"target\": \"Attraction::2477238\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8369.3}, {\"source\": \"Attraction::877925\", \"target\": \"Restaurant::793793.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8380.97}, {\"source\": \"Restaurant::793793.0\", \"target\": \"Attraction::877925\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8380.97}, {\"source\": \"Accommodation::39535988.0\", \"target\": \"Attraction::2477238\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8388.63}, {\"source\": \"Accommodation::42363458.0\", \"target\": \"Restaurant::821555.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8576.26}, {\"source\": \"Accommodation::31550414.0\", \"target\": \"Restaurant::461886.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8680.22}, {\"source\": \"Accommodation::31550414.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8715.38}, {\"source\": \"Accommodation::46085195.0\", \"target\": \"Attraction::1771645\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8834.62}, {\"source\": \"Accommodation::10831994.0\", \"target\": \"Attraction::2367131\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8916.31}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-13\", \"2024-11-14\", \"2024-11-15\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F2546399\", \"dep_time\": \"01:00\", \"arr_time\": \"06:03\", \"local_activity_start_after_arrival_buffer\": \"06:33\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2804753\", \"dep_time\": \"00:47\", \"arr_time\": \"05:47\", \"local_activity_start_after_arrival_buffer\": \"06:17\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1442190\", \"dep_time\": \"00:45\", \"arr_time\": \"05:37\", \"local_activity_start_after_arrival_buffer\": \"06:07\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1903065\", \"dep_time\": \"00:45\", \"arr_time\": \"06:08\", \"local_activity_start_after_arrival_buffer\": \"06:38\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2093468\", \"dep_time\": \"00:06\", \"arr_time\": \"05:19\", \"local_activity_start_after_arrival_buffer\": \"05:49\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2823707\", \"dep_time\": \"21:25\", \"arr_time\": \"22:42\", \"latest_local_activity_finish_before_airport_buffer\": \"19:25\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1436775\", \"dep_time\": \"21:21\", \"arr_time\": \"22:32\", \"latest_local_activity_finish_before_airport_buffer\": \"19:21\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1332413\", \"dep_time\": \"20:47\", \"arr_time\": \"22:15\", \"latest_local_activity_finish_before_airport_buffer\": \"18:47\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2546920\", \"dep_time\": \"20:59\", \"arr_time\": \"22:59\", \"latest_local_activity_finish_before_airport_buffer\": \"18:59\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1921083\", \"dep_time\": \"20:36\", \"arr_time\": \"22:03\", \"latest_local_activity_finish_before_airport_buffer\": \"18:36\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::6627541.0\"], \"lunch\": [\"Restaurant::720452.0\", \"Restaurant::2103722.0\", \"Restaurant::821555.0\", \"Restaurant::9603363.0\", \"Restaurant::398582.0\", \"Restaurant::461886.0\", \"Restaurant::780583.0\", \"Restaurant::6627541.0\"], \"dinner\": [\"Restaurant::981516.0\", \"Restaurant::720452.0\", \"Restaurant::2103722.0\", \"Restaurant::821555.0\", \"Restaurant::9603363.0\", \"Restaurant::398582.0\", \"Restaurant::461886.0\", \"Restaurant::793793.0\", \"Restaurant::780583.0\", \"Restaurant::6627541.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::877925\", \"Attraction::1771645\", \"Attraction::108892\", \"Attraction::2534046\", \"Attraction::2367131\", \"Attraction::1136082\", \"Attraction::2477238\", \"Attraction::108895\", \"Attraction::2228276\", \"Attraction::302414\"], \"afternoon_attraction\": [\"Attraction::877925\", \"Attraction::1771645\", \"Attraction::108892\", \"Attraction::2534046\", \"Attraction::2367131\", \"Attraction::1136082\", \"Attraction::2477238\", \"Attraction::108895\", \"Attraction::2228276\", \"Attraction::302414\"]}, \"event_slots_by_date\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::6627541.0\", \"name\": \"Charlottes of Filey\"}], \"lunch\": [{\"node_key\": \"Restaurant::720452.0\", \"name\": \"ROKA Charlotte Street\"}, {\"node_key\": \"Restaurant::2103722.0\", \"name\": \"Midwood Smokehouse\"}, {\"node_key\": \"Restaurant::821555.0\", \"name\": \"Mac's Speed Shop\"}, {\"node_key\": \"Restaurant::9603363.0\", \"name\": \"Charlotte’s Kitchen\"}, {\"node_key\": \"Restaurant::398582.0\", \"name\": \"The Capital Grille\"}, {\"node_key\": \"Restaurant::461886.0\", \"name\": \"Cabo Fish Taco Baja Seagrill\"}, {\"node_key\": \"Restaurant::780583.0\", \"name\": \"Gaucho Charlotte Street\"}, {\"node_key\": \"Restaurant::6627541.0\", \"name\": \"Charlottes of Filey\"}], \"dinner\": [{\"node_key\": \"Restaurant::981516.0\", \"name\": \"Charlotte Lane\"}, {\"node_key\": \"Restaurant::720452.0\", \"name\": \"ROKA Charlotte Street\"}, {\"node_key\": \"Restaurant::2103722.0\", \"name\": \"Midwood Smokehouse\"}, {\"node_key\": \"Restaurant::821555.0\", \"name\": \"Mac's Speed Shop\"}, {\"node_key\": \"Restaurant::9603363.0\", \"name\": \"Charlotte’s Kitchen\"}, {\"node_key\": \"Restaurant::398582.0\", \"name\": \"The Capital Grille\"}, {\"node_key\": \"Restaurant::461886.0\", \"name\": \"Cabo Fish Taco Baja Seagrill\"}, {\"node_key\": \"Restaurant::793793.0\", \"name\": \"The Fig Tree Restaurant\"}, {\"node_key\": \"Restaurant::780583.0\", \"name\": \"Gaucho Charlotte Street\"}, {\"node_key\": \"Restaurant::6627541.0\", \"name\": \"Charlottes of Filey\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-13\", \"required_slots\": {\"Flight::F2546399\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2804753\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1442190\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1903065\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2093468\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-14\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-15\", \"required_slots\": {\"Flight::F2823707\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1436775\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1332413\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2546920\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1921083\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-13\": [], \"2024-11-14\": [], \"2024-11-15\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_77",
+    "query_text": "Plan a 3-day trip for 3 people from Denver to Charlotte from November 13th to November 15th, 2024, with a budget of $4,650.",
+    "request": {
+      "org": "Denver",
+      "dest": "Charlotte",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-13', '2024-11-14', '2024-11-15']",
+      "people_number": 3,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}",
+      "budget": 4650,
+      "query": "Plan a 3-day trip for 3 people from Denver to Charlotte from November 13th to November 15th, 2024, with a budget of $4,650.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-13",
+      "2024-11-14",
+      "2024-11-15"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Adventure",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "event": null,
+      "attraction": null,
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F2546399",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Denver",
+          "DestCityName": "Charlotte",
+          "DepTime": "01:00",
+          "ArrTime": "06:03",
+          "Price": 371
+        }
+      },
+      {
+        "node_key": "Flight::F2804753",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Denver",
+          "DestCityName": "Charlotte",
+          "DepTime": "00:47",
+          "ArrTime": "05:47",
+          "Price": 417
+        }
+      },
+      {
+        "node_key": "Flight::F1442190",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Denver",
+          "DestCityName": "Charlotte",
+          "DepTime": "00:45",
+          "ArrTime": "05:37",
+          "Price": 484
+        }
+      },
+      {
+        "node_key": "Flight::F1903065",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Denver",
+          "DestCityName": "Charlotte",
+          "DepTime": "00:45",
+          "ArrTime": "06:08",
+          "Price": 533
+        }
+      },
+      {
+        "node_key": "Flight::F2093468",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-13",
+          "OriginCityName": "Denver",
+          "DestCityName": "Charlotte",
+          "DepTime": "00:06",
+          "ArrTime": "05:19",
+          "Price": 546
+        }
+      },
+      {
+        "node_key": "Flight::F2823707",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Denver",
+          "DepTime": "21:25",
+          "ArrTime": "22:42",
+          "Price": 347
+        }
+      },
+      {
+        "node_key": "Flight::F1436775",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Denver",
+          "DepTime": "21:21",
+          "ArrTime": "22:32",
+          "Price": 350
+        }
+      },
+      {
+        "node_key": "Flight::F1332413",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Denver",
+          "DepTime": "20:47",
+          "ArrTime": "22:15",
+          "Price": 360
+        }
+      },
+      {
+        "node_key": "Flight::F2546920",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Denver",
+          "DepTime": "20:59",
+          "ArrTime": "22:59",
+          "Price": 508
+        }
+      },
+      {
+        "node_key": "Flight::F1921083",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-15",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Denver",
+          "DepTime": "20:36",
+          "ArrTime": "22:03",
+          "Price": 566
+        }
+      },
+      {
+        "node_key": "Accommodation::5.82e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.82e+17",
+          "name": "Chic Industrial Loft in the Heart of NoDa",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$193 per night",
+            "originalPrice": null,
+            "price": "$193",
+            "qualifier": "night",
+            "total": "$961 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  326 reviews",
+            "localizedLabel": "4.95 (326)",
+            "average": 4.95,
+            "reviewsCount": 326
+          },
+          "coordinates": {
+            "latitude": 35.24813,
+            "longitude": -80.80474
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::46085195.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "46085195.0",
+          "name": "Lovely Studio Apartment for 2 with a patio garden",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$93 per night",
+            "originalPrice": null,
+            "price": "$93",
+            "qualifier": "night",
+            "total": "$464 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  372 reviews",
+            "localizedLabel": "4.95 (372)",
+            "average": 4.95,
+            "reviewsCount": 372
+          },
+          "coordinates": {
+            "latitude": 35.17125,
+            "longitude": -80.76791
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::42363458.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42363458.0",
+          "name": "❀ Sparkling Clean, NODA-Chic at Lightrail Station",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$106 per night",
+            "originalPrice": null,
+            "price": "$106",
+            "qualifier": "night",
+            "total": "$530 total"
+          },
+          "rating": {
+            "label": "4.86 out of 5 average rating,  330 reviews",
+            "localizedLabel": "4.86 (330)",
+            "average": 4.86,
+            "reviewsCount": 330
+          },
+          "coordinates": {
+            "latitude": 35.25049,
+            "longitude": -80.79002
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43170147.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43170147.0",
+          "name": "3-BDR Direct Waterfront Cottage",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$169 per night",
+            "originalPrice": null,
+            "price": "$169",
+            "qualifier": "night",
+            "total": "$842 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  245 reviews",
+            "localizedLabel": "4.97 (245)",
+            "average": 4.97,
+            "reviewsCount": 245
+          },
+          "coordinates": {
+            "latitude": 35.25231,
+            "longitude": -81.00888
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5.57e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.57e+17",
+          "name": "Cozy & Convenient Loft on Lakeshore LKN 1-Bed",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$184 per night",
+            "originalPrice": null,
+            "price": "$184",
+            "qualifier": "night",
+            "total": "$918 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  340 reviews",
+            "localizedLabel": "4.99 (340)",
+            "average": 4.99,
+            "reviewsCount": 340
+          },
+          "coordinates": {
+            "latitude": 35.52496,
+            "longitude": -80.88503
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::31550414.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "31550414.0",
+          "name": "Colorful, Comfortable, Private and Unique",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$95 per night",
+            "originalPrice": null,
+            "price": "$95",
+            "qualifier": "night",
+            "total": "$471 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  325 reviews",
+            "localizedLabel": "4.9 (325)",
+            "average": 4.9,
+            "reviewsCount": 325
+          },
+          "coordinates": {
+            "latitude": 35.17673,
+            "longitude": -80.76452
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::39535988.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39535988.0",
+          "name": "The best things in life come in small packages!",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$93 per night",
+            "originalPrice": null,
+            "price": "$93",
+            "qualifier": "night",
+            "total": "$462 total"
+          },
+          "rating": {
+            "label": "4.8 out of 5 average rating,  624 reviews",
+            "localizedLabel": "4.8 (624)",
+            "average": 4.8,
+            "reviewsCount": 624
+          },
+          "coordinates": {
+            "latitude": 35.25767,
+            "longitude": -80.85044
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::41799951.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "41799951.0",
+          "name": "Tippah Treehouse Retreat",
+          "City": "Charlotte",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$124 per night",
+            "originalPrice": null,
+            "price": "$124",
+            "qualifier": "night",
+            "total": "$619 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  328 reviews",
+            "localizedLabel": "4.98 (328)",
+            "average": 4.98,
+            "reviewsCount": 328
+          },
+          "coordinates": {
+            "latitude": 35.23022,
+            "longitude": -80.80534
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::2500749.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "2500749.0",
+          "name": "Bedroom with Private Patio & Gym Near Uptown!",
+          "City": "Charlotte",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$80 per night",
+            "originalPrice": null,
+            "price": "$80",
+            "qualifier": "night",
+            "total": "$400 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  108 reviews",
+            "localizedLabel": "4.99 (108)",
+            "average": 4.99,
+            "reviewsCount": 108
+          },
+          "coordinates": {
+            "latitude": 35.21824,
+            "longitude": -80.88904
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::10831994.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "10831994.0",
+          "name": "Comfy private bed and bath",
+          "City": "Charlotte",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$61 per night",
+            "originalPrice": null,
+            "price": "$61",
+            "qualifier": "night",
+            "total": "$302 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  401 reviews",
+            "localizedLabel": "4.9 (401)",
+            "average": 4.9,
+            "reviewsCount": 401
+          },
+          "coordinates": {
+            "latitude": 35.24554,
+            "longitude": -80.7709
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::877925",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "877925",
+          "name": "Billy Graham Library",
+          "City": "Charlotte",
+          "subtype": [
+            "Libraries"
+          ],
+          "subcategories": [
+            "Traveler Resources"
+          ],
+          "visit_duration": "1.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 399 things to do in Charlotte",
+          "address": "4330 Westmont Dr, Charlotte, NC 28217",
+          "description": "Journey through history with one of the most influential voices of the 20th century. Learn more about Billy Graham and his message of God’s love. Through multimedia exhibits, films, and memorabilia, you'll relive the historic moments of his life. Tour the restored Graham family home, shop in Ruth’s Attic, and enjoy lunch in the Dairy Bar. The Billy Graham Library will leave you inspired by this amazing man and his message of hope."
+        }
+      },
+      {
+        "node_key": "Attraction::1771645",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1771645",
+          "name": "NASCAR Hall of Fame",
+          "City": "Charlotte",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#6 of 399 things to do in Charlotte",
+          "address": "400 East Martin Luther King Boulevard, Charlotte, NC 28202-2343",
+          "description": "The NASCAR Hall of Fame is where legends live on. Where fun lives on. Where the race lives on. Enjoy amazing artifacts, interactive exhibits, simulator rides and special events at the High Octane Theater. Plus, you can grab a bite to eat in the NASCAR Hall of Fame Café or at the Buffalo Wild Wings restaurant. You also can take home a souvenir at the gift shop to help you remember it all."
+        }
+      },
+      {
+        "node_key": "Attraction::108892",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108892",
+          "name": "Discovery Place Science",
+          "City": "Charlotte",
+          "subtype": [
+            "Specialty Museums",
+            "Science Museums",
+            "Children's Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 399 things to do in Charlotte",
+          "address": "301 N Tryon St, Charlotte, NC 28202",
+          "description": "Hands-on science Museum in Uptown Charlotte featuring interactive exhibitions, the Carolinas' largest IMAX screen and one-of-a-kind Accenture IMAX Dome Theatre and educational programs. And don't forget: We offer summer camps and birthday parties so take advantage of both options before these spaces fill up completely!"
+        }
+      },
+      {
+        "node_key": "Attraction::2534046",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2534046",
+          "name": "The Bank Of America Stadium",
+          "City": "Charlotte",
+          "subtype": [
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#11 of 399 things to do in Charlotte",
+          "address": "800 S. Mint Street, Charlotte, NC 28202-1518"
+        }
+      },
+      {
+        "node_key": "Attraction::2367131",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2367131",
+          "name": "Freedom Park",
+          "City": "Charlotte",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#4 of 399 things to do in Charlotte",
+          "address": "Charlotte, NC"
+        }
+      },
+      {
+        "node_key": "Attraction::1136082",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1136082",
+          "name": "Truist Field",
+          "City": "Charlotte",
+          "subtype": [
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 399 things to do in Charlotte",
+          "address": "324 S Mint St, Charlotte, NC 28202-1465",
+          "description": "The Charlotte Knights are the Triple-A affiliate of the Chicago White Sox. The Knights play their home games in Uptown Charlotte, NC at BB&T Ballpark."
+        }
+      },
+      {
+        "node_key": "Attraction::2477238",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2477238",
+          "name": "Sullenberger Aviation Museum",
+          "City": "Charlotte",
+          "subtype": [
+            "Specialty Museums",
+            "Science Museums",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#9 of 399 things to do in Charlotte",
+          "address": "4108 Minuteman Way, Charlotte, NC 28208",
+          "description": "The reimagined Sullenberger Aviation Museum reopened on June 1, 2024. The new 35,000 square foot main gallery houses two thematic areas: 1) Aviation Society is about the people and companies that make up the aerospace industry in the Carolinas and features oral histories from people who have shaped its business and culture in recent years. 2) Innovation Nation features iconic aircraft that represent significant advances in technology, design, and safetyn starting with Orville and Wilbur Wrigh..."
+        }
+      },
+      {
+        "node_key": "Attraction::108895",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108895",
+          "name": "Levine Museum of the New South",
+          "City": "Charlotte",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#7 of 399 things to do in Charlotte",
+          "address": "401 South Tryon Street, Charlotte, NC 28202",
+          "description": "Using history to build community, Levine Museum of the New South offers rotating and traveling exhibitions that explore issues relevant to the history of the greater Charlotte metro area and spark curiosity about our world today. Their exhibitions and public programs welcome all participants to engage deeply with the diversity of our region’s communities through stories of the past that encourage productive dialogue and deepen understanding of critical contemporary issues."
+        }
+      },
+      {
+        "node_key": "Attraction::2228276",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2228276",
+          "name": "Mint Museum Uptown",
+          "City": "Charlotte",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#10 of 399 things to do in Charlotte",
+          "address": "500 S Tryon St Levine Center for the Arts, Charlotte, NC 28202-1811",
+          "description": "Designed by Machado and Silvetti Associates of Boston, the five-story, 145,000-square-foot facility combines inspiring architecture with cutting-edge exhibitions to provide visitors with unparalleled educational and cultural experiences. Located in the heart of Charlotte's burgeoning city center, Mint Museum Uptown is an integral part of the Levine Center for the Arts, a cultural campus that includes the Bechtler Museum of Modern Art, the Harvey B. Gantt Center for African-American Arts and C..."
+        }
+      },
+      {
+        "node_key": "Attraction::302414",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "302414",
+          "name": "Belk Theater at Blumenthal Performing Arts Center",
+          "City": "Charlotte",
+          "subtype": [
+            "Theaters"
+          ],
+          "subcategories": [
+            "Concerts & Shows"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#3 of 399 things to do in Charlotte",
+          "address": "130 N Tryon St, Charlotte, NC 28202-2100",
+          "description": "Blumenthal Performing Arts presents the PNC Broadway Lights, featuring national touring Broadway productions and a wide range of special attractions. Additionally, the Education Department develops innovative partnerships with schools and community organizations to bring the performing arts to life for people throughout the region."
+        }
+      },
+      {
+        "node_key": "Restaurant::981516.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "981516.0",
+          "name": "Charlotte Lane",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Seafood",
+            "International",
+            "Canadian"
+          ],
+          "avg_cost": "45.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "13 Charlotte Lane Seasonal business in the historic district, Shelburne, Nova Scotia B0T 1W0 Canada",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Halifax"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::720452.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "720452.0",
+          "name": "ROKA Charlotte Street",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Sushi",
+            "Asian",
+            "Grill",
+            "Healthy"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "37 Charlotte Street, London W1T 1RR England",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "Europe/London"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2103722.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2103722.0",
+          "name": "Midwood Smokehouse",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Barbecue"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1401 Central Ave Ste 101, Charlotte, NC 28205",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::821555.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "821555.0",
+          "name": "Mac's Speed Shop",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Barbecue"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2511 South Blvd, Charlotte, NC 28203-5011",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::9603363.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "9603363.0",
+          "name": "Charlotte’s Kitchen",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Seafood",
+            "European",
+            "Contemporary",
+            "Healthy"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "69 Marsden Road End of Wharf, Paihia 0200 New Zealand",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "Pacific/Auckland"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::398582.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "398582.0",
+          "name": "The Capital Grille",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "201 N Tryon St, Charlotte, NC 28202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::461886.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "461886.0",
+          "name": "Cabo Fish Taco Baja Seagrill",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern",
+            "Seafood",
+            "International",
+            "Fusion"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3201 N Davidson St, Charlotte, NC 28205-1033",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::793793.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "793793.0",
+          "name": "The Fig Tree Restaurant",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "European"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "1601 E 7th St, Charlotte, NC 28204-2411",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::780583.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "780583.0",
+          "name": "Gaucho Charlotte Street",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Latin"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "60A Charlotte Street, London W1T 2NU England",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ]
+            ],
+            "timezone": "Europe/London"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6627541.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6627541.0",
+          "name": "Charlottes of Filey",
+          "City": "Charlotte",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Bar",
+            "British"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "40 Belle Vue Street, Filey YO14 9HY England",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "Europe/London"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZbo2lW_LY",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZbo2lW_LY",
+          "name": "Drake White - VIP Experience Upgrade",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://livemu.sc/DrakeWhite-VIP",
+            "availabilityStarts": "2024-08-19T20:46:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZboKztUdZ",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZboKztUdZ",
+          "name": "Drake White - VIP Experience Upgrade",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://livemu.sc/DrakeWhite-VIP",
+            "availabilityStarts": "2024-08-20T21:40:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7Gxqp",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7Gxqp",
+          "name": "Mac McAnally",
+          "city": "Charlotte",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7Gxqp",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7GF8x",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7GF8x",
+          "name": "Mac McAnally",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7GF8x",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_nsMIcAHcZZcDvmm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_nsMIcAHcZZcDvmm",
+          "name": "Trap Karaoke: Columbia, SC",
+          "city": "Charlotte",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Hip-Hop/Rap",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/trap-karaoke-columbia-sc-tickets-SF3LKM?ref=ticketmaster",
+            "availabilityStarts": "2024-08-02T06:07:30Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZb4LnkAMH",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZb4LnkAMH",
+          "name": "Debbie Rogers Cheer Classic",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/debbie-rogers-cheer-classic-columbia-south-carolina-11-02-2024/event/2D006157EA185DFC",
+            "availabilityStarts": "2024-10-25T16:00:00Z",
+            "price": 15,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZb8EhX9ut",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZb8EhX9ut",
+          "name": "Drake White - Low Country High Road Tour",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/drake-white-low-country-high-road-columbia-south-carolina-11-02-2024/event/2D006109DBF97369",
+            "availabilityStarts": "2024-08-16T14:00:00Z",
+            "price": 25,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZb2bzdnd5",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZb2bzdnd5",
+          "name": "Will Moseley & Colin Stough",
+          "city": "Charlotte",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/will-moseley-colin-stough-columbia-south-carolina-11-03-2024/event/2D0060F6380EA0CB",
+            "availabilityStarts": "2024-07-26T15:00:00Z",
+            "price": 25,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZb1hpX6I5",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZb1hpX6I5",
+          "name": "PAW Patrol Live! \"Heroes Unite\"",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Children's Theatre",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/paw-patrol-live-heroes-unite-charlotte-north-carolina-11-02-2024/event/2D0060A6D6F87A0B",
+            "availabilityStarts": "2024-05-24T14:00:00Z",
+            "price": 25.5,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5eVZb1hpT9If",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5eVZb1hpT9If",
+          "name": "PAW Patrol Live! \"Heroes Unite\"",
+          "city": "Charlotte",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Children's Theatre",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/paw-patrol-live-heroes-unite-charlotte-north-carolina-11-02-2024/event/2D0060A6D6FD7A14",
+            "availabilityStarts": "2024-05-24T14:00:00Z",
+            "price": 25.5,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::108892",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 124.31
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 124.31
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 143.27
+      },
+      {
+        "source": "Attraction::302414",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 148.21
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 148.21
+      },
+      {
+        "source": "Attraction::1136082",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 635.42
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 635.42
+      },
+      {
+        "source": "Attraction::108895",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 656.2
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 656.2
+      },
+      {
+        "source": "Attraction::2228276",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 751.5
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 751.5
+      },
+      {
+        "source": "Attraction::1771645",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 835.87
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 835.87
+      },
+      {
+        "source": "Attraction::2534046",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1075.86
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1075.86
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1339.21
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1476.86
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1882.58
+      },
+      {
+        "source": "Attraction::1771645",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1954.78
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1954.78
+      },
+      {
+        "source": "Attraction::302414",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2090.87
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2090.87
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2192.75
+      },
+      {
+        "source": "Attraction::108892",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2235.28
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2235.28
+      },
+      {
+        "source": "Attraction::2367131",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2289.84
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2289.84
+      },
+      {
+        "source": "Attraction::108895",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2352.72
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2352.72
+      },
+      {
+        "source": "Attraction::2228276",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2465.59
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2465.59
+      },
+      {
+        "source": "Attraction::302414",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2522.17
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2522.17
+      },
+      {
+        "source": "Attraction::108892",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2585.24
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2585.24
+      },
+      {
+        "source": "Attraction::1771645",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2594.08
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2594.08
+      },
+      {
+        "source": "Attraction::1136082",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2700.41
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2700.41
+      },
+      {
+        "source": "Attraction::2534046",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2741.71
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2741.71
+      },
+      {
+        "source": "Attraction::1771645",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2790.31
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2790.31
+      },
+      {
+        "source": "Attraction::2228276",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2807.61
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2807.61
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2813.17
+      },
+      {
+        "source": "Attraction::108895",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2879.54
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2879.54
+      },
+      {
+        "source": "Attraction::108895",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2918.68
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2918.68
+      },
+      {
+        "source": "Attraction::2534046",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2935.07
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2935.07
+      },
+      {
+        "source": "Attraction::2228276",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3040.47
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3040.47
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3150.89
+      },
+      {
+        "source": "Attraction::1136082",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3167.6
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3167.6
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3170.69
+      },
+      {
+        "source": "Attraction::1136082",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3176.43
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3176.43
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3215.43
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3260.93
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3262.09
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3302.58
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3304.27
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3320.47
+      },
+      {
+        "source": "Attraction::2367131",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3358.77
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3358.77
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3382.08
+      },
+      {
+        "source": "Attraction::302414",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3415.8
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3415.8
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3466.96
+      },
+      {
+        "source": "Attraction::2534046",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3501.43
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3501.43
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3553.44
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::877925",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3587.47
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3598.34
+      },
+      {
+        "source": "Attraction::108892",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3645.26
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3645.26
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3704.88
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3708.2
+      },
+      {
+        "source": "Attraction::108892",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3759.47
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3759.47
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3783.41
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3812.8
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3837.7
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3874.73
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3895.41
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3906.01
+      },
+      {
+        "source": "Attraction::302414",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3924.11
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3924.11
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3935.59
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3939.69
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3978.04
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3990.8
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4062.28
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4094.1
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::2477238",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4125.92
+      },
+      {
+        "source": "Attraction::2367131",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4136.73
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4136.73
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4158.08
+      },
+      {
+        "source": "Attraction::2367131",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4184.12
+      },
+      {
+        "source": "Restaurant::2103722.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4184.12
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4222.47
+      },
+      {
+        "source": "Attraction::877925",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4309.23
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::877925",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4309.23
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4354.36
+      },
+      {
+        "source": "Attraction::1136082",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4419.52
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4419.52
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4433.0
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4456.75
+      },
+      {
+        "source": "Attraction::1771645",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4467.61
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4467.61
+      },
+      {
+        "source": "Attraction::108895",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4494.77
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4494.77
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4525.58
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4553.07
+      },
+      {
+        "source": "Attraction::2228276",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4600.75
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4600.75
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4608.9
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4632.93
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4738.37
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4803.98
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4834.73
+      },
+      {
+        "source": "Attraction::2534046",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4901.95
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4901.95
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5036.19
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5100.75
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5193.08
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5200.01
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5222.39
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5280.58
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5338.9
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5522.76
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5705.51
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5835.81
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5865.34
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5907.21
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6018.03
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6028.62
+      },
+      {
+        "source": "Accommodation::41799951.0",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6160.46
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6214.74
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6343.08
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::108892",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6626.23
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6695.22
+      },
+      {
+        "source": "Accommodation::31550414.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6722.19
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::302414",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6725.99
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6745.21
+      },
+      {
+        "source": "Attraction::2477238",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6758.89
+      },
+      {
+        "source": "Restaurant::821555.0",
+        "target": "Attraction::2477238",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6758.89
+      },
+      {
+        "source": "Accommodation::31550414.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6894.87
+      },
+      {
+        "source": "Accommodation::46085195.0",
+        "target": "Restaurant::2103722.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6988.56
+      },
+      {
+        "source": "Attraction::2367131",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7069.93
+      },
+      {
+        "source": "Restaurant::461886.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7069.93
+      },
+      {
+        "source": "Accommodation::46085195.0",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7081.14
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7116.79
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7210.47
+      },
+      {
+        "source": "Accommodation::46085195.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7222.73
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::108895",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7274.22
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::1136082",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7315.12
+      },
+      {
+        "source": "Accommodation::31550414.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7356.25
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7384.79
+      },
+      {
+        "source": "Accommodation::5.82e+17",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7387.56
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::2228276",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7393.13
+      },
+      {
+        "source": "Attraction::877925",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7465.3
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::877925",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7465.3
+      },
+      {
+        "source": "Accommodation::43170147.0",
+        "target": "Attraction::2477238",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7472.55
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::2534046",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7770.9
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8157.73
+      },
+      {
+        "source": "Accommodation::2500749.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8218.6
+      },
+      {
+        "source": "Attraction::2477238",
+        "target": "Restaurant::398582.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8369.3
+      },
+      {
+        "source": "Restaurant::398582.0",
+        "target": "Attraction::2477238",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8369.3
+      },
+      {
+        "source": "Attraction::877925",
+        "target": "Restaurant::793793.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8380.97
+      },
+      {
+        "source": "Restaurant::793793.0",
+        "target": "Attraction::877925",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8380.97
+      },
+      {
+        "source": "Accommodation::39535988.0",
+        "target": "Attraction::2477238",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8388.63
+      },
+      {
+        "source": "Accommodation::42363458.0",
+        "target": "Restaurant::821555.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8576.26
+      },
+      {
+        "source": "Accommodation::31550414.0",
+        "target": "Restaurant::461886.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8680.22
+      },
+      {
+        "source": "Accommodation::31550414.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8715.38
+      },
+      {
+        "source": "Accommodation::46085195.0",
+        "target": "Attraction::1771645",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8834.62
+      },
+      {
+        "source": "Accommodation::10831994.0",
+        "target": "Attraction::2367131",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8916.31
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-13",
+        "2024-11-14",
+        "2024-11-15"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F2546399",
+          "dep_time": "01:00",
+          "arr_time": "06:03",
+          "local_activity_start_after_arrival_buffer": "06:33",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2804753",
+          "dep_time": "00:47",
+          "arr_time": "05:47",
+          "local_activity_start_after_arrival_buffer": "06:17",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1442190",
+          "dep_time": "00:45",
+          "arr_time": "05:37",
+          "local_activity_start_after_arrival_buffer": "06:07",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1903065",
+          "dep_time": "00:45",
+          "arr_time": "06:08",
+          "local_activity_start_after_arrival_buffer": "06:38",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2093468",
+          "dep_time": "00:06",
+          "arr_time": "05:19",
+          "local_activity_start_after_arrival_buffer": "05:49",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2823707",
+          "dep_time": "21:25",
+          "arr_time": "22:42",
+          "latest_local_activity_finish_before_airport_buffer": "19:25",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1436775",
+          "dep_time": "21:21",
+          "arr_time": "22:32",
+          "latest_local_activity_finish_before_airport_buffer": "19:21",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1332413",
+          "dep_time": "20:47",
+          "arr_time": "22:15",
+          "latest_local_activity_finish_before_airport_buffer": "18:47",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2546920",
+          "dep_time": "20:59",
+          "arr_time": "22:59",
+          "latest_local_activity_finish_before_airport_buffer": "18:59",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1921083",
+          "dep_time": "20:36",
+          "arr_time": "22:03",
+          "latest_local_activity_finish_before_airport_buffer": "18:36",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::6627541.0"
+        ],
+        "lunch": [
+          "Restaurant::720452.0",
+          "Restaurant::2103722.0",
+          "Restaurant::821555.0",
+          "Restaurant::9603363.0",
+          "Restaurant::398582.0",
+          "Restaurant::461886.0",
+          "Restaurant::780583.0",
+          "Restaurant::6627541.0"
+        ],
+        "dinner": [
+          "Restaurant::981516.0",
+          "Restaurant::720452.0",
+          "Restaurant::2103722.0",
+          "Restaurant::821555.0",
+          "Restaurant::9603363.0",
+          "Restaurant::398582.0",
+          "Restaurant::461886.0",
+          "Restaurant::793793.0",
+          "Restaurant::780583.0",
+          "Restaurant::6627541.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::877925",
+          "Attraction::1771645",
+          "Attraction::108892",
+          "Attraction::2534046",
+          "Attraction::2367131",
+          "Attraction::1136082",
+          "Attraction::2477238",
+          "Attraction::108895",
+          "Attraction::2228276",
+          "Attraction::302414"
+        ],
+        "afternoon_attraction": [
+          "Attraction::877925",
+          "Attraction::1771645",
+          "Attraction::108892",
+          "Attraction::2534046",
+          "Attraction::2367131",
+          "Attraction::1136082",
+          "Attraction::2477238",
+          "Attraction::108895",
+          "Attraction::2228276",
+          "Attraction::302414"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-13": [],
+        "2024-11-14": [],
+        "2024-11-15": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::6627541.0",
+            "name": "Charlottes of Filey"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::720452.0",
+            "name": "ROKA Charlotte Street"
+          },
+          {
+            "node_key": "Restaurant::2103722.0",
+            "name": "Midwood Smokehouse"
+          },
+          {
+            "node_key": "Restaurant::821555.0",
+            "name": "Mac's Speed Shop"
+          },
+          {
+            "node_key": "Restaurant::9603363.0",
+            "name": "Charlotte’s Kitchen"
+          },
+          {
+            "node_key": "Restaurant::398582.0",
+            "name": "The Capital Grille"
+          },
+          {
+            "node_key": "Restaurant::461886.0",
+            "name": "Cabo Fish Taco Baja Seagrill"
+          },
+          {
+            "node_key": "Restaurant::780583.0",
+            "name": "Gaucho Charlotte Street"
+          },
+          {
+            "node_key": "Restaurant::6627541.0",
+            "name": "Charlottes of Filey"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::981516.0",
+            "name": "Charlotte Lane"
+          },
+          {
+            "node_key": "Restaurant::720452.0",
+            "name": "ROKA Charlotte Street"
+          },
+          {
+            "node_key": "Restaurant::2103722.0",
+            "name": "Midwood Smokehouse"
+          },
+          {
+            "node_key": "Restaurant::821555.0",
+            "name": "Mac's Speed Shop"
+          },
+          {
+            "node_key": "Restaurant::9603363.0",
+            "name": "Charlotte’s Kitchen"
+          },
+          {
+            "node_key": "Restaurant::398582.0",
+            "name": "The Capital Grille"
+          },
+          {
+            "node_key": "Restaurant::461886.0",
+            "name": "Cabo Fish Taco Baja Seagrill"
+          },
+          {
+            "node_key": "Restaurant::793793.0",
+            "name": "The Fig Tree Restaurant"
+          },
+          {
+            "node_key": "Restaurant::780583.0",
+            "name": "Gaucho Charlotte Street"
+          },
+          {
+            "node_key": "Restaurant::6627541.0",
+            "name": "Charlottes of Filey"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-13": [],
+        "2024-11-14": [],
+        "2024-11-15": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-13",
+          "required_slots": {
+            "Flight::F2546399": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2804753": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1442190": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1903065": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2093468": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-14",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-15",
+          "required_slots": {
+            "Flight::F2823707": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1436775": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1332413": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2546920": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1921083": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-13": [],
+      "2024-11-14": [],
+      "2024-11-15": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

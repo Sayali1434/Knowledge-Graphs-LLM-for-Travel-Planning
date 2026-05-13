@@ -1,0 +1,3850 @@
+{
+  "query_id": "idx_73",
+  "query_text": "Plan a 3-day trip for 2 people from Everett to San Diego from November 27th to November 29th, 2024, with a budget of $1,950. Accommodations should be in a non-shared room. Include dining options featuring Chinese, Mexican, Italian, and Asian cuisines, as well as visits to outdoor activities and museums.",
+  "request": {
+    "org": "Everett",
+    "dest": "San Diego",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-27', '2024-11-28', '2024-11-29']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': None, 'cuisine': ['Chinese', 'Mexican', 'Italian', 'Asian'], 'room type': 'not shared room', 'transportation': None, 'event': None, 'attraction': ['Outdoor Activities', 'Museums']}",
+    "budget": 1950,
+    "query": "Plan a 3-day trip for 2 people from Everett to San Diego from November 27th to November 29th, 2024, with a budget of $1,950. Accommodations should be in a non-shared room. Include dining options featuring Chinese, Mexican, Italian, and Asian cuisines, as well as visits to outdoor activities and museums.",
+    "level": "hard",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Nature",
+    "spending_preference": "Economical Traveler",
+    "location_preference": "Beaches"
+  },
+  "constraints": {
+    "house rule": null,
+    "cuisine": "Chinese, Mexican, Italian, Asian",
+    "room type": "not shared room",
+    "transportation": null,
+    "event": null,
+    "attraction": "Outdoor Activities, Museums"
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This itinerary optimizes the use of available flights, accommodations, and dining options while fitting in diverse attractions and events within the given constraints.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1950.0,
+    "min_estimated_total_cost": 1163.0,
+    "max_estimated_total_cost": 1163.0,
+    "best_option_remaining_budget": 787.0
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 1163.0,
+      "stay": {
+        "node_key": "Accommodation::11278334.0",
+        "label": "Accommodation",
+        "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+        "id": "11278334.0",
+        "City": "San Diego",
+        "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+      },
+      "outbound": {
+        "node_key": "Flight::F0633219",
+        "label": "Flight",
+        "name": "F0633219: Everett to San Diego, 08:23-11:18",
+        "Flight Number": "F0633219",
+        "FlightDate": "2024-11-27",
+        "OriginCityName": "Everett",
+        "DestCityName": "San Diego",
+        "Price": 307,
+        "DepTime": "08:23",
+        "ArrTime": "11:18"
+      },
+      "return": {
+        "node_key": "Flight::F2402765",
+        "label": "Flight",
+        "name": "F2402765: San Diego to Everett, 18:23-21:20",
+        "Flight Number": "F2402765",
+        "FlightDate": "2024-11-29",
+        "OriginCityName": "San Diego",
+        "DestCityName": "Everett",
+        "Price": 222,
+        "DepTime": "18:23",
+        "ArrTime": "21:20"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-27",
+          "current_city": "San Diego",
+          "llm_notes": "Day 1 starts with an early flight, allowing time for a light breakfast, morning attraction, and lunch before the afternoon attraction. Dinner is scheduled near the accommodation.",
+          "outbound_flight": {
+            "node_key": "Flight::F0633219",
+            "label": "Flight",
+            "name": "F0633219: Everett to San Diego, 08:23-11:18",
+            "Flight Number": "F0633219",
+            "FlightDate": "2024-11-27",
+            "OriginCityName": "Everett",
+            "DestCityName": "San Diego",
+            "Price": 307,
+            "DepTime": "08:23",
+            "ArrTime": "11:18"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::11278334.0",
+            "label": "Accommodation",
+            "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+            "id": "11278334.0",
+            "City": "San Diego",
+            "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::568355.0",
+            "label": "Restaurant",
+            "name": "Cafe Coyote",
+            "id": "568355.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::531819",
+            "label": "Attraction",
+            "name": "USS Midway Museum",
+            "id": "531819",
+            "City": "San Diego",
+            "rating": "5.0"
+          },
+          "lunch": {
+            "node_key": "Restaurant::492018.0",
+            "label": "Restaurant",
+            "name": "Filippi's Pizza Grotto Little Italy",
+            "id": "492018.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::104122",
+            "label": "Attraction",
+            "name": "San Diego Zoo",
+            "id": "104122",
+            "City": "San Diego",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1776028.0",
+            "label": "Restaurant",
+            "name": "Bencotto Italian Kitchen",
+            "id": "1776028.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::11278334.0",
+            "label": "Accommodation",
+            "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+            "id": "11278334.0",
+            "City": "San Diego",
+            "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-28",
+          "current_city": "San Diego",
+          "llm_notes": "A full day in the city with a balanced schedule of breakfast, morning attraction, lunch, afternoon attraction, and dinner.",
+          "start_accommodation": {
+            "node_key": "Accommodation::11278334.0",
+            "label": "Accommodation",
+            "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+            "id": "11278334.0",
+            "City": "San Diego",
+            "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::568355.0",
+            "label": "Restaurant",
+            "name": "Cafe Coyote",
+            "id": "568355.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::255307",
+            "label": "Attraction",
+            "name": "La Jolla Cove",
+            "id": "255307",
+            "City": "San Diego",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::532538.0",
+            "label": "Restaurant",
+            "name": "Buon Appetito",
+            "id": "532538.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::102782",
+            "label": "Attraction",
+            "name": "Balboa Park",
+            "id": "102782",
+            "City": "San Diego",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1508162.0",
+            "label": "Restaurant",
+            "name": "La Puerta",
+            "id": "1508162.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::11278334.0",
+            "label": "Accommodation",
+            "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+            "id": "11278334.0",
+            "City": "San Diego",
+            "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-29",
+          "current_city": "San Diego",
+          "llm_notes": "The final day focuses on a morning attraction and lunch before the return flight. Dinner is skipped as the return flight is too early.",
+          "start_accommodation": {
+            "node_key": "Accommodation::11278334.0",
+            "label": "Accommodation",
+            "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+            "id": "11278334.0",
+            "City": "San Diego",
+            "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::568355.0",
+            "label": "Restaurant",
+            "name": "Cafe Coyote",
+            "id": "568355.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::104125",
+            "label": "Attraction",
+            "name": "Mission Beach",
+            "id": "104125",
+            "City": "San Diego",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::1875780.0",
+            "label": "Restaurant",
+            "name": "Las Hadas Grill",
+            "id": "1875780.0",
+            "City": "San Diego",
+            "avg_cost": "45.5",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F2402765",
+            "label": "Flight",
+            "name": "F2402765: San Diego to Everett, 18:23-21:20",
+            "Flight Number": "F2402765",
+            "FlightDate": "2024-11-29",
+            "OriginCityName": "San Diego",
+            "DestCityName": "Everett",
+            "Price": 222,
+            "DepTime": "18:23",
+            "ArrTime": "21:20"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_73",
+    "node_count": 49,
+    "edge_count": 624,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::11278334.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "11",
+        "house_rules": "No visitors",
+        "State": "California",
+        "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+        "coordinates": "{\"latitude\": 32.72673, \"longitude\": -117.23444}",
+        "rating": "{\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}",
+        "id": "11278334.0",
+        "City": "San Diego",
+        "title": "Guest suite in San Diego",
+        "url": "https://www.airbnb.com/rooms/11278334?locale=en-US&currency=USD&check_in=2024-12-01&check_out=2024-12-06",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$135 per night\", \"originalPrice\": null, \"price\": \"$135\", \"qualifier\": \"night\", \"total\": \"$675 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:10",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::102782",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "13099",
+        "latitude": "32.731518",
+        "rating": "4.5",
+        "description": "This 1,200-acre nature park comprises 17 museums, gardens, musical theaters, a sports complex, and the world-famous San Diego Zoo. The park’s Spanish-Moorish architecture and 19 distinct gardens (some require admission fees) attract both tourists and locals. Don’t miss the San Diego Air and Space Museum, the Spanish Village Art Center for unique handicrafts, and the Spreckels Organ Pavilion, where free concerts are hosted in the evenings. Travelers recommend putting aside the whole day to explore the park. To make the most of your time, hop on the Balboa Park trams (they’re free!) to get around. – Tripadvisor",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1549 El Prado\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-1660\"}",
+        "offerGroup": "{\"lowestPrice\": \"$5.00\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-City-Lights-Night-Tour%2Fd736-5046SDNIGHT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9ea412f3ae694a030&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=102782&clt=TD&from=api&nt=true\", \"price\": \"$46.00\", \"roundedUpPrice\": \"$46\", \"offerType\": null, \"title\": \"San Diego After Dark: Explore the City's Nighttime Charms\", \"productCode\": \"5046SDNIGHT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/17/3f/8f.jpg\", \"description\": null, \"primaryCategory\": \"Night Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Tour-Hop-on-Hop-off-Trolley%2Fd736-5046SAN_OTT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=b3f608dbd401132ff&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=102782&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"San Diego Hop On Hop Off Trolley Tour\", \"productCode\": \"5046SAN_OTT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/83/f1/3f.jpg\", \"description\": null, \"primaryCategory\": \"Hop-on Hop-off Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Scenic-Tour%2Fd736-22921P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=229c8b633e9a15b22&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=102782&clt=TD&from=api&nt=true\", \"price\": \"$79.00\", \"roundedUpPrice\": \"$79\", \"offerType\": null, \"title\": \"San Diego Scenic Tour\", \"productCode\": \"22921P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/32/00/f8.jpg\", \"description\": null, \"primaryCategory\": \"Half-day Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FPrivate-Balboa-Park-Tour%2Fd736-5044PRIVBAL%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=74b1b33f90bc38376&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=102782&clt=TD&from=api&nt=true\", \"price\": \"$199.00\", \"roundedUpPrice\": \"$199\", \"offerType\": null, \"title\": \"The Private Balboa Park Tour\", \"productCode\": \"5044PRIVBAL\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/94/4c/13.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FGoCar-Talking-GoCar-2Hr-Tour-Downtown-and-Old-Town%2Fd736-3871P11%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=45af76885b2d20d54&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=102782&clt=TD&from=api&nt=true\", \"price\": \"$62.00\", \"roundedUpPrice\": \"$62\", \"offerType\": null, \"title\": \"2-Hour GoCar Tour of Downtown San Diego and Old Town\", \"productCode\": \"3871P11\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/dd/e7/35.jpg\", \"description\": null, \"primaryCategory\": \"4WD, ATV & Off-Road Tours\"}]}",
+        "subtype": [
+          "Parks",
+          "Gardens",
+          "Playgrounds"
+        ],
+        "ratingHistogram": "{\"count1\": 33, \"count2\": 85, \"count3\": 469, \"count4\": 2772, \"count5\": 9740}",
+        "location_contains_city": "True",
+        "id": "102782",
+        "longitude": "-117.15017",
+        "website": "http://www.balboapark.org/",
+        "rankingPosition": "4.0",
+        "address": "1549 El Prado, San Diego, CA 92101-1660",
+        "neighborhoodLocations": "[{\"id\": \"20484014\", \"name\": \"Balboa Park\"}]",
+        "rankingString": "#4 of 815 things to do in San Diego",
+        "City": "San Diego",
+        "localName": "Balboa Park",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60750-d102782-Reviews-Balboa_Park-San_Diego_California.html",
+        "localAddress": "1549 El Prado, 92101-1660",
+        "rankingDenominator": "815.0",
+        "name": "Balboa Park",
+        "locationString": "San Diego, California",
+        "subcategories": [
+          "Fun & Games",
+          "Nature & Parks"
+        ],
+        "rawRanking": "4.711843967"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1706",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::104122",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "29995",
+        "latitude": "32.735275",
+        "rating": "4.5",
+        "description": "The San Diego Zoo pioneered cageless exhibits and offers travelers a fun and informative experience. Featuring over 4000 animals, the park gives you a peek into the wildlife of several ecosystems, from deserts to rainforests. Ride the tour bus, which crosses three quarters of the zoo’s area, and learn more about the animals from the guide as you view them in their natural habitats. You can also hop on the Skyfari gondola lift to see the entire park from above. Tickets to the San Diego Zoo that also cover the San Diego Zoo Safari Park in Escondido are available for a discount. – Tripadvisor",
+        "visit_duration": "3.6666666666666665",
+        "addressObj": "{\"street1\": \"2929 Zoo Drive\", \"street2\": \"Balboa Park\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101\"}",
+        "offerGroup": "{\"lowestPrice\": \"$19.99\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Zoo%2Fd736-3097ZOO_TR%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=ca527f6b16a511f1f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=104122&clt=TD&from=api&nt=true\", \"price\": \"$74.00\", \"roundedUpPrice\": \"$74\", \"offerType\": null, \"title\": \"San Diego Zoo 1-Day Pass: Any Day Ticket\", \"productCode\": \"3097ZOO_TR\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/8d/73/09.jpg\", \"description\": null, \"primaryCategory\": \"Zoo Tickets & Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Zoo-and-Safari-Park-Combo-Tour%2Fd736-3097SDZSP_2VISIT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=7347382584b381119&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=104122&clt=TD&from=api&nt=true\", \"price\": \"$124.00\", \"roundedUpPrice\": \"$124\", \"offerType\": null, \"title\": \"San Diego Zoo and Safari Park 2-Visit Pass Ticket\", \"productCode\": \"3097SDZSP_2VISIT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0c/11/86/ca.jpg\", \"description\": null, \"primaryCategory\": \"Nature & Wildlife\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Zoo-Safari-Park%2Fd736-3097WAP_TR%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=542e679b5be16afa2&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=104122&clt=TD&from=api&nt=true\", \"price\": \"$74.00\", \"roundedUpPrice\": \"$74\", \"offerType\": null, \"title\": \"San Diego Zoo Safari Park 1-Day Pass: Any Day Ticket\", \"productCode\": \"3097WAP_TR\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/ed/fe/bb.jpg\", \"description\": null, \"primaryCategory\": \"Zoo Tickets & Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Tour-Hop-on-Hop-off-Trolley%2Fd736-5046SAN_OTT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=b3f608dbd401132ff&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=104122&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"San Diego Hop On Hop Off Trolley Tour\", \"productCode\": \"5046SAN_OTT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/83/f1/3f.jpg\", \"description\": null, \"primaryCategory\": \"Hop-on Hop-off Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FGPS-Talking-GoCar-2HR-Tour-Downtown-and-Balboa%2Fd736-3871P10%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=e5102e451712d5879&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=104122&clt=TD&from=api&nt=true\", \"price\": \"$86.46\", \"roundedUpPrice\": \"$87\", \"offerType\": null, \"title\": \"2-Hour GoCar Tour of Downtown and Balboa Park\", \"productCode\": \"3871P10\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/dd/e7/37.jpg\", \"description\": null, \"primaryCategory\": \"4WD, ATV & Off-Road Tours\"}]}",
+        "subtype": [
+          "Zoos"
+        ],
+        "ratingHistogram": "{\"count1\": 235, \"count2\": 477, \"count3\": 1910, \"count4\": 5810, \"count5\": 21563}",
+        "location_contains_city": "True",
+        "id": "104122",
+        "longitude": "-117.14911",
+        "website": "http://zoo.sandiegozoo.org",
+        "rankingPosition": "3.0",
+        "address": "2929 Zoo Drive Balboa Park, San Diego, CA 92101",
+        "neighborhoodLocations": "[{\"id\": \"20484014\", \"name\": \"Balboa Park\"}]",
+        "rankingString": "#3 of 815 things to do in San Diego",
+        "City": "San Diego",
+        "localName": "San Diego Zoo",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60750-d104122-Reviews-San_Diego_Zoo-San_Diego_California.html",
+        "localAddress": "2929 Zoo Drive, Balboa Park, 92101",
+        "rankingDenominator": "815.0",
+        "name": "San Diego Zoo",
+        "locationString": "San Diego, California",
+        "subcategories": [
+          "Zoos & Aquariums",
+          "Nature & Parks",
+          "Outdoor Activities"
+        ],
+        "rawRanking": "4.850902557"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1708",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::104125",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2065",
+        "latitude": "32.772114",
+        "rating": "4.5",
+        "description": "Enjoy a slice of Californian life at this iconic long sandy beach in San Diego. This laidback beach town has almost two miles of beachfront boardwalk, lined with shops, bars, and restaurants. Here, you can cycle or rollerblade down the boardwalk, relax on the beach, go for a swim and surf, and even have fun at an amusement park. The old-school Belmont Park is free to enter and has both retro and modern amusement rides, food stalls, and entertainment all year round. There are also year-round whale-watching tours from Mission Bay, that'll take you to the best wildlife viewing spots.",
+        "visit_duration": "4.25",
+        "addressObj": "{\"street1\": \"3200 Ocean Front Walk\", \"street2\": \"Surfrider Square\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92109\"}",
+        "offerGroup": "{\"lowestPrice\": \"$1.49\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLa-Jolla%2FThe-Plunge-Bike-Tour%2Fd22636-5044P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=ad110b5ec6e605dca&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=104125&clt=TD&from=api&nt=true\", \"price\": \"$219.00\", \"roundedUpPrice\": \"$219\", \"offerType\": null, \"title\": \"The Summit To The Sea La Jolla Bike Tour\", \"productCode\": \"5044P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0e/32/f2/ec.jpg\", \"description\": null, \"primaryCategory\": \"4WD, ATV & Off-Road Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FCarlsbad%2FBeachside-Moped-Rentals%2Fd23228-373260P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=51b6fa47723c39871&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=104125&clt=TD&from=api&nt=true\", \"price\": \"$149.00\", \"roundedUpPrice\": \"$149\", \"offerType\": null, \"title\": \"Beachside Moped Rentals\", \"productCode\": \"373260P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/e3/93/cb.jpg\", \"description\": null, \"primaryCategory\": \"Day Trips\"}]}",
+        "subtype": [
+          "Beaches"
+        ],
+        "ratingHistogram": "{\"count1\": 22, \"count2\": 46, \"count3\": 190, \"count4\": 656, \"count5\": 1151}",
+        "location_contains_city": "True",
+        "id": "104125",
+        "longitude": "-117.25307",
+        "rankingPosition": "38.0",
+        "address": "3200 Ocean Front Walk Surfrider Square, San Diego, CA 92109",
+        "neighborhoodLocations": "[{\"id\": \"20484023\", \"name\": \"Pacific Beach\"}, {\"id\": \"21002011\", \"name\": \"Mission Beach\"}]",
+        "rankingString": "#38 of 815 things to do in San Diego",
+        "City": "San Diego",
+        "localName": "Mission Beach",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60750-d104125-Reviews-Mission_Beach-San_Diego_California.html",
+        "localAddress": "3200 Ocean Front Walk, Surfrider Square, 92109",
+        "rankingDenominator": "815.0",
+        "name": "Mission Beach",
+        "locationString": "San Diego, California",
+        "subcategories": [
+          "Nature & Parks",
+          "Outdoor Activities"
+        ],
+        "rawRanking": "3.89921689"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1721",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::255307",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "13798",
+        "latitude": "32.850586",
+        "rating": "4.5",
+        "description": "At this beach surronded by sandstone cliffs on the San Diego coast, the water is calm enough for travelers to enjoy diving and snorkeling. Walk along the rocky shore to spot large colonies of sea lions lounging in their natural habitat and looking after their pups, and have a picnic while soaking up the views of the ocean from the cliffs at sunset. If you visit at low tide, you’ll get to swim in the crystal clear tidal pools as well. You can also visit Sunny Jim's Sea Cave which is accessible via a tunnel. Visit early in the morning to find a parking space more easily. – Tripadvisor",
+        "visit_duration": "4.25",
+        "addressObj": "{\"street1\": \"1100 Coast Blvd\", \"street2\": null, \"city\": \"La Jolla\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92037-3600\"}",
+        "offerGroup": "{\"lowestPrice\": \"$9.99\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FLa-Jolla-Tour%2Fd736-5044LJTOUR%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=a18fa92ba0217d588&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=255307&clt=TD&from=api&nt=true\", \"price\": \"$129.00\", \"roundedUpPrice\": \"$129\", \"offerType\": null, \"title\": \"The La Jolla Tour\", \"productCode\": \"5044LJTOUR\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/8e/aa/bd.jpg\", \"description\": null, \"primaryCategory\": \"City Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Scenic-Tour%2Fd736-22921P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=229c8b633e9a15b22&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=255307&clt=TD&from=api&nt=true\", \"price\": \"$79.00\", \"roundedUpPrice\": \"$79\", \"offerType\": null, \"title\": \"San Diego Scenic Tour\", \"productCode\": \"22921P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/32/00/f8.jpg\", \"description\": null, \"primaryCategory\": \"Half-day Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSegway-Experience-Through-La-Jolla%2Fd736-18125P3%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=7641f79f4266edfe0&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=255307&clt=TD&from=api&nt=true\", \"price\": \"$99.00\", \"roundedUpPrice\": \"$99\", \"offerType\": null, \"title\": \"Private Segway Experience Through La Jolla\", \"productCode\": \"18125P3\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/4f/62/d7.jpg\", \"description\": null, \"primaryCategory\": \"Segway Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-in-One-Day%2Fd736-5044SANHI%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=ccf4a4863a5dacb78&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=255307&clt=TD&from=api&nt=true\", \"price\": \"$249.00\", \"roundedUpPrice\": \"$249\", \"offerType\": null, \"title\": \"The San Diego Highlights Tour\", \"productCode\": \"5044SANHI\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/7c/6a/e9.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Life-at-the-Beach-Tour%2Fd736-22921P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=c9b0b03d928d785f9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=255307&clt=TD&from=api&nt=true\", \"price\": \"$105.00\", \"roundedUpPrice\": \"$105\", \"offerType\": null, \"title\": \"San Diego Life at the Beach Tour\", \"productCode\": \"22921P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/6f/79/a4.jpg\", \"description\": null, \"primaryCategory\": \"Half-day Tours\"}]}",
+        "subtype": [
+          "Beaches",
+          "Parks"
+        ],
+        "ratingHistogram": "{\"count1\": 77, \"count2\": 159, \"count3\": 661, \"count4\": 3285, \"count5\": 9616}",
+        "location_contains_city": "True",
+        "id": "255307",
+        "longitude": "-117.27309",
+        "rankingPosition": "1.0",
+        "address": "1100 Coast Blvd, La Jolla, San Diego, CA 92037-3600",
+        "neighborhoodLocations": [],
+        "rankingString": "#1 of 355 things to do in La Jolla",
+        "City": "San Diego",
+        "localName": "La Jolla Cove",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g32578-d255307-Reviews-La_Jolla_Cove-La_Jolla_San_Diego_California.html",
+        "localAddress": "1100 Coast Blvd, 92037-3600",
+        "rankingDenominator": "355.0",
+        "name": "La Jolla Cove",
+        "locationString": "La Jolla, San Diego, California",
+        "subcategories": [
+          "Nature & Parks",
+          "Outdoor Activities"
+        ],
+        "rawRanking": "5.0"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1705",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::531819",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.3764020826794977}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "25777",
+        "latitude": "32.71386",
+        "rating": "5.0",
+        "description": "Located in downtown San Diego, the USS Midway (Museum) was America’s longest-serving aircraft carrier of the 20th century. Today, the interactive museum is an unforgettable adventure for the entire family as guests walk in the footsteps of the 225,000 young men who served on Midway. Visitors explore a floating city at sea, the amazing flight deck and its 29 restored aircraft, flight simulators, and are inspired in the Battle of Midway Theater, included with admission. Admission also includes a self-guided audio tour narrated by Midway sailors in English, Mandarin, Spanish, Japanese, French and German. Visiting Midway is a once-in-a-lifetime experience in San Diego, known around the world as \"Navy Town, USA.\"",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"910 N Harbor Drive\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-5811\"}",
+        "offerGroup": "{\"lowestPrice\": \"$5.00\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FUSS-Midway-Museum%2Fd736-5160USS%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cafbb3ed2c79be9aa&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=531819&clt=TD&from=api&nt=true\", \"price\": \"$32.00\", \"roundedUpPrice\": \"$32\", \"offerType\": null, \"title\": \"Skip the Line: USS Midway Museum Admission Ticket in San Diego\", \"productCode\": \"5160USS\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/ab/3d/20.jpg\", \"description\": null, \"primaryCategory\": \"Museum Tickets & Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Shore-Excursion-San-Diego-Hop-On-Hop-Off-Trolley%2Fd736-5046PRTSANHOHO%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=8d2639eea62504420&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=531819&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"San Diego Shore Excursion: San Diego Hop-On Hop-Off Trolley\", \"productCode\": \"5046PRTSANHOHO\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/6e/b8/f6.jpg\", \"description\": null, \"primaryCategory\": \"Ports of Call Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-City-Lights-Night-Tour%2Fd736-5046SDNIGHT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9ea412f3ae694a030&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=531819&clt=TD&from=api&nt=true\", \"price\": \"$46.00\", \"roundedUpPrice\": \"$46\", \"offerType\": null, \"title\": \"San Diego After Dark: Explore the City's Nighttime Charms\", \"productCode\": \"5046SDNIGHT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/09/17/3f/8f.jpg\", \"description\": null, \"primaryCategory\": \"Night Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2FSan-Diego-Bay-Sunset-Sail%2Fd736-10935P3%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=6aa03d3fd1574d858&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=531819&clt=TD&from=api&nt=true\", \"price\": \"$109.00\", \"roundedUpPrice\": \"$109\", \"offerType\": null, \"title\": \"Small-Group Sunset Sailing Experience on San Diego Bay\", \"productCode\": \"10935P3\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/6f/2b/c7.jpg\", \"description\": null, \"primaryCategory\": \"Sailing Trips\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FSan-Diego%2F2Hr-Scooter-Tour-Downtown-and-Old-Town%2Fd736-5257P12%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=dcc6ba0e51681fb83&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=531819&clt=TD&from=api&nt=true\", \"price\": \"$81.56\", \"roundedUpPrice\": \"$82\", \"offerType\": null, \"title\": \"2Hr GPS Self Guided Scooter Tour: Downtown & Old Town\", \"productCode\": \"5257P12\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/07/12/41/8a.jpg\", \"description\": null, \"primaryCategory\": \"4WD, ATV & Off-Road Tours\"}]}",
+        "subtype": [
+          "Specialty Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 32, \"count2\": 50, \"count3\": 514, \"count4\": 4868, \"count5\": 20313}",
+        "location_contains_city": "True",
+        "id": "531819",
+        "longitude": "-117.17507",
+        "website": "http://www.midway.org",
+        "rankingPosition": "1.0",
+        "address": "910 N Harbor Drive, San Diego, CA 92101-5811",
+        "neighborhoodLocations": "[{\"id\": \"20933750\", \"name\": \"Downtown\"}, {\"id\": \"20484018\", \"name\": \"Marina\"}]",
+        "rankingString": "#1 of 815 things to do in San Diego",
+        "City": "San Diego",
+        "localName": "USS Midway Museum",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g60750-d531819-Reviews-USS_Midway_Museum-San_Diego_California.html",
+        "localAddress": "910 N Harbor Drive, 92101-5811",
+        "rankingDenominator": "815.0",
+        "name": "USS Midway Museum",
+        "locationString": "San Diego, California",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "5.0"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:1709",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Everett",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Everett"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::San Diego",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "San Diego"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F0633219",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F0633219",
+        "Price": 307,
+        "DepTime": "08:23",
+        "ArrTime": "11:18",
+        "ActualElapsedTime": "2 hours 55 minutes",
+        "FlightDate": "2024-11-27",
+        "OriginCityName": "Everett",
+        "DestCityName": "San Diego",
+        "Distance": 1080.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F2402765",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F2402765",
+        "Price": 222,
+        "DepTime": "18:23",
+        "ArrTime": "21:20",
+        "ActualElapsedTime": "2 hours 57 minutes",
+        "FlightDate": "2024-11-29",
+        "OriginCityName": "San Diego",
+        "DestCityName": "Everett",
+        "Distance": 1080.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_73::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "current_city": "San Diego"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_73::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "current_city": "San Diego"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_73::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "current_city": "San Diego"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_73::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1163.0,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::11278334.0",
+        "outbound_node_key": "Flight::F0633219",
+        "return_node_key": "Flight::F2402765"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_73",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_73",
+        "query": "Plan a 3-day trip for 2 people from Everett to San Diego from November 27th to November 29th, 2024, with a budget of $1,950. Accommodations should be in a non-shared room. Include dining options featuring Chinese, Mexican, Italian, and Asian cuisines, as well as visits to outdoor activities and museums.",
+        "days": 3,
+        "origin_city": "Everett",
+        "destination_city": "San Diego",
+        "budget": 1950.0,
+        "source_mini_kg_query_id": "idx_73"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::1508162.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.6182233382520491}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "1118.0",
+        "avg_cost": "45.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"560 Fourth Ave\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/06/19/happy-hour-everyday-3.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/06/3a/table-with-a-view.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/5a/1c/90/interior.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/84/25/old-fashioned-love-song.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/84/15/99-problems.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/f9/we-love-tequila.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/db/we-have-an-extensive.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/c3/mr-mojo-risin-our-housemade.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/b2/open-for-lunch-everyday.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/99/our-guacamole-s-fresh.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/1a/83/8a/happy-hour-everyday-3.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/18/39/5d/join-us-for-brunch-every.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/31/2e/brunch-every-weekend.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/5a/purple-haze.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/56/hey-mami.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/53/angel-of-harlem.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/52/shrimp-tostaditas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/4d/surf-and-turf-fries.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/3f/tj-dogs.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/16/2f/3b/flautitas-potato-or-cochinita.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/8c/0e/e8/nice-atmosphere.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/6d/10/26/la-puerta.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/1b/cb/ad/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/20/26/6e/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/23/0d/36/6a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/24/23/f6/da/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/24/23/f6/db/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/24/23/f6/dc/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/fa/de/bf/la-puerta.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/c6/65/5e/street-tacos.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/c6/65/59/guacamole-on-fresh-chips.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/c6/65/54/burrito.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c3/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c0/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/bb/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/be/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/bf/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c4/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/bd/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c5/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/c1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/47/53/bc/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/bf/3e/b1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/bf/3e/b2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/bf/3e/b3/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/bf/3e/b4/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/bf/3e/b5/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/62/4a/f0/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/62/4a/f1/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/62/4a/f2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/62/4a/f3/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/62/4a/f4/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Accepts Credit Cards",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1508162.0",
+        "longitude": "-117.16122",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/1b/16/06/19/happy-hour-everyday-3.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#1 of 61 Bars & Pubs in San Diego",
+        "openNowText": "Closed Now",
+        "City": "San Diego",
+        "mealTypes": [
+          "Dinner",
+          "Drinks"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern",
+          "Latin",
+          "Bar",
+          "Central American"
+        ],
+        "localName": "La Puerta",
+        "input": "San Diego",
+        "phone": "+1 619-696-3466",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d1508162-Reviews-La_Puerta-San_Diego_California.html",
+        "localAddress": "560 Fourth Ave, 92101",
+        "Rest-MidRange": "91.0",
+        "name": "La Puerta",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.373183727",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Bars & Pubs",
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "32.71122",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g60750-d1508162-La_Puerta-San_Diego_California.html",
+        "photoCount": "461.0",
+        "ratingHistogram": "{\"count1\": 17, \"count2\": 27, \"count3\": 100, \"count4\": 353, \"count5\": 621}",
+        "email": "merritte@lapuertasd.com",
+        "website": "https://lapuertasd.com/?utm_source=business-listings",
+        "rankingPosition": "1.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1560, \"closeHours\": \"02:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "560 Fourth Ave, San Diego, CA 92101",
+        "neighborhoodLocations": "[{\"id\": \"20484016\", \"name\": \"Gaslamp\"}, {\"id\": \"20933750\", \"name\": \"Downtown\"}]",
+        "dishes": [
+          "Burrito",
+          "Tortillas",
+          "Poutine",
+          "Shrimp",
+          "Surf And Turf",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Nachos",
+          "Queso",
+          "French Fries",
+          "Fish",
+          "Pork",
+          "Refried Beans",
+          "Enchiladas",
+          "Asado",
+          "Chips and Salsa",
+          "Carne Asada",
+          "Carnitas",
+          "Mole",
+          "Quesadilla",
+          "Guacamole",
+          "Fried",
+          "Quesadillas",
+          "Carne Asada Fries"
+        ],
+        "reviewTags": "[{\"text\": \"street tacos\", \"reviews\": 98}, {\"text\": \"guacamole\", \"reviews\": 130}, {\"text\": \"burrito\", \"reviews\": 122}, {\"text\": \"shrimp\", \"reviews\": 56}, {\"text\": \"rice and beans\", \"reviews\": 16}, {\"text\": \"surf and turf\", \"reviews\": 12}, {\"text\": \"fries\", \"reviews\": 22}, {\"text\": \"steak\", \"reviews\": 20}, {\"text\": \"happy hour\", \"reviews\": 134}, {\"text\": \"mix and match\", \"reviews\": 14}, {\"text\": \"great mexican food\", \"reviews\": 37}, {\"text\": \"gaslamp district\", \"reviews\": 40}, {\"text\": \"great tacos\", \"reviews\": 23}, {\"text\": \"mexican restaurant\", \"reviews\": 29}, {\"text\": \"margaritas\", \"reviews\": 123}, {\"text\": \"pastor\", \"reviews\": 18}, {\"text\": \"sd\", \"reviews\": 22}, {\"text\": \"california\", \"reviews\": 15}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "61.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6757",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::1776028.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.5359516991753454}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "702.0",
+        "avg_cost": "45.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"750 W Fir St\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-2203\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/dd/5d/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/dd/64/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/dd/2c/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/e0/b6/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/dd/68/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/c5/dd/2f/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d9/f2/3a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/21/18/62/papardelle-with-bencotto.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/b2/bd/45/20170317-193525-1-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/df/74/f1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/e7/bb/28/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/da/a2/b7/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/da/a2/b6/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/da/a2/b5/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/9d/60/b0/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/36/0c/5a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/36/0c/20/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/36/0b/d8/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/7f/e8/e4/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/7f/e8/e3/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/08/aa/e1/bc/inside-view.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/9d/f4/b4/bencotto-italian-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/d8/f5/51/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d4/c1/44/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d4/c1/45/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d4/c1/46/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d4/c1/47/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/d4/c1/48/photo4jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Seating",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1776028.0",
+        "longitude": "-117.16886",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/02/c5/dd/5d/bencotto-italian-kitchen.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#56 of 4,376 Restaurants in San Diego",
+        "openNowText": "Closed Now",
+        "City": "San Diego",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Italian",
+          "Contemporary"
+        ],
+        "localName": "Bencotto Italian Kitchen",
+        "input": "San Diego",
+        "phone": "+1 619-450-4786",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d1776028-Reviews-Bencotto_Italian_Kitchen-San_Diego_California.html",
+        "localAddress": "750 W Fir St, 92101-2203",
+        "Rest-MidRange": "91.0",
+        "name": "Bencotto Italian Kitchen",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.290723801",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232188385&geo=1776028&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311319779&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8BjmRaq6HtVUm456jM62JBC8ZNgV66kT9CkGBZufztrk&cs=1d2762d80a22325a6c4c47a5225d4bcd7_JXs\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "32.724457",
+        "description": "ONLINE RESERVATIONS ARE LIMITED. PLEASE CALL THE RESTAURANT IF YOUR DESIRED TIME IS NOT AVAILABLE.We are proud to offer 75 kinds of different pasta recipe, fresh and hand-crafted 12 hours a day.\"Bencotto\" means cooked well: this is what authentic Italian food is about.It tastes as it should and would in Italy.Bencotto offers two different eating environments: guests can either enjoy their meal at our “kitchen-esque” bar downstairs, or they can relax in the intimate low-ceiling dining area upstairs. The décor creates a clean and sophisticated atmosphere, where old-world charm and warmth blend with contemporary appeal.",
+        "photoCount": "186.0",
+        "ratingHistogram": "{\"count1\": 10, \"count2\": 14, \"count3\": 71, \"count4\": 191, \"count5\": 416}",
+        "email": "info@lovebencotto.com",
+        "website": "http://www.lovebencotto.com",
+        "rankingPosition": "56.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "750 W Fir St, San Diego, CA 92101-2203",
+        "neighborhoodLocations": "[{\"id\": \"20484017\", \"name\": \"Little Italy\"}]",
+        "dishes": [
+          "Noodle",
+          "Pasta",
+          "Crab",
+          "Lasagne",
+          "Lobster",
+          "Polenta",
+          "Shrimp",
+          "Salad",
+          "Calamari",
+          "Cannoli",
+          "Cioppino",
+          "Risotto",
+          "Tiramisu",
+          "Prosciutto",
+          "Meatballs",
+          "Tagliatelle",
+          "Bolognese",
+          "Tortellini",
+          "Tortelloni",
+          "Eggplant",
+          "Salmon",
+          "Beef",
+          "Lamb",
+          "Tortelli",
+          "Gnocco fritto",
+          "Ossobuco",
+          "Ragu",
+          "Squid Ink Pasta",
+          "Pesto",
+          "Penne",
+          "Tortino",
+          "Soup",
+          "Homemade Pasta",
+          "Sausage",
+          "Fresh Pasta",
+          "Linguine",
+          "Cake",
+          "Pappardelle",
+          "Fried",
+          "Meat Sauce",
+          "Penne Pasta",
+          "Braised Beef"
+        ],
+        "reviewTags": "[{\"text\": \"gnocchi\", \"reviews\": 56}, {\"text\": \"shrimp\", \"reviews\": 55}, {\"text\": \"braised beef\", \"reviews\": 9}, {\"text\": \"salad\", \"reviews\": 45}, {\"text\": \"pink sauce\", \"reviews\": 8}, {\"text\": \"italian meal\", \"reviews\": 8}, {\"text\": \"homemade\", \"reviews\": 20}, {\"text\": \"hostess\", \"reviews\": 17}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "4376.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6762",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::1875780.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.623813202282552}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "301.0",
+        "avg_cost": "45.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"558 4th Ave\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-6905\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/15/87/67/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/e3/0d/ce/las-hadas-grill.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/e3/0d/c4/las-hadas-grill.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/81/c1/02/las-hadas-family-owned.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/4b/63/e7/signature-camacho-fire.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/85/cc/our-full-service-bar.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/85/95/our-front-page-of-our.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/85/61/our-main-courses-specializing.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/85/2a/558-4th-avenue.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/85/07/we-have-10-different.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/84/d8/we-have-a-great-selection.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/24/84/ad/family-owned-and-operated.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/cf/42/72/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/17/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/16/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/15/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/13/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/12/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/11/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/10/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/ef/00/9d/we-love-kat.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0b/75/cf/93/pollo-and-carne-asada.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/d1/9e/a5/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/27/aa/76/3b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/27/aa/76/3a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/27/aa/76/39/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/27/aa/76/38/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/16/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/15/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/10/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/13/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/12/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/11/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/0f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/dc/1a/17/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/cf/42/72/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Seating",
+          "Free off-street parking",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Wine and Beer",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Digital Payments",
+          "Free Wifi",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music",
+          "Dog Friendly",
+          "Sports bars"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1875780.0",
+        "longitude": "-117.16121",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/17/15/87/67/photo0jpg.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#95 of 4,376 Restaurants in San Diego",
+        "openNowText": "Closed Now",
+        "City": "San Diego",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night",
+          "Drinks"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern",
+          "Bar"
+        ],
+        "localName": "Las Hadas Grill",
+        "input": "San Diego",
+        "phone": "+1 619-232-1720",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d1875780-Reviews-Las_Hadas_Grill-San_Diego_California.html",
+        "localAddress": "558 4th Ave, 92101-6905",
+        "Rest-MidRange": "91.0",
+        "name": "Las Hadas Grill",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.151196003",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "32.711098",
+        "description": "Family owned and operated since 2008. We provide a wide array of mexican cuisine including tacos, fajitas, vegetarian, seafood, and celiac plates for those with allergies. Family recipes with high quality and not at a \"gaslamp/downtown\" price. We try to appeal to all ages including families, which are always welcome. We are very well known for our $6 patron shots open-close and our patron margarita flight!",
+        "photoCount": "208.0",
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 9, \"count3\": 34, \"count4\": 96, \"count5\": 158}",
+        "email": "reservationslashadas@gmail.com",
+        "website": "http://www.lashadasgrillsd.com",
+        "rankingPosition": "95.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "558 4th Ave, San Diego, CA 92101-6905",
+        "neighborhoodLocations": "[{\"id\": \"20484016\", \"name\": \"Gaslamp\"}, {\"id\": \"20933750\", \"name\": \"Downtown\"}]",
+        "dishes": [
+          "Burrito",
+          "Ceviche",
+          "Burger",
+          "Lobster",
+          "Shrimp",
+          "Tortillas",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Fajitas",
+          "Nachos",
+          "Fish",
+          "Enchiladas",
+          "Soup",
+          "Coconut Shrimp",
+          "Mahi Mahi",
+          "Carne Asada",
+          "Carnitas",
+          "Quesadilla",
+          "Guacamole",
+          "Fried",
+          "Quesadillas"
+        ],
+        "reviewTags": "[{\"text\": \"taco\", \"reviews\": 36}, {\"text\": \"guacamole\", \"reviews\": 24}, {\"text\": \"fajitas\", \"reviews\": 17}, {\"text\": \"relleno\", \"reviews\": 3}, {\"text\": \"shrimp\", \"reviews\": 13}, {\"text\": \"carne\", \"reviews\": 5}, {\"text\": \"steak\", \"reviews\": 7}, {\"text\": \"fries\", \"reviews\": 6}, {\"text\": \"happy hour\", \"reviews\": 30}, {\"text\": \"la puerta\", \"reviews\": 14}, {\"text\": \"mexican food\", \"reviews\": 21}, {\"text\": \"the gas lamp district\", \"reviews\": 7}, {\"text\": \"gaslamp quarter\", \"reviews\": 5}, {\"text\": \"saturday night\", \"reviews\": 5}, {\"text\": \"margaritas\", \"reviews\": 28}, {\"text\": \"beers\", \"reviews\": 10}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "4376.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6767",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::492018.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.4905592130430936}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "2017.0",
+        "avg_cost": "45.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"1747 India St\", \"street2\": \"\", \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-2517\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/ea/bc/d0/el-restaurante-en-una.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/3c/cb/48/pizza.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/a7/56/b2/img-20190712-165527-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/fa/ef/04/ceiling-in-dining-room.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/18/55/6f/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/1d/93/e1/a-camouflaged-front-entrance.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/92/1a/e9/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/45/8b/f9/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/45/8b/f8/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/55/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/54/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/53/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/52/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/51/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/50/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/4f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/2a/d7/4e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/a8/e1/96/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/a8/e1/95/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/5b/a4/8e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/53/ee/da/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/34/8c/64/italian-at-it-s-best.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/94/94/4b/filippi-s-pizza-grotto.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/0a/db/02/how-things-used-to-be.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/8f/31/54/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/8f/31/53/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/0d/52/a3/spaghetti-with-giant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/0d/52/7b/great-photo-op-outside.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/49/4a/16/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/49/4a/15/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/49/4a/14/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e3/1a/93/20200210-180712-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e3/1a/92/20200213-165543-largejpg.jpg"
+        ],
+        "features": [
+          "Delivery",
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "492018.0",
+        "longitude": "-117.16828",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/02/3c/cb/48/pizza.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#77 of 4,376 Restaurants in San Diego",
+        "openNowText": "Closed Now",
+        "City": "San Diego",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Italian",
+          "Pizza"
+        ],
+        "localName": "Filippi's Pizza Grotto Little Italy",
+        "input": "San Diego",
+        "phone": "+1 619-232-5094",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d492018-Reviews-Filippi_s_Pizza_Grotto_Little_Italy-San_Diego_California.html",
+        "localAddress": "1747 India St, 92101-2517",
+        "Rest-MidRange": "91.0",
+        "name": "Filippi's Pizza Grotto Little Italy",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.208353996",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Grubhub&src=230413062&geo=492018&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=25768&bucket=852508&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311319773&managed=false&capped=false&gosox=I-ADlg7wY8lqEq92hGOCPH9yxKao4fnJtoYdd5TLctoCVK2EaqcCi9rOMrUCyEbyjwNVx9SobuRmZeYXHHKRM6-MMRFQmoPD7U93xrMcwWE&cs=162660ef73139fb7a65cb1e122da0a33e_G51\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/grubhub_05.11.2022.png\", \"provider\": \"Grubhub\", \"providerId\": \"13712\", \"providerDisplayName\": \"Grubhub\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "False",
+        "latitude": "32.72374",
+        "description": "\"Vincent DePhilippis Born in New York NY, raised in Naples Italy returned to New York City at the age of 18. Vincent DePhilippis and Madeleine Manfredi from Nimes France met in New York NY (Mamma and Papa) married in 1925, then settled in Westchester Pennsylvania. Then moved to San Diego in 1947 where they opened an Italian market named Cash & Carry Italian foods on India Street in San Diego. 1950 was the beginning of what has become a very successful line of family restaurants that are today know as Filippi's Pizza Grottos that are owned and operated by original family members of the founders. The DePhilippis family would like to welcome you and your family to visit our restaurants to enjoy our traditional old Italian family recipes.\"",
+        "photoCount": "691.0",
+        "ratingHistogram": "{\"count1\": 76, \"count2\": 71, \"count3\": 209, \"count4\": 547, \"count5\": 1114}",
+        "website": "https://www.facebook.com/filippislittleitaly/",
+        "rankingPosition": "77.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "1747 India St, San Diego, CA 92101-2517",
+        "neighborhoodLocations": "[{\"id\": \"20484017\", \"name\": \"Little Italy\"}, {\"id\": \"20933750\", \"name\": \"Downtown\"}]",
+        "dishes": [
+          "Lasagne",
+          "Sandwiches",
+          "Pasta",
+          "Cheesecake",
+          "Shrimp",
+          "Salad",
+          "Cannoli",
+          "Alfredo",
+          "Meatballs",
+          "Eggplant",
+          "Clams",
+          "Beef",
+          "Antipasti",
+          "Pesto",
+          "Chicken Parma",
+          "Pepperoni",
+          "Soup",
+          "Veal",
+          "Sausage",
+          "Linguine",
+          "Italian Sausage",
+          "Cookies",
+          "Meat Sauce"
+        ],
+        "reviewTags": "[{\"text\": \"lasagna\", \"reviews\": 343}, {\"text\": \"salad\", \"reviews\": 171}, {\"text\": \"garlic bread\", \"reviews\": 72}, {\"text\": \"cannoli\", \"reviews\": 35}, {\"text\": \"pie\", \"reviews\": 22}, {\"text\": \"italian market\", \"reviews\": 90}, {\"text\": \"italian food\", \"reviews\": 155}, {\"text\": \"little italy\", \"reviews\": 53}, {\"text\": \"india street\", \"reviews\": 33}, {\"text\": \"huge portions\", \"reviews\": 53}, {\"text\": \"long line\", \"reviews\": 36}, {\"text\": \"worth the wait\", \"reviews\": 54}, {\"text\": \"deli\", \"reviews\": 124}, {\"text\": \"filippis\", \"reviews\": 46}, {\"text\": \"crust\", \"reviews\": 125}, {\"text\": \"toppings\", \"reviews\": 81}, {\"text\": \"leftovers\", \"reviews\": 48}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "4376.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6750",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::532538.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Santa Fe Depot\", \"localName\": \"Santa Fe Depot\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.716732025146484, \"longitude\": -117.1695785522461, \"distance\": 0.40116723782774566}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "1321.0",
+        "avg_cost": "45.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"1609 India St\", \"street2\": null, \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92101-2515\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/ff/tartufo-di-calabria.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/f2/homemade-tiramisu.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/e4/burrata-special.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/dd/homemade-cheese-raviola.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/c3/polpo-alla-griglia.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/b7/homemade-arancini.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/ae/carciofi-alla-romana.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/a7/linguine-neri.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/c2/d4/97/insalata-d-anatra.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/de/43/fa/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/cd/c4/0d/exquisito-rissoto-piemontese.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/23/70/44/08/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/96/54/24/dsc-2551-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/96/54/23/dsc-2546-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/8d/68/80/photo4jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/8d/68/7f/photo3jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/04/5c/52/dc/buon-appetito.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/0a/12/05/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/0a/12/04/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/7d/35/ac/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/d4/95/a9/indoor-seating-and-art.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/58/6a/68/buon-appetito.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/7a/4d/5a/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/dc/cc/01/buon-appetito.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/dc/cb/f8/buon-appetito.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/18/9b/f1/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/18/9b/f0/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/18/9b/ef/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/59/05/19/exterior-of-the-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/59/05/1a/outdoor-dining-along.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/59/05/1b/linguine-boscomare.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/59/05/1c/borsettini-aragosta.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/59/05/1d/roasted-goat-cheese.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Seating",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Wine and Beer",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "532538.0",
+        "longitude": "-117.16812",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0e/cd/c4/0d/exquisito-rissoto-piemontese.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#53 of 4,376 Restaurants in San Diego",
+        "openNowText": "Closed today",
+        "City": "San Diego",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Italian"
+        ],
+        "localName": "Buon Appetito",
+        "input": "San Diego",
+        "phone": "+1 619-238-9880",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d532538-Reviews-Buon_Appetito-San_Diego_California.html",
+        "localAddress": "1609 India St, 92101-2515",
+        "Rest-MidRange": "91.0",
+        "name": "Buon Appetito",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.301963806",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Delivery_MealMe&src=255120002&geo=532538&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=48941&bucket=1011626&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311319785&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8QLtRPUB6KHGTMbn8vys4LhhAbl-s8nBf1nhwO4Xu-8U&cs=195e1d41c233f462def661710b253aa77_Vzf\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/mealme_24.png\", \"provider\": \"Delivery_MealMe\", \"providerId\": \"15999\", \"providerDisplayName\": \"MealMe\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "32.7224",
+        "description": "Buon Appetito is an Italian Restaurant in San Diego, CA. They serve classic Italian dishes created from family recipes and offer an extensive wine list, catering services, and private dining options for guests.",
+        "photoCount": "355.0",
+        "ratingHistogram": "{\"count1\": 30, \"count2\": 47, \"count3\": 115, \"count4\": 338, \"count5\": 792}",
+        "email": "info@buonappetitosandiego.com",
+        "website": "https://www.facebook.com/160554863995119",
+        "rankingPosition": "53.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [], [], [], [], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "1609 India St, San Diego, CA 92101-2515",
+        "neighborhoodLocations": "[{\"id\": \"20484017\", \"name\": \"Little Italy\"}, {\"id\": \"20933750\", \"name\": \"Downtown\"}]",
+        "dishes": [
+          "Pasta",
+          "Lasagne",
+          "Lobster",
+          "Polenta",
+          "Shrimp",
+          "Salad",
+          "Calamari",
+          "Cannoli",
+          "Cioppino",
+          "Risotto",
+          "Tiramisu",
+          "Mussels",
+          "Bolognese",
+          "Minestrone",
+          "Arancini",
+          "Eggplant",
+          "Gelato",
+          "Scallops",
+          "Swordfish",
+          "Salmon",
+          "Clams",
+          "Beef",
+          "Duck",
+          "Lamb",
+          "Antipasti",
+          "Ossobuco",
+          "Ragu",
+          "Pesto",
+          "Fish",
+          "Pork",
+          "Penne",
+          "Soup",
+          "Carpaccio",
+          "Seafood Pasta",
+          "Veal",
+          "Sausage",
+          "Linguine",
+          "Cake",
+          "Sea Bass"
+        ],
+        "reviewTags": "[{\"text\": \"osso bucco\", \"reviews\": 72}, {\"text\": \"pasta\", \"reviews\": 176}, {\"text\": \"bread\", \"reviews\": 128}, {\"text\": \"tiramisu\", \"reviews\": 51}, {\"text\": \"clams\", \"reviews\": 16}, {\"text\": \"italian food\", \"reviews\": 70}, {\"text\": \"red sauce\", \"reviews\": 21}, {\"text\": \"entrees\", \"reviews\": 58}, {\"text\": \"sidewalk\", \"reviews\": 21}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "4376.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6770",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::568355.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Old Town Transit Center\", \"localName\": \"Old Town Transit Center\", \"address\": \"San Diego, CA\", \"localAddress\": \"\", \"lines\": [], \"latitude\": 32.75519561767578, \"longitude\": -117.19947052001953, \"distance\": 0.36831090002425165}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "3242.0",
+        "avg_cost": "45.5",
+        "rating": "4.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"2461 San Diego Ave\", \"street2\": null, \"city\": \"San Diego\", \"state\": \"CA\", \"country\": \"United States\", \"postalcode\": \"92110-2877\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/26/2b/4f/ae/fresh-handmade-tortillas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/b4/42/d4/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/b4/3e/d5/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/b4/3e/ca/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/b4/3e/af/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fc/98/patio-seating-available.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fc/97/baja-style-fish-tacos.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fc/96/join-us-for-happy-hour.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fa/7a/the-new-chamango-margarita.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fa/78/taco-tuesday-every-tuesday.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/9f/fa/77/our-handmade-tortillas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/ce/39/95/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/ce/39/94/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/0e/98/3e/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/a8/67/4b/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/fb/79/6d/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/f3/c3/e4/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/d3/4c/e3/entrance.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/2e/15/56/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/c5/62/a7/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/33/15/f9/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/33/15/ff/cafe-coyote.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/99/65/d8/just-a-few-ritas.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/99/62/e4/cafe-coyote.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d1/3e/50/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/d1/3e/4f/photo0jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "568355.0",
+        "longitude": "-117.19423",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/26/2b/4f/ae/fresh-handmade-tortillas.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.0",
+        "Range.1": "65.00 - 175.00",
+        "rankingString": "#125 of 4,376 Restaurants in San Diego",
+        "openNowText": "Closed Now",
+        "City": "San Diego",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "12.41 - 30.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern",
+          "Latin",
+          "Bar"
+        ],
+        "localName": "Cafe Coyote",
+        "input": "San Diego",
+        "phone": "+1 619-291-4695",
+        "State": "California",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g60750-d568355-Reviews-Cafe_Coyote-San_Diego_California.html",
+        "localAddress": "2461 San Diego Ave, 92110-2877",
+        "Rest-MidRange": "91.0",
+        "name": "Cafe Coyote",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.060230255",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Delivery_MealMe&src=255119611&geo=568355&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=48941&bucket=1011626&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311319766&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8NHwyIw9_gi1ui1nBytr8_Z3_aikrKB8CzT5QtjpjVuQ&cs=12ccdb7f6bef4e0903c634d9353672f8d_Hp0\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/mealme_24.png\", \"provider\": \"Delivery_MealMe\", \"providerId\": \"15999\", \"providerDisplayName\": \"MealMe\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "32.75221",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g60750-d568355-Cafe_Coyote-San_Diego_California.html",
+        "description": "Cafe Coyote has been a San Diego favorite for over 30 years! Come experience our friendly staff, delicious Mexican food, refreshing margaritas and a festive atmosphere, located in the Heart of Old Town San Diego’s Historic Walking District.",
+        "photoCount": "1008.0",
+        "ratingHistogram": "{\"count1\": 88, \"count2\": 139, \"count3\": 537, \"count4\": 1121, \"count5\": 1357}",
+        "email": "kylie@cafecoyote.net",
+        "website": "http://www.cafecoyoteoldtown.com/",
+        "rankingPosition": "125.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "2461 San Diego Ave, San Diego, CA 92110-2877",
+        "neighborhoodLocations": "[{\"id\": \"20484022\", \"name\": \"Old Town\"}]",
+        "dishes": [
+          "Burrito",
+          "Tortillas",
+          "Lobster",
+          "Shrimp",
+          "Surf And Turf",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Chili",
+          "Fajitas",
+          "Nachos",
+          "Queso",
+          "Beef",
+          "Fish",
+          "Pork",
+          "Refried Beans",
+          "Enchiladas",
+          "Tamales",
+          "Soup",
+          "Chile Relleno",
+          "Tamale",
+          "Chips and Salsa",
+          "Carne Asada",
+          "Carnitas",
+          "Mole",
+          "Chimichanga",
+          "Quesadilla",
+          "Guacamole",
+          "Fried",
+          "Quesadillas"
+        ],
+        "reviewTags": "[{\"text\": \"tortillas\", \"reviews\": 425}, {\"text\": \"carnitas\", \"reviews\": 119}, {\"text\": \"rice and beans\", \"reviews\": 46}, {\"text\": \"taco\", \"reviews\": 90}, {\"text\": \"chicken\", \"reviews\": 69}, {\"text\": \"old town\", \"reviews\": 911}, {\"text\": \"mexican food\", \"reviews\": 339}, {\"text\": \"ladies making\", \"reviews\": 36}, {\"text\": \"free appetizer\", \"reviews\": 37}, {\"text\": \"mariachi band\", \"reviews\": 41}, {\"text\": \"margaritas\", \"reviews\": 446}, {\"text\": \"tequila\", \"reviews\": 87}, {\"text\": \"line\", \"reviews\": 163}, {\"text\": \"sd\", \"reviews\": 35}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "1",
+        "rankingDenominator": "4376.0",
+        "locationString": "San Diego, California",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"60750\", \"name\": \"San Diego\", \"abbreviation\": null, \"subcategory\": \"Municipality\"}, {\"id\": \"28926\", \"name\": \"California\", \"abbreviation\": \"CA\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:6741",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.084406,
+        "distance_m": 7900.67,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.085757,
+        "distance_m": 8038.06,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.049059,
+        "distance_m": 5338.76,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.129746,
+        "distance_m": 14238.18,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.060749,
+        "distance_m": 5735.49,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.074845,
+        "distance_m": 7063.64,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.065619,
+        "distance_m": 6139.88,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.07488,
+        "distance_m": 7067.88,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.066228,
+        "distance_m": 6197.88,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.066461,
+        "distance_m": 6222.62,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::568355.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::568355.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::568355.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::11278334.0",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.047603,
+        "distance_m": 4708.64,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::1508162.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.023111,
+        "distance_m": 2482.5,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.019979,
+        "distance_m": 1916.52,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.023213,
+        "distance_m": 2494.45,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.01971,
+        "distance_m": 1902.06,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.020133,
+        "distance_m": 1961.46,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::102782",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.048677,
+        "distance_m": 4719.66,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Attraction::104125",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.56969,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Attraction::255307",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.56969,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.026931,
+        "distance_m": 2904.8,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::1776028.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.022519,
+        "distance_m": 2204.53,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.027036,
+        "distance_m": 2916.94,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.022373,
+        "distance_m": 2204.68,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.02296,
+        "distance_m": 2282.91,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104122",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.048193,
+        "distance_m": 4620.98,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Attraction::104122",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.56969,
+        "rank": 5,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Attraction::255307",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.110202,
+        "distance_m": 10938.25,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.09676,
+        "distance_m": 9492.3,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::1875780.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.110278,
+        "distance_m": 10947.39,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.097619,
+        "distance_m": 9581.9,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.098428,
+        "distance_m": 9678.66,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104125",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.062115,
+        "distance_m": 5930.39,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Attraction::104122",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.56969,
+        "rank": 5,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Attraction::104125",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.178711,
+        "distance_m": 18695.67,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.163623,
+        "distance_m": 17077.23,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.178813,
+        "distance_m": 18707.44,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.164545,
+        "distance_m": 17173.66,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::532538.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.165681,
+        "distance_m": 17304.77,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::255307",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.126082,
+        "distance_m": 13190.4,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::1508162.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.014099,
+        "distance_m": 1328.62,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::1776028.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.012283,
+        "distance_m": 1313.76,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::1875780.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.014133,
+        "distance_m": 1332.6,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::492018.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::492018.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.011988,
+        "distance_m": 1269.03,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::532538.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.011011,
+        "distance_m": 1150.87,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::531819",
+      "target": "Restaurant::568355.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.04287,
+        "distance_m": 4625.62,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F0633219",
+      "target": "Accommodation::11278334.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Accommodation::11278334.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Accommodation::11278334.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 8,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Attraction::104122",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 6,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Attraction::531819",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 4,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Flight::F0633219",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Restaurant::1776028.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 7,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Restaurant::492018.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 5,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::1",
+      "target": "Restaurant::568355.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "order": 3,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Accommodation::11278334.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Accommodation::11278334.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Attraction::102782",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Attraction::255307",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Restaurant::1508162.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Restaurant::532538.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::2",
+      "target": "Restaurant::568355.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::3",
+      "target": "Accommodation::11278334.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::3",
+      "target": "Attraction::104125",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::3",
+      "target": "Flight::F2402765",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::3",
+      "target": "Restaurant::1875780.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_73::option_001::3",
+      "target": "Restaurant::568355.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "Accommodation::11278334.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "Flight::F0633219",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "Flight::F2402765",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "PlanDay::idx_73::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "PlanDay::idx_73::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_73::option_001",
+      "target": "PlanDay::idx_73::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_73",
+      "target": "PlanOption::idx_73::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1163.0
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Accommodation::11278334.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.023111,
+        "distance_m": 2482.5,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.026931,
+        "distance_m": 2904.8,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.110202,
+        "distance_m": 10938.25,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.178711,
+        "distance_m": 18695.67,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.014099,
+        "distance_m": 1328.62,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1508162.0",
+      "target": "Restaurant::568355.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Accommodation::11278334.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 7,
+        "to_order": 8
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.019979,
+        "distance_m": 1916.52,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.022519,
+        "distance_m": 2204.53,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.09676,
+        "distance_m": 9492.3,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.163623,
+        "distance_m": 17077.23,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.012283,
+        "distance_m": 1313.76,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1776028.0",
+      "target": "Restaurant::532538.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.023213,
+        "distance_m": 2494.45,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.027036,
+        "distance_m": 2916.94,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.110278,
+        "distance_m": 10947.39,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.178813,
+        "distance_m": 18707.44,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.014133,
+        "distance_m": 1332.6,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Flight::F2402765",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1875780.0",
+      "target": "Restaurant::568355.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.01971,
+        "distance_m": 1902.06,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.022373,
+        "distance_m": 2204.68,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::104122",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.097619,
+        "distance_m": 9581.9,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.164545,
+        "distance_m": 17173.66,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.011988,
+        "distance_m": 1269.03,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::492018.0",
+      "target": "Restaurant::532538.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.020133,
+        "distance_m": 1961.46,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::102782",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.02296,
+        "distance_m": 2282.91,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.098428,
+        "distance_m": 9678.66,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.165681,
+        "distance_m": 17304.77,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.011011,
+        "distance_m": 1150.87,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Restaurant::1776028.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::532538.0",
+      "target": "Restaurant::492018.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 3,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::102782",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.048677,
+        "distance_m": 4719.66,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::104122",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.048193,
+        "distance_m": 4620.98,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::104125",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.062115,
+        "distance_m": 5930.39,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::104125",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-29",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::255307",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.126082,
+        "distance_m": 13190.4,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::255307",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-28",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::531819",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.04287,
+        "distance_m": 4625.62,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Attraction::531819",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-27",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Restaurant::1508162.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 2,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::568355.0",
+      "target": "Restaurant::1875780.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 1.0,
+        "rank": 1,
+        "feature_space": [
+          "asian",
+          "bar",
+          "central american",
+          "chinese",
+          "contemporary",
+          "italian",
+          "latin",
+          "mexican",
+          "pizza",
+          "southwestern",
+          "taiwanese"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F0633219",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::11278334.0",
+      "label": "Accommodation",
+      "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 3,
+      "slot": "breakfast",
+      "node_key": "Restaurant::568355.0",
+      "label": "Restaurant",
+      "name": "Cafe Coyote",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 4,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::531819",
+      "label": "Attraction",
+      "name": "USS Midway Museum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 5,
+      "slot": "lunch",
+      "node_key": "Restaurant::492018.0",
+      "label": "Restaurant",
+      "name": "Filippi's Pizza Grotto Little Italy",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 6,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::104122",
+      "label": "Attraction",
+      "name": "San Diego Zoo",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 7,
+      "slot": "dinner",
+      "node_key": "Restaurant::1776028.0",
+      "label": "Restaurant",
+      "name": "Bencotto Italian Kitchen",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-27",
+      "order": 8,
+      "slot": "accommodation",
+      "node_key": "Accommodation::11278334.0",
+      "label": "Accommodation",
+      "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::11278334.0",
+      "label": "Accommodation",
+      "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::568355.0",
+      "label": "Restaurant",
+      "name": "Cafe Coyote",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::255307",
+      "label": "Attraction",
+      "name": "La Jolla Cove",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::532538.0",
+      "label": "Restaurant",
+      "name": "Buon Appetito",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::102782",
+      "label": "Attraction",
+      "name": "Balboa Park",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::1508162.0",
+      "label": "Restaurant",
+      "name": "La Puerta",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-28",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::11278334.0",
+      "label": "Accommodation",
+      "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-29",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::11278334.0",
+      "label": "Accommodation",
+      "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-29",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::568355.0",
+      "label": "Restaurant",
+      "name": "Cafe Coyote",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-29",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::104125",
+      "label": "Attraction",
+      "name": "Mission Beach",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-29",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::1875780.0",
+      "label": "Restaurant",
+      "name": "Las Hadas Grill",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-29",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F2402765",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}
