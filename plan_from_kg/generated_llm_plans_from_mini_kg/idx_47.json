@@ -1,0 +1,2749 @@
+{
+  "query_id": "idx_47",
+  "query_text": "Plan a 3-day trip for 1 person from Detroit to Kansas City from November 19th to November 21st, 2024, with a budget of $1,500.",
+  "request": {
+    "org": "Detroit",
+    "dest": "Kansas City",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-19', '2024-11-20', '2024-11-21']",
+    "people_number": 1,
+    "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+    "budget": 1500,
+    "query": "Plan a 3-day trip for 1 person from Detroit to Kansas City from November 19th to November 21st, 2024, with a budget of $1,500.",
+    "level": "easy",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Forests/Wildlife"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Relaxation",
+    "spending_preference": "Economical Traveler",
+    "location_preference": "Forests/Wildlife"
+  },
+  "constraints": {
+    "house rule": null,
+    "cuisine": null,
+    "room type": null,
+    "transportation": null,
+    "event": null,
+    "attraction": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This plan optimizes the trip by selecting the earliest outbound flight, accommodating the local itinerary, and fitting the return flight within the buffer. It prioritizes meal and attraction compatibility, ensuring a balanced and enjoyable stay.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1500.0,
+    "min_estimated_total_cost": 891.0,
+    "max_estimated_total_cost": 891.0,
+    "best_option_remaining_budget": 609.0
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 891.0,
+      "stay": {
+        "node_key": "Accommodation::15519787.0",
+        "label": "Accommodation",
+        "name": "Elegant Romantic Carriage House - pets welcome!",
+        "id": "15519787.0",
+        "City": "Kansas City",
+        "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+      },
+      "outbound": {
+        "node_key": "Flight::F2950786",
+        "label": "Flight",
+        "name": "F2950786: Detroit to Kansas City, 08:40-09:50",
+        "Flight Number": "F2950786",
+        "FlightDate": "2024-11-19",
+        "OriginCityName": "Detroit",
+        "DestCityName": "Kansas City",
+        "Price": 157,
+        "DepTime": "08:40",
+        "ArrTime": "09:50"
+      },
+      "return": {
+        "node_key": "Flight::F0345891",
+        "label": "Flight",
+        "name": "F0345891: Kansas City to Detroit, 18:54-21:36",
+        "Flight Number": "F0345891",
+        "FlightDate": "2024-11-21",
+        "OriginCityName": "Kansas City",
+        "DestCityName": "Detroit",
+        "Price": 135,
+        "DepTime": "18:54",
+        "ArrTime": "21:36"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-19",
+          "current_city": "Kansas City",
+          "llm_notes": "The first day includes the earliest flight, allowing for a light itinerary after arrival. Breakfast, lunch, and dinner are scheduled with nearby restaurants, and attractions are chosen based on proximity.",
+          "outbound_flight": {
+            "node_key": "Flight::F2950786",
+            "label": "Flight",
+            "name": "F2950786: Detroit to Kansas City, 08:40-09:50",
+            "Flight Number": "F2950786",
+            "FlightDate": "2024-11-19",
+            "OriginCityName": "Detroit",
+            "DestCityName": "Kansas City",
+            "Price": 157,
+            "DepTime": "08:40",
+            "ArrTime": "09:50"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::15519787.0",
+            "label": "Accommodation",
+            "name": "Elegant Romantic Carriage House - pets welcome!",
+            "id": "15519787.0",
+            "City": "Kansas City",
+            "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::2390711.0",
+            "label": "Restaurant",
+            "name": "Beer Kitchen",
+            "id": "2390711.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::266888",
+            "label": "Attraction",
+            "name": "National WWI Museum and Memorial",
+            "id": "266888",
+            "City": "Kansas City",
+            "rating": "5.0"
+          },
+          "lunch": {
+            "node_key": "Restaurant::390492.0",
+            "label": "Restaurant",
+            "name": "Jack Stack Barbecue - Freight House",
+            "id": "390492.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::104332",
+            "label": "Attraction",
+            "name": "The Nelson-Atkins Museum of Art",
+            "id": "104332",
+            "City": "Kansas City",
+            "rating": "5.0"
+          },
+          "dinner": {
+            "node_key": "Restaurant::27108325.0",
+            "label": "Restaurant",
+            "name": "Fern Bar",
+            "id": "27108325.0",
+            "City": "Kansas City",
+            "avg_cost": "60.0",
+            "rating": "5.0"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::15519787.0",
+            "label": "Accommodation",
+            "name": "Elegant Romantic Carriage House - pets welcome!",
+            "id": "15519787.0",
+            "City": "Kansas City",
+            "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-20",
+          "current_city": "Kansas City",
+          "llm_notes": "A full day in the city with breakfast, morning attraction, lunch near the attraction, afternoon attraction, and dinner. The itinerary is balanced and covers various activities.",
+          "start_accommodation": {
+            "node_key": "Accommodation::15519787.0",
+            "label": "Accommodation",
+            "name": "Elegant Romantic Carriage House - pets welcome!",
+            "id": "15519787.0",
+            "City": "Kansas City",
+            "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::2390711.0",
+            "label": "Restaurant",
+            "name": "Beer Kitchen",
+            "id": "2390711.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::209765",
+            "label": "Attraction",
+            "name": "Union Station",
+            "id": "209765",
+            "City": "Kansas City",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::390492.0",
+            "label": "Restaurant",
+            "name": "Jack Stack Barbecue - Freight House",
+            "id": "390492.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::104321",
+            "label": "Attraction",
+            "name": "Country Club Plaza",
+            "id": "104321",
+            "City": "Kansas City",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::27108325.0",
+            "label": "Restaurant",
+            "name": "Fern Bar",
+            "id": "27108325.0",
+            "City": "Kansas City",
+            "avg_cost": "60.0",
+            "rating": "5.0"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::15519787.0",
+            "label": "Accommodation",
+            "name": "Elegant Romantic Carriage House - pets welcome!",
+            "id": "15519787.0",
+            "City": "Kansas City",
+            "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-21",
+          "current_city": "Kansas City",
+          "llm_notes": "The final day focuses on the return flight, with breakfast and a short morning attraction. Dinner is skipped as the flight departs early.",
+          "start_accommodation": {
+            "node_key": "Accommodation::15519787.0",
+            "label": "Accommodation",
+            "name": "Elegant Romantic Carriage House - pets welcome!",
+            "id": "15519787.0",
+            "City": "Kansas City",
+            "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::2390711.0",
+            "label": "Restaurant",
+            "name": "Beer Kitchen",
+            "id": "2390711.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::104463",
+            "label": "Attraction",
+            "name": "Negro Leagues Baseball Museum",
+            "id": "104463",
+            "City": "Kansas City",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::390492.0",
+            "label": "Restaurant",
+            "name": "Jack Stack Barbecue - Freight House",
+            "id": "390492.0",
+            "City": "Kansas City",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F0345891",
+            "label": "Flight",
+            "name": "F0345891: Kansas City to Detroit, 18:54-21:36",
+            "Flight Number": "F0345891",
+            "FlightDate": "2024-11-21",
+            "OriginCityName": "Kansas City",
+            "DestCityName": "Detroit",
+            "Price": 135,
+            "DepTime": "18:54",
+            "ArrTime": "21:36"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_47",
+    "node_count": 50,
+    "edge_count": 660,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::15519787.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "8",
+        "house_rules": "No smoking",
+        "State": "Missouri",
+        "name": "Elegant Romantic Carriage House - pets welcome!",
+        "coordinates": "{\"latitude\": 39.05833, \"longitude\": -94.57437}",
+        "rating": "{\"label\": \"4.97 out of 5 average rating,  692 reviews\", \"localizedLabel\": \"4.97 (692)\", \"average\": 4.97, \"reviewsCount\": 692}",
+        "id": "15519787.0",
+        "City": "Kansas City",
+        "title": "Guesthouse in Kansas City",
+        "url": "https://www.airbnb.com/rooms/15519787?locale=en-US&currency=USD&check_in=2025-01-13&check_out=2025-01-18",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$127 per night\", \"originalPrice\": null, \"price\": \"$127\", \"qualifier\": \"night\", \"total\": \"$635 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:591",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::104321",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1902",
+        "latitude": "39.04198",
+        "rating": "4.5",
+        "description": "Country Club Plaza is an open-air shopping and dining destination in the heart of Kansas City. Home to over 120 Shops & Eateries with a one-of-a-kind curated mix of national and local retailers & restaurants, over 50 unique to Kansas City. Known for its annual Plaza Art Fair and Holiday Lights, the Plaza’s design was inspired by Spanish architecture, boasts over 75 unique statues, fountains and one-of-a-kind artwork and has been a Kansas City tradition for over 100 years.",
+        "visit_duration": "1.5",
+        "addressObj": "{\"street1\": \"4706 Broadway Blvd\", \"street2\": null, \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64112-1934\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.49\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FCue-and-Brew-Tour%2Fd22925-36761P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cedabb656a7eb0a11&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=104321&clt=TD&from=api&nt=true\", \"price\": \"$76.93\", \"roundedUpPrice\": \"$77\", \"offerType\": null, \"title\": \"Cue and Brew Tour in Kansas City\", \"productCode\": \"36761P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/23/d1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FPlaza-Lights-and-Crestwood-Urban-Hike%2Fd22925-138599P4%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4682ff7e4a95aae0b&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=104321&clt=TD&from=api&nt=true\", \"price\": \"$49.00\", \"roundedUpPrice\": \"$49\", \"offerType\": null, \"title\": \"Plaza Lights & Crestwood Urban Hike\", \"productCode\": \"138599P4\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/ed/24/dc.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FThe-best-of-Kansas-City-walking-tour%2Fd22925-209615P77%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4ae9b6a5053f6b178&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=104321&clt=TD&from=api&nt=true\", \"price\": \"$193.45\", \"roundedUpPrice\": \"$194\", \"offerType\": null, \"title\": \"Kansas City Wander: From Plazas to Parks\", \"productCode\": \"209615P77\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/04/6c/43.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Shopping Malls"
+        ],
+        "ratingHistogram": "{\"count1\": 12, \"count2\": 34, \"count3\": 146, \"count4\": 500, \"count5\": 1210}",
+        "location_contains_city": "True",
+        "id": "104321",
+        "longitude": "-94.59261",
+        "website": "http://www.countryclubplaza.com",
+        "rankingPosition": "18.0",
+        "address": "4706 Broadway Blvd, Kansas City, MO 64112-1934",
+        "neighborhoodLocations": [],
+        "rankingString": "#18 of 328 things to do in Kansas City",
+        "City": "Kansas City",
+        "localName": "Country Club Plaza",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g44535-d104321-Reviews-Country_Club_Plaza-Kansas_City_Missouri.html",
+        "localAddress": "4706 Broadway Blvd, 64112-1934",
+        "rankingDenominator": "328.0",
+        "name": "Country Club Plaza",
+        "locationString": "Kansas City, Missouri",
+        "subcategories": [
+          "Shopping"
+        ],
+        "rawRanking": "3.985400915"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3282",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::104332",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "3352",
+        "latitude": "39.04495",
+        "rating": "5.0",
+        "description": "Drop in for an hour, come for lunch, or spend the entire day wandering through world-class galleries. The Nelson-Atkins Museum of Art is the cultural jewel of Kansas City and just three blocks from the Country Club Plaza, and admission is free. The Nelson-Atkins, recognized as one of America’s finest art museums, strives to be the place where the power of art engages the spirit of community. With 40,000 works of art, the Nelson-Atkins is best known for its new Bloch Galleries, featuring Impressionist and Post-Impressionist art, plus its Asian art, photography, American paintings, American Indian and Egyptian galleries. The Donald J. Hall Sculpture Park, a beautiful setting for a walk or picnic, is an oasis in the city and home to notable sculptures.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"4525 Oak Street\", \"street2\": \"\", \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64111-1818\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.75\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FCue-and-Brew-Tour%2Fd22925-36761P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cedabb656a7eb0a11&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=104332&clt=TD&from=api&nt=true\", \"price\": \"$76.93\", \"roundedUpPrice\": \"$77\", \"offerType\": null, \"title\": \"Cue and Brew Tour in Kansas City\", \"productCode\": \"36761P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/23/d1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FKansas-City-Segway-Tour-Country-Club-Plaza-Area%2Fd22925-6134P7%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=f0b3fce910042740d&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=104332&clt=TD&from=api&nt=true\", \"price\": \"$75.00\", \"roundedUpPrice\": \"$75\", \"offerType\": null, \"title\": \"Kansas City Segway Tour: Art and Glide\", \"productCode\": \"6134P7\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/e2/4f.jpg\", \"description\": null, \"primaryCategory\": \"Segway Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FRomantic-tour-in-Kansas-City%2Fd22925-209615P78%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9214a322ceb902183&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=104332&clt=TD&from=api&nt=true\", \"price\": \"$178.15\", \"roundedUpPrice\": \"$179\", \"offerType\": null, \"title\": \"Art, Nature & Legacy: A Kansas City Private Walking Tour\", \"productCode\": \"209615P78\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/04/6f/d8.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FThe-best-of-Kansas-City-walking-tour%2Fd22925-209615P77%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4ae9b6a5053f6b178&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=104332&clt=TD&from=api&nt=true\", \"price\": \"$193.45\", \"roundedUpPrice\": \"$194\", \"offerType\": null, \"title\": \"Kansas City Wander: From Plazas to Parks\", \"productCode\": \"209615P77\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/04/6c/43.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Art Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 10, \"count2\": 4, \"count3\": 51, \"count4\": 443, \"count5\": 2844}",
+        "location_contains_city": "True",
+        "id": "104332",
+        "longitude": "-94.580925",
+        "website": "http://www.nelson-atkins.org/",
+        "rankingPosition": "2.0",
+        "address": "4525 Oak Street, Kansas City, MO 64111-1818",
+        "neighborhoodLocations": "[{\"id\": \"21228899\", \"name\": \"Rockhill\"}]",
+        "rankingString": "#2 of 328 things to do in Kansas City",
+        "City": "Kansas City",
+        "localName": "The Nelson-Atkins Museum of Art",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g44535-d104332-Reviews-The_Nelson_Atkins_Museum_of_Art-Kansas_City_Missouri.html",
+        "localAddress": "4525 Oak Street, 64111-1818",
+        "rankingDenominator": "328.0",
+        "name": "The Nelson-Atkins Museum of Art",
+        "locationString": "Kansas City, Missouri",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.282888412"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3293",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::104463",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1117",
+        "latitude": "39.09146",
+        "rating": "4.5",
+        "description": "Opened in 1991, this museum is a tribute to some of baseball's best unknown players.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"1616 E 18th St\", \"street2\": \"\", \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64108-1610\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.30\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FKansas-City-MO-Attractions-Pass%2Fd22925-364488P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=fabace7b45b5d9962&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=104463&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \" Kansas City MO Attractions Pass\", \"productCode\": \"364488P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/84/3b/ba.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}]}",
+        "subtype": [
+          "Specialty Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 5, \"count3\": 50, \"count4\": 290, \"count5\": 769}",
+        "location_contains_city": "True",
+        "id": "104463",
+        "longitude": "-94.562515",
+        "website": "http://www.nlbm.com/",
+        "rankingPosition": "7.0",
+        "address": "1616 E 18th St, Kansas City, MO 64108-1610",
+        "neighborhoodLocations": "[{\"id\": \"21228890\", \"name\": \"18th and Vine\"}]",
+        "rankingString": "#7 of 328 things to do in Kansas City",
+        "City": "Kansas City",
+        "localName": "Negro Leagues Baseball Museum",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g44535-d104463-Reviews-Negro_Leagues_Baseball_Museum-Kansas_City_Missouri.html",
+        "localAddress": "1616 E 18th St, 64108-1610",
+        "rankingDenominator": "328.0",
+        "name": "Negro Leagues Baseball Museum",
+        "locationString": "Kansas City, Missouri",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.200004578"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3299",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::209765",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "2579",
+        "latitude": "39.084633",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"30 W Pershing Rd\", \"street2\": \"\", \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64108-2410\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.77\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FCue-and-Brew-Tour%2Fd22925-36761P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cedabb656a7eb0a11&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=209765&clt=TD&from=api&nt=true\", \"price\": \"$76.93\", \"roundedUpPrice\": \"$77\", \"offerType\": null, \"title\": \"Cue and Brew Tour in Kansas City\", \"productCode\": \"36761P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/23/d1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}]}",
+        "subtype": [
+          "Historic Sites"
+        ],
+        "ratingHistogram": "{\"count1\": 22, \"count2\": 40, \"count3\": 206, \"count4\": 811, \"count5\": 1500}",
+        "location_contains_city": "True",
+        "id": "209765",
+        "longitude": "-94.58502",
+        "website": "http://www.unionstation.org/",
+        "rankingPosition": "17.0",
+        "address": "30 W Pershing Rd, Kansas City, MO 64108-2410",
+        "neighborhoodLocations": [],
+        "rankingString": "#17 of 328 things to do in Kansas City",
+        "City": "Kansas City",
+        "localName": "Union Station",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g44535-d209765-Reviews-Union_Station-Kansas_City_Missouri.html",
+        "localAddress": "30 W Pershing Rd, 64108-2410",
+        "rankingDenominator": "328.0",
+        "name": "Union Station",
+        "locationString": "Kansas City, Missouri",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.989114761"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3284",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::266888",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "5682",
+        "latitude": "39.080673",
+        "rating": "5.0",
+        "description": "The National WWI Museum and Memorial is America's leading institution dedicated to remembering, interpreting and understanding the Great War and its enduring impact on the global community. The Museum and Memorial holds the most comprehensive collection of World War I objects and documents in the world and is the second-oldest public museum dedicated to preserving the objects, history and experiences of the war. The Museum and Memorial takes visitors of all ages on an epic journey through a transformative period and shares deeply personal stories of courage, honor, patriotism and sacrifice. Designated by Congress as America's official World War I Museum and Memorial and located in downtown Kansas City, Mo., the National WWI Museum and Memorial inspires thought, dialogue and learning to make the experiences of the Great War era meaningful and relevant for present and future generations.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"2 Memorial Dr\", \"street2\": null, \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64108-4616\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.30\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FCue-and-Brew-Tour%2Fd22925-36761P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cedabb656a7eb0a11&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=266888&clt=TD&from=api&nt=true\", \"price\": \"$76.93\", \"roundedUpPrice\": \"$77\", \"offerType\": null, \"title\": \"Cue and Brew Tour in Kansas City\", \"productCode\": \"36761P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/23/d1.jpg\", \"description\": null, \"primaryCategory\": \"Historical & Heritage Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FKansas-City%2FKansas-City-MO-Attractions-Pass%2Fd22925-364488P2%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=fabace7b45b5d9962&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=266888&clt=TD&from=api&nt=true\", \"price\": \"$30.00\", \"roundedUpPrice\": \"$30\", \"offerType\": null, \"title\": \" Kansas City MO Attractions Pass\", \"productCode\": \"364488P2\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/12/84/3b/ba.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}]}",
+        "subtype": [
+          "Military Museums",
+          "History Museums"
+        ],
+        "ratingHistogram": "{\"count1\": 5, \"count2\": 11, \"count3\": 62, \"count4\": 700, \"count5\": 4904}",
+        "location_contains_city": "True",
+        "id": "266888",
+        "longitude": "-94.58608",
+        "website": "http://www.theworldwar.org",
+        "rankingPosition": "3.0",
+        "address": "2 Memorial Dr, Kansas City, MO 64108-4616",
+        "neighborhoodLocations": "[{\"id\": \"21228893\", \"name\": \"Crown Center\"}]",
+        "rankingString": "#3 of 328 things to do in Kansas City",
+        "City": "Kansas City",
+        "localName": "National WWI Museum and Memorial",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g44535-d266888-Reviews-National_WWI_Museum_and_Memorial-Kansas_City_Missouri.html",
+        "localAddress": "2 Memorial Dr, 64108-4616",
+        "rankingDenominator": "328.0",
+        "name": "National WWI Museum and Memorial",
+        "locationString": "Kansas City, Missouri",
+        "subcategories": [
+          "Museums"
+        ],
+        "rawRanking": "4.281483173"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3287",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Detroit",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Detroit"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Kansas City",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Kansas City"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F0345891",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F0345891",
+        "Price": 135,
+        "DepTime": "18:54",
+        "ArrTime": "21:36",
+        "ActualElapsedTime": "1 hours 42 minutes",
+        "FlightDate": "2024-11-21",
+        "OriginCityName": "Kansas City",
+        "DestCityName": "Detroit",
+        "Distance": 629.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F2950786",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F2950786",
+        "Price": 157,
+        "DepTime": "08:40",
+        "ArrTime": "09:50",
+        "ActualElapsedTime": "2 hours 10 minutes",
+        "FlightDate": "2024-11-19",
+        "OriginCityName": "Detroit",
+        "DestCityName": "Kansas City",
+        "Distance": 629.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_47::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "current_city": "Kansas City"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_47::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "current_city": "Kansas City"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_47::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "current_city": "Kansas City"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_47::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 891.0,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::15519787.0",
+        "outbound_node_key": "Flight::F2950786",
+        "return_node_key": "Flight::F0345891"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_47",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_47",
+        "query": "Plan a 3-day trip for 1 person from Detroit to Kansas City from November 19th to November 21st, 2024, with a budget of $1,500.",
+        "days": 3,
+        "origin_city": "Detroit",
+        "destination_city": "Kansas City",
+        "budget": 1500.0,
+        "source_mini_kg_query_id": "idx_47"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::2390711.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "645.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"435 Westport Road\", \"street2\": \"\", \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64111\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/80/f7/68/beer-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/63/7f/in-the-heart-of-historic.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/63/41/16-always-changing-beers.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/62/e0/cozy-and-warm-environment.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/62/d7/carafes-and-carefully.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/62/82/smokestack-burger-and.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/62/50/the-red-velvet-waffle.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/1a/62/0e/chicken-and-waffles.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/15/22/ff/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/15/22/fe/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/15/22/fd/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/7d/d2/d9/entrance.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/08/37/ba/the-best-grilled-cheese.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/33/eb/8c/beer-kitchen.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/90/6e/dc/20190222-212306-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/1e/ae/70/drunken-donuts.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c1/61/1d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/c1/61/1c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/45/8d/98/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/2d/18/bd/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/8d/32/10/taps-in-the-sky.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/a7/71/6a/mac-n-cheese-with-burn_rotated_270.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/b9/63/95/beer-kitchen.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/2d/18/bc/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/2d/18/bd/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/23/48/d3/39/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/86/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/85/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/84/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/83/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/82/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/aa/ea/81/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/c1/61/1c/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2c/c1/61/1d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2e/15/22/fd/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2e/15/22/fe/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2e/15/22/ff/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Television",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Gift Cards Available"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "2390711.0",
+        "longitude": "-94.59139",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/0f/7d/d2/d9/entrance.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "50.00 - 113.36",
+        "rankingString": "#4 of 1,275 Restaurants in Kansas City",
+        "openNowText": "Closed Now",
+        "City": "Kansas City",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "11.50 - 45.00",
+        "cuisines": [
+          "American",
+          "Bar",
+          "Pub"
+        ],
+        "localName": "Beer Kitchen",
+        "input": "Kansas City",
+        "phone": "+1 816-389-4180",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g44535-d2390711-Reviews-Beer_Kitchen-Kansas_City_Missouri.html",
+        "localAddress": "435 Westport Road, 64111",
+        "Rest-MidRange": "75.0",
+        "name": "Beer Kitchen",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.507091522216797",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Grubhub&src=253773859&geo=2390711&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=25768&bucket=852508&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311334243&managed=false&capped=false&gosox=I-ADlg7wY8lqEq92hGOCPH9yxKao4fnJtoYdd5TLctoCVK2EaqcCi9rOMrUCyEbyjHJ9VVqZAT-YsUESIRbLLNuA0PjXuKIhXbOeDS0wEOQ&cs=17ca440f452c201fc33db22dd6eb0a881_eha\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/grubhub_05.11.2022.png\", \"provider\": \"Grubhub\", \"providerId\": \"13712\", \"providerDisplayName\": \"Grubhub\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.05279",
+        "menuWebUrl": "https://beerkitchenkc.com/menu",
+        "description": "If your heart races at the smell of a malty-sweet and robust imperial brown ale and tears of joy begin to fall at the sight of a 100% American beer burger stuffed with Kansas City-style burnt ends, lathered in house-made BBQ sauce, then Beer Kitchen is the place for you. Enjoy lunch, dinner or weekend brunch at Kansas City's original gastropub in historic Westport.",
+        "photoCount": "215.0",
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 4, \"count3\": 35, \"count4\": 200, \"count5\": 403}",
+        "email": "events@beerkc.com",
+        "website": "http://beerkitchenkc.com",
+        "rankingPosition": "4.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "435 Westport Road, Kansas City, MO 64111",
+        "neighborhoodLocations": "[{\"id\": \"21228891\", \"name\": \"Westport\"}]",
+        "dishes": [
+          "Sandwiches",
+          "Pasta",
+          "Chicken And Waffles",
+          "Corned Beef",
+          "Fish & Chips",
+          "French Toast",
+          "Burger",
+          "Pretzel",
+          "Salad",
+          "Eggs Benedict",
+          "Biscuits and gravy",
+          "Grilled cheese",
+          "Mac and cheese",
+          "Waffles",
+          "French Fries",
+          "Toasts",
+          "Beef",
+          "French onion soup",
+          "Cakes",
+          "Fish",
+          "Pork",
+          "Enchiladas",
+          "Flatbread",
+          "Tamales",
+          "Soup",
+          "Bloody Mary",
+          "Tamale",
+          "Brussel Sprouts",
+          "Cake",
+          "Fried",
+          "Hash",
+          "Truffle"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 80}, {\"text\": \"deviled eggs\", \"reviews\": 16}, {\"text\": \"donuts\", \"reviews\": 15}, {\"text\": \"great beer selection\", \"reviews\": 29}, {\"text\": \"menu items\", \"reviews\": 12}, {\"text\": \"kc\", \"reviews\": 95}, {\"text\": \"concert\", \"reviews\": 10}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "42",
+        "rankingDenominator": "1275.0",
+        "locationString": "Kansas City, Missouri",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"44535\", \"name\": \"Kansas City\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28946\", \"name\": \"Missouri\", \"abbreviation\": \"MO\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8089",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::27108325.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "12.0",
+        "avg_cost": "60.0",
+        "rating": "5.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"2041 Broadway Blvd\", \"street2\": null, \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64108\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/63/our-logo.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/be/c1/fern-bar-in-the-crossroads.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2f/have-you-ever-had-a-rolled.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2a/the-best-small-plates.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2e/quesadilla-grilled-nopales.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/29/apples-brie-bitter-greens.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2d/braised-pork-ribs-the.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/32/the-rabbit-hole-ilegal.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/28/braised-pork-ribs-mole.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2c/bulgogi-chicken-tacos.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/31/fern-bar-the-best-place.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/27/roasted-carrots-guajillo.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/2b/spanish-design-meets.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/30/not-a-crunchwrap-carmelo.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d2/b8/26/dressed-eggs-pickled.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d8/6d/bc/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d7/7f/ee/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/d7/7f/ee/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9d/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9e/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/d7/dd/9f/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2d/d8/6d/bc/caption.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Seating",
+          "Street Parking",
+          "Free off-street parking",
+          "Serves Alcohol",
+          "Full Bar",
+          "American Express",
+          "Mastercard",
+          "Visa",
+          "Digital Payments",
+          "Free Wifi",
+          "Discover",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Non-smoking restaurants"
+        ],
+        "dietaryRestrictions": [],
+        "id": "27108325.0",
+        "longitude": "-94.586136",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/2d/d2/b8/63/our-logo.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "50.00 - 113.36",
+        "rankingString": "#4 of 21 Bars & Pubs in Kansas City",
+        "openNowText": "Closed Now",
+        "City": "Kansas City",
+        "mealTypes": [
+          "Dinner",
+          "Late Night",
+          "Drinks"
+        ],
+        "Range": "11.50 - 45.00",
+        "cuisines": [
+          "Mexican",
+          "Caribbean",
+          "Bar",
+          "Contemporary",
+          "Pub",
+          "Fusion"
+        ],
+        "localName": "Fern Bar",
+        "input": "Kansas City",
+        "phone": "+1 816-200-7430",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g44535-d27108325-Reviews-Fern_Bar-Kansas_City_Missouri.html",
+        "localAddress": "2041 Broadway Blvd, 64108",
+        "Rest-MidRange": "75.0",
+        "name": "Fern Bar",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "3.38358211517334",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Bars & Pubs",
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.099228",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g44535-d27108325-Fern_Bar-Kansas_City_Missouri.html",
+        "description": "Welcome to Fern Bar, Kansas City! Since opening on New Year’s Eve 2023, we’ve turned years of planning into a space where exceptional cocktails and community come together. Our focus on sugarcane and agave spirits—rum, tequila, and mezcal—is just the start. What truly drives us is crafting a space where everyone feels they truly belong. At Fern Bar, it’s not just about great drinks; it’s about creating a warm, inviting environment where our team is valued and our guests can connect. We’re here to build more than a bar—we’re here to build a community",
+        "photoCount": "20.0",
+        "ratingHistogram": "{\"count1\": 0, \"count2\": 0, \"count3\": 0, \"count4\": 0, \"count5\": 12}",
+        "email": "info@fernbarkc.com",
+        "website": "http://www.fernbarkc.com",
+        "rankingPosition": "4.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "2041 Broadway Blvd, Kansas City, MO 64108",
+        "neighborhoodLocations": [],
+        "dishes": [],
+        "reviewTags": [],
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "42",
+        "rankingDenominator": "21.0",
+        "locationString": "Kansas City, Missouri",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"44535\", \"name\": \"Kansas City\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28946\", \"name\": \"Missouri\", \"abbreviation\": \"MO\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8092",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::390492.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "4005.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"101 W. 22 St\", \"street2\": \"Freight House\", \"city\": \"Kansas City\", \"state\": \"MO\", \"country\": \"United States\", \"postalcode\": \"64108\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/89/35/1f/20190920-125513-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f1/ae/da/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f1/ae/d9/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/13/b6/98/salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/66/7c/63/salmon-with-blackberry.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/08/2e/f5/67/fiorella-s-jack-stack.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/14/94/00/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/14/93/ff/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/14/93/fe/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/14/93/fd/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/14/93/fc/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/b3/c3/12/20200804-190516-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/62/0f/10/20200605-174924-largejpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Gluten free options"
+        ],
+        "id": "390492.0",
+        "longitude": "-94.58561",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/01/13/b6/98/salad.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "50.00 - 113.36",
+        "rankingString": "#9 of 1,275 Restaurants in Kansas City",
+        "openNowText": "Closed Now",
+        "City": "Kansas City",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "11.50 - 45.00",
+        "cuisines": [
+          "Steakhouse",
+          "Barbecue"
+        ],
+        "localName": "Jack Stack Barbecue - Freight House",
+        "input": "Kansas City",
+        "phone": "+1 816-472-7427",
+        "State": "Missouri",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g44535-d390492-Reviews-Jack_Stack_Barbecue_Freight_House-Kansas_City_Missouri.html",
+        "localAddress": "101 W. 22 St, Freight House, 64108",
+        "Rest-MidRange": "75.0",
+        "name": "Jack Stack Barbecue - Freight House",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.404017448425293",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232177488&geo=390492&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311334258&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8FDbNHyt819C7xc8Su3A04rXiYzI3aR9V2S9_R_Y0y9c&cs=1cda769b5d76982aafe49a2e1d6ffa582_GWi\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "39.087345",
+        "description": "\"Highest-rated barbecue in the country!\" - Zagat SurveyJack Stack Barbecue originated in Kansas City in 1957, by Russ Fiorella in a traditional storefront barbecue, with a modest selection of 5 or 6 items. Jack Fiorella, the eldest son, worked with his father until 1974 when he decided to branch off and start Fiorella's Jack Stack of Martin City.To stand out in the competitive KC barbecue scene of the mid 1970's, Jack and Delores, began cooking with Gourmet Hickory Wood and created the most extensive barbecue menu in the country. The menu included Certified Angus Beef steaks, tender chicken, award-winning lamb ribs, and mouth-watering sides like Hickory Pit Beans and Cheesy Corn Bake.",
+        "photoCount": "704.0",
+        "ratingHistogram": "{\"count1\": 23, \"count2\": 68, \"count3\": 342, \"count4\": 999, \"count5\": 2573}",
+        "website": "http://www.jackstackbbq.com/?olonwp=z17TA_tz20aL5UmKf8LjMg",
+        "rankingPosition": "9.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "101 W. 22 St Freight House, Kansas City, MO 64108",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Sandwiches",
+          "Ribs",
+          "Shrimp",
+          "Salad",
+          "Wings",
+          "Carrot Cake",
+          "Baby Back Ribs",
+          "Salmon",
+          "Beef",
+          "Lamb",
+          "Pork",
+          "Onion Rings",
+          "Baked Potato",
+          "Sausage",
+          "Coleslaw",
+          "Brisket",
+          "Cake",
+          "Fried",
+          "Potato Salad",
+          "Cornbread",
+          "Baked Beans",
+          "Beef Ribs"
+        ],
+        "reviewTags": "[{\"text\": \"cheesy corn\", \"reviews\": 461}, {\"text\": \"jack stack\", \"reviews\": 676}, {\"text\": \"beans\", \"reviews\": 408}, {\"text\": \"burnt ends\", \"reviews\": 1029}, {\"text\": \"ribs\", \"reviews\": 622}, {\"text\": \"carrot cake\", \"reviews\": 108}, {\"text\": \"onion rings\", \"reviews\": 145}, {\"text\": \"prime rib\", \"reviews\": 117}, {\"text\": \"beef\", \"reviews\": 165}, {\"text\": \"cole slaw\", \"reviews\": 95}, {\"text\": \"ham\", \"reviews\": 49}, {\"text\": \"bread\", \"reviews\": 55}, {\"text\": \"salad\", \"reviews\": 58}, {\"text\": \"kansas city bbq\", \"reviews\": 116}, {\"text\": \"union station\", \"reviews\": 135}, {\"text\": \"sides\", \"reviews\": 407}, {\"text\": \"sauce\", \"reviews\": 360}, {\"text\": \"tender\", \"reviews\": 242}, {\"text\": \"meats\", \"reviews\": 157}, {\"text\": \"jacks\", \"reviews\": 39}, {\"text\": \"combo\", \"reviews\": 99}, {\"text\": \"bone\", \"reviews\": 55}, {\"text\": \"leftovers\", \"reviews\": 50}, {\"text\": \"plaza\", \"reviews\": 46}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "42",
+        "rankingDenominator": "1275.0",
+        "locationString": "Kansas City, Missouri",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"44535\", \"name\": \"Kansas City\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28946\", \"name\": \"Missouri\", \"abbreviation\": \"MO\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8108",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Attraction::104321",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.024495,
+        "distance_m": 2405.44,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Attraction::104332",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.014899,
+        "distance_m": 1591.83,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Attraction::104463",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.035187,
+        "distance_m": 3823.39,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Attraction::209765",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.028377,
+        "distance_m": 3065.86,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Attraction::266888",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.025226,
+        "distance_m": 2682.23,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::2390711.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::2390711.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::2390711.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.017899,
+        "distance_m": 1593.51,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.042557,
+        "distance_m": 4659.68,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::15519787.0",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.031116,
+        "distance_m": 3369.07,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104321",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.010879,
+        "distance_m": 1206.63,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104321",
+      "target": "Restaurant::27108325.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::104321",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.057613,
+        "distance_m": 6390.17,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104321",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.045902,
+        "distance_m": 5080.43,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Attraction::104463",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::104463->Attraction::104332"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Attraction::266888",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Attraction::266888",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 1.109313,
+        "rank": 1,
+        "feature_space": [
+          "4wd, atv & off-road tours",
+          "antique stores",
+          "aquariums",
+          "architectural buildings",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "breweries",
+          "canyons",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "city tours",
+          "cultural tours",
+          "department stores",
+          "distilleries",
+          "eco tours",
+          "exhibitions",
+          "forests",
+          "game & entertainment centers",
+          "gardens",
+          "gift & specialty shops",
+          "government buildings",
+          "hiking & camping tours",
+          "hiking trails",
+          "historic sites",
+          "historic walking areas",
+          "historical & heritage tours",
+          "history museums",
+          "kayaking & canoeing",
+          "lookouts",
+          "military bases & facilities",
+          "military museums",
+          "monuments & statues",
+          "movie theaters",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "parks",
+          "playgrounds",
+          "room escape games",
+          "sacred & religious sites",
+          "science museums",
+          "shopping malls",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "theaters",
+          "water parks",
+          "zoos"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.013076,
+        "distance_m": 1255.65,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Restaurant::27108325.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.054528,
+        "distance_m": 6052.18,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104332",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.042653,
+        "distance_m": 4731.43,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Attraction::104332",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Attraction::266888",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.048261,
+        "distance_m": 4970.18,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.024866,
+        "distance_m": 2213.9,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Restaurant::390492.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::104463",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.023459,
+        "distance_m": 2045.07,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::209765",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.032474,
+        "distance_m": 3583.23,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::209765",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.014638,
+        "distance_m": 1625.75,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::209765",
+      "target": "Restaurant::390492.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::209765",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002775,
+        "distance_m": 305.83,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Attraction::104332",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Attraction::104332",
+      "type": "SIMILAR_SUBTYPE",
+      "properties": {
+        "kd_distance": 1.109313,
+        "rank": 2,
+        "feature_space": [
+          "4wd, atv & off-road tours",
+          "antique stores",
+          "aquariums",
+          "architectural buildings",
+          "arenas & stadiums",
+          "art galleries",
+          "art museums",
+          "bars & clubs",
+          "breweries",
+          "canyons",
+          "caverns & caves",
+          "children's museums",
+          "churches & cathedrals",
+          "city tours",
+          "cultural tours",
+          "department stores",
+          "distilleries",
+          "eco tours",
+          "exhibitions",
+          "forests",
+          "game & entertainment centers",
+          "gardens",
+          "gift & specialty shops",
+          "government buildings",
+          "hiking & camping tours",
+          "hiking trails",
+          "historic sites",
+          "historic walking areas",
+          "historical & heritage tours",
+          "history museums",
+          "kayaking & canoeing",
+          "lookouts",
+          "military bases & facilities",
+          "military museums",
+          "monuments & statues",
+          "movie theaters",
+          "natural history museums",
+          "nature & wildlife areas",
+          "nature & wildlife tours",
+          "parks",
+          "playgrounds",
+          "room escape games",
+          "sacred & religious sites",
+          "science museums",
+          "shopping malls",
+          "sightseeing tours",
+          "spas",
+          "specialty museums",
+          "theaters",
+          "water parks",
+          "zoos"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Attraction::104463",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "food & drink",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::104463->Attraction::266888"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Restaurant::2390711.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.028384,
+        "distance_m": 3134.16,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Restaurant::27108325.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.018555,
+        "distance_m": 2063.23,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Restaurant::390492.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::266888",
+      "target": "Restaurant::390492.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.006689,
+        "distance_m": 743.0,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F2950786",
+      "target": "Accommodation::15519787.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Accommodation::15519787.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Accommodation::15519787.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 8,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Attraction::104332",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 6,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Attraction::266888",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 4,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Flight::F2950786",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Restaurant::2390711.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 3,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Restaurant::27108325.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 7,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::1",
+      "target": "Restaurant::390492.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "order": 5,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Accommodation::15519787.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Accommodation::15519787.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Attraction::104321",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Attraction::209765",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Restaurant::2390711.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Restaurant::27108325.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::2",
+      "target": "Restaurant::390492.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::3",
+      "target": "Accommodation::15519787.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::3",
+      "target": "Attraction::104463",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::3",
+      "target": "Flight::F0345891",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::3",
+      "target": "Restaurant::2390711.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_47::option_001::3",
+      "target": "Restaurant::390492.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "Accommodation::15519787.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "Flight::F0345891",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "Flight::F2950786",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "PlanDay::idx_47::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "PlanDay::idx_47::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_47::option_001",
+      "target": "PlanDay::idx_47::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_47",
+      "target": "PlanOption::idx_47::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 891.0
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::104321",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.010879,
+        "distance_m": 1206.63,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::104332",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.013076,
+        "distance_m": 1255.65,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::104463",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.048261,
+        "distance_m": 4970.18,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::104463",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::209765",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.032474,
+        "distance_m": 3583.23,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::209765",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::266888",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.028384,
+        "distance_m": 3134.16,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2390711.0",
+      "target": "Attraction::266888",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Accommodation::15519787.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 7,
+        "to_order": 8
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Accommodation::15519787.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Attraction::104321",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.057613,
+        "distance_m": 6390.17,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Attraction::104332",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.054528,
+        "distance_m": 6052.18,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Attraction::104463",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.024866,
+        "distance_m": 2213.9,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Attraction::209765",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.014638,
+        "distance_m": 1625.75,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::27108325.0",
+      "target": "Attraction::266888",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.018555,
+        "distance_m": 2063.23,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::104321",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.045902,
+        "distance_m": 5080.43,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::104321",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-20",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::104332",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.042653,
+        "distance_m": 4731.43,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::104332",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-19",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::104463",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.023459,
+        "distance_m": 2045.07,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::209765",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002775,
+        "distance_m": 305.83,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Attraction::266888",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.006689,
+        "distance_m": 743.0,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::390492.0",
+      "target": "Flight::F0345891",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-21",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F2950786",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::15519787.0",
+      "label": "Accommodation",
+      "name": "Elegant Romantic Carriage House - pets welcome!",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 3,
+      "slot": "breakfast",
+      "node_key": "Restaurant::2390711.0",
+      "label": "Restaurant",
+      "name": "Beer Kitchen",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 4,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::266888",
+      "label": "Attraction",
+      "name": "National WWI Museum and Memorial",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 5,
+      "slot": "lunch",
+      "node_key": "Restaurant::390492.0",
+      "label": "Restaurant",
+      "name": "Jack Stack Barbecue - Freight House",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 6,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::104332",
+      "label": "Attraction",
+      "name": "The Nelson-Atkins Museum of Art",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 7,
+      "slot": "dinner",
+      "node_key": "Restaurant::27108325.0",
+      "label": "Restaurant",
+      "name": "Fern Bar",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-19",
+      "order": 8,
+      "slot": "accommodation",
+      "node_key": "Accommodation::15519787.0",
+      "label": "Accommodation",
+      "name": "Elegant Romantic Carriage House - pets welcome!",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::15519787.0",
+      "label": "Accommodation",
+      "name": "Elegant Romantic Carriage House - pets welcome!",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::2390711.0",
+      "label": "Restaurant",
+      "name": "Beer Kitchen",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::209765",
+      "label": "Attraction",
+      "name": "Union Station",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::390492.0",
+      "label": "Restaurant",
+      "name": "Jack Stack Barbecue - Freight House",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::104321",
+      "label": "Attraction",
+      "name": "Country Club Plaza",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::27108325.0",
+      "label": "Restaurant",
+      "name": "Fern Bar",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-20",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::15519787.0",
+      "label": "Accommodation",
+      "name": "Elegant Romantic Carriage House - pets welcome!",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-21",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::15519787.0",
+      "label": "Accommodation",
+      "name": "Elegant Romantic Carriage House - pets welcome!",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-21",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::2390711.0",
+      "label": "Restaurant",
+      "name": "Beer Kitchen",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-21",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::104463",
+      "label": "Attraction",
+      "name": "Negro Leagues Baseball Museum",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-21",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::390492.0",
+      "label": "Restaurant",
+      "name": "Jack Stack Barbecue - Freight House",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-21",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F0345891",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

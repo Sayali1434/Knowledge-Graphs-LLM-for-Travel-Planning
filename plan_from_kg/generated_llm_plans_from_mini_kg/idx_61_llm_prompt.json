@@ -1,0 +1,3117 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_61\", \"query_text\": \"Plan a 3-day trip for 5 people from Miami to San Antonio from November 1st to November 3rd, 2024, with a budget of $6,750.\", \"request\": {\"org\": \"Miami\", \"dest\": \"San Antonio\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-01', '2024-11-02', '2024-11-03']\", \"people_number\": 5, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}\", \"budget\": 6750, \"query\": \"Plan a 3-day trip for 5 people from Miami to San Antonio from November 1st to November 3rd, 2024, with a budget of $6,750.\", \"level\": \"medium\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"event\": null, \"attraction\": null, \"transportation\": null}, \"nodes\": [{\"node_key\": \"Flight::F3718778\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"San Antonio\", \"DepTime\": \"21:13\", \"ArrTime\": \"23:26\", \"Price\": 244}}, {\"node_key\": \"Flight::F0781637\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"San Antonio\", \"DepTime\": \"21:05\", \"ArrTime\": \"23:28\", \"Price\": 313}}, {\"node_key\": \"Flight::F3288035\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"San Antonio\", \"DepTime\": \"20:56\", \"ArrTime\": \"23:05\", \"Price\": 336}}, {\"node_key\": \"Flight::F1372422\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"San Antonio\", \"DepTime\": \"13:47\", \"ArrTime\": \"16:10\", \"Price\": 355}}, {\"node_key\": \"Flight::F2584203\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Miami\", \"DestCityName\": \"San Antonio\", \"DepTime\": \"14:29\", \"ArrTime\": \"16:25\", \"Price\": 544}}, {\"node_key\": \"Flight::F2803046\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"San Antonio\", \"DestCityName\": \"Miami\", \"DepTime\": \"06:22\", \"ArrTime\": \"10:00\", \"Price\": 279}}, {\"node_key\": \"Flight::F1901514\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"San Antonio\", \"DestCityName\": \"Miami\", \"DepTime\": \"05:56\", \"ArrTime\": \"10:16\", \"Price\": 317}}, {\"node_key\": \"Flight::F2584235\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"San Antonio\", \"DestCityName\": \"Miami\", \"DepTime\": \"17:50\", \"ArrTime\": \"21:42\", \"Price\": 370}}, {\"node_key\": \"Flight::F0784902\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"San Antonio\", \"DestCityName\": \"Miami\", \"DepTime\": \"08:40\", \"ArrTime\": \"12:40\", \"Price\": 496}}, {\"node_key\": \"Flight::F1372455\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"San Antonio\", \"DestCityName\": \"Miami\", \"DepTime\": \"17:32\", \"ArrTime\": \"21:40\", \"Price\": 517}}, {\"node_key\": \"Accommodation::21481905.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21481905.0\", \"name\": \"The Tobin Hill Maids Quarters by The Pearl\", \"City\": \"San Antonio\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$90 per night\", \"originalPrice\": null, \"price\": \"$90\", \"qualifier\": \"night\", \"total\": \"$446 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  411 reviews\", \"localizedLabel\": \"4.98 (411)\", \"average\": 4.98, \"reviewsCount\": 411}, \"coordinates\": {\"latitude\": 29.44476, \"longitude\": -98.49096}}}, {\"node_key\": \"Accommodation::7.33e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7.33e+17\", \"name\": \"Private Unit Near Downtown San Antonio\", \"City\": \"San Antonio\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$62 per night\", \"originalPrice\": null, \"price\": \"$62\", \"qualifier\": \"night\", \"total\": \"$308 total\"}, \"rating\": {\"label\": \"4.88 out of 5 average rating,  95 reviews\", \"localizedLabel\": \"4.88 (95)\", \"average\": 4.88, \"reviewsCount\": 95}, \"coordinates\": {\"latitude\": 29.4278228, \"longitude\": -98.4741077}}}, {\"node_key\": \"Accommodation::4085510.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"4085510.0\", \"name\": \"Southtown Retama | Riverwalk 6min | Walkscore 81\", \"City\": \"San Antonio\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No children under 10 & No parties\", \"pricing\": {\"label\": \"$93 per night\", \"originalPrice\": null, \"price\": \"$93\", \"qualifier\": \"night\", \"total\": \"$463 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  720 reviews\", \"localizedLabel\": \"4.9 (720)\", \"average\": 4.9, \"reviewsCount\": 720}, \"coordinates\": {\"latitude\": 29.41016, \"longitude\": -98.48715}}}, {\"node_key\": \"Accommodation::6.58e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"6.58e+17\", \"name\": \"Private room in NW San Antonio\", \"City\": \"San Antonio\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$52 per night\", \"originalPrice\": null, \"price\": \"$52\", \"qualifier\": \"night\", \"total\": \"$260 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  221 reviews\", \"localizedLabel\": \"4.91 (221)\", \"average\": 4.91, \"reviewsCount\": 221}, \"coordinates\": {\"latitude\": 29.48154, \"longitude\": -98.61782}}}, {\"node_key\": \"Accommodation::23045248.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"23045248.0\", \"name\": \"Royal Bluebird EnSuite 9 Mins to Riverwalk & Alamo\", \"City\": \"San Antonio\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$78 per night, originally $90\", \"originalPrice\": \"$90\", \"price\": \"$78\", \"qualifier\": \"night\", \"total\": \"$388 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  49 reviews\", \"localizedLabel\": \"5.0 (49)\", \"average\": 5, \"reviewsCount\": 49}, \"coordinates\": {\"latitude\": 29.46163, \"longitude\": -98.46538}}}, {\"node_key\": \"Attraction::1931876\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1931876\", \"name\": \"Morgan's Wonderland\", \"City\": \"San Antonio\", \"subtype\": [\"Theme Parks\"], \"subcategories\": [\"Water & Amusement Parks\"], \"visit_duration\": \"5.0\", \"rating\": \"5.0\", \"rankingString\": \"#4 of 590 things to do in San Antonio\", \"address\": \"5223 David Edward Dr, San Antonio, TX 78233-6941\", \"description\": \"Experience the joy of what it means to have Ultra-Accessible™, fully-inclusive fun at Morgan’s Wonderland and Morgan’s Inspiration Island. Our 25+ accessible rides, playscapes, and interactive elements are spread out over a colorful 25-acre area that offers enough fun to keep your family entertained all day long.\"}}, {\"node_key\": \"Attraction::105056\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105056\", \"name\": \"San Antonio River Walk\", \"City\": \"San Antonio\", \"subtype\": [\"Scenic Walking Areas\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 590 things to do in San Antonio\", \"address\": \"849 E Commerce St, San Antonio, TX 78205-3939\", \"description\": \"Also known as Paseo del Rio, this 15-mile-long river walk is a must-do in San Antonio. Opt for a self-guided walking or bike tour of the riverside paths, lined with beautiful cypress trees, shops, museums, hotels and of course, Tex-Mex restaurants. But one of the best ways to experience the River Walk is on a hop-on, hop-off cruise, which glides past iconic spots like the Arneson River Theatre, Marriage Island, and the San Antonio Museum of Art. Visit during festivals and holidays like St Pat...\"}}, {\"node_key\": \"Attraction::103610\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103610\", \"name\": \"The Alamo\", \"City\": \"San Antonio\", \"subtype\": [\"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 590 things to do in San Antonio\", \"address\": \"300 Alamo Plaza, San Antonio, TX 78205-2606\", \"description\": \"Established in 1718 as Mission San Antonio de Valero, for over 300 years the former mission now known as the Alamo has been a crossroads of history. Having existed under six flags of independent nations and served as a garrison for five different armies, the Alamo has a rich history and a heritage to inspire Texans and people around the world. Although the Alamo is best known as the site of the 1836 Battle of the Alamo, all 300 years of Alamo history are vital to our story. Visitors can take ...\"}}, {\"node_key\": \"Attraction::169799\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"169799\", \"name\": \"Natural Bridge Caverns\", \"City\": \"San Antonio\", \"subtype\": [\"Caverns & Caves\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#17 of 590 things to do in San Antonio\", \"address\": \"26495 Natural Bridge Caverns Road, San Antonio, TX 78266-2671\", \"description\": \"Natural Bridge Caverns is one of Texas’ largest underground attractions that is best explored on a guided tour. The Discovery Tour takes you through the most spectacular part of the caverns 180 feet underground, whilst the Hidden Passages tour shows you a system of huge underground chambers—or experience both on a combo tour. Otherwise, navigate the outdoor Twisted Trails rope course, find your way out of the AMAZEn’ Ranch Roundup maze, and pan for fossils at the Mining Company. Don’t miss th...\"}}, {\"node_key\": \"Attraction::116411\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"116411\", \"name\": \"San Antonio River\", \"City\": \"San Antonio\", \"subtype\": [\"Bodies of Water\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 590 things to do in San Antonio\", \"address\": \"San Antonio, TX\", \"description\": \"Scenic river winds through the town of San Antonio.\"}}, {\"node_key\": \"Attraction::116413\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"116413\", \"name\": \"Mission San Jose\", \"City\": \"San Antonio\", \"subtype\": [\"Missions\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 590 things to do in San Antonio\", \"address\": \"San Antonio, TX\", \"description\": \"Founded in 1720, this Spanish frontier mission, the largest of the five San Antonio missions, is best known for its rose window.  On Sundays, this Texas and U.S. National historic site offers a mariachi mass.\"}}, {\"node_key\": \"Attraction::145405\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"145405\", \"name\": \"San Fernando De Bexar Cathedral\", \"City\": \"San Antonio\", \"subtype\": [\"Churches & Cathedrals\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 590 things to do in San Antonio\", \"address\": \"115 W Main Plz, San Antonio, TX 78205-2718\", \"description\": \"This cathedral was built in 1873 to replace the original founded more than one hundred years earlier.\"}}, {\"node_key\": \"Attraction::108413\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108413\", \"name\": \"San Antonio Missions National Historical Park\", \"City\": \"San Antonio\", \"subtype\": [\"Parks\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 590 things to do in San Antonio\", \"address\": \"S River Walk, San Antonio, TX\", \"description\": \"Historical area that stretches nine miles and contains four important 18th-century missions.\"}}, {\"node_key\": \"Attraction::108031\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108031\", \"name\": \"Japanese Tea Gardens\", \"City\": \"San Antonio\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 590 things to do in San Antonio\", \"address\": \"3853 N St. Mary_s St Brackenridge Park, San Antonio, TX 78212-3170\", \"description\": \"Originally a rock quarry, part of the tea garden came from a donation by George W. Brackenridge and another section from Emma Koehler. In 1915 Ray Lambert, city parks commissioner, thought it would make a nice location for a lily pond. Ultimately, it grew to become a tea garden. The latest renovations began in 2007 and cost about $1.6 million, compared with the $7,000 Lambert originally spent to open the park. It is a Registered Texas Historic Landmark and on the National Register of Historic...\"}}, {\"node_key\": \"Attraction::106308\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"106308\", \"name\": \"Natural Bridge Wildlife Ranch\", \"City\": \"San Antonio\", \"subtype\": [\"Zoos\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#35 of 590 things to do in San Antonio\", \"address\": \"26515 Natural Bridge Caverns Rd, San Antonio, TX 78266-2671\", \"description\": \"Natural Bridge Wildlife Ranch is an African Safari, Texas-Style. View and feed more than 700 animals representing over 45 species from all over the world in the comfort of your own car. Since 1984, 450 acres of rolling hills, creek beds, and magnificent oak trees that make up the safari drive-thru in the scenic Texas Hill Country has been open to the public. Additionally, the Walk-A-Bout area features several bird and primate species, a family of giraffes, the Safari Camp Grill, and the Safar...\"}}, {\"node_key\": \"Restaurant::1233077.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1233077.0\", \"name\": \"Chama Gaucha Brazilian Steakhouse - San Antonio\", \"City\": \"San Antonio\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Steakhouse\", \"Brazilian\"], \"avg_cost\": \"56.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"18318 Sonterra Pl, San Antonio, TX 78258\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 840, \"openHours\": \"14:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::23041850.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"23041850.0\", \"name\": \"1Watson\", \"City\": \"San Antonio\", \"mealTypes\": [\"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Latin\", \"Bar\", \"Spanish\"], \"avg_cost\": \"35.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"111 Soledad St 14th Floor, San Antonio, TX 78205-2230\", \"hours\": {\"weekRanges\": [[{\"open\": 630, \"openHours\": \"10:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1500, \"closeHours\": \"01:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::26336409.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"26336409.0\", \"name\": \"Brenner's on the River Walk\", \"City\": \"San Antonio\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Seafood\"], \"avg_cost\": \"56.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"215 Losoya St, San Antonio, TX 78205\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::437240.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"437240.0\", \"name\": \"Boudro's Texas Bistro\", \"City\": \"San Antonio\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Southwestern\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"421 E Commerce St, San Antonio, TX 78205-2814\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::469993.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"469993.0\", \"name\": \"Rosario's ComidaMex & Bar\", \"City\": \"San Antonio\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Mexican\", \"Bar\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"722 S Saint Mary's Street, San Antonio, TX 78205-3419\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::1238474.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1238474.0\", \"name\": \"Zocca Cuisine D'Italia\", \"City\": \"San Antonio\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Contemporary\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"420 W Market St On the Riverwalk, San Antonio, TX 78205-2920\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::437290.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"437290.0\", \"name\": \"Bohanan's Prime Steak and Seafood\", \"City\": \"San Antonio\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Steakhouse\", \"Seafood\", \"Contemporary\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"219 E Houston St 2nd Floor, San Antonio, TX 78205-1854\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::470027.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"470027.0\", \"name\": \"Magnolia Pancake Haus\", \"City\": \"San Antonio\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"10333 Huebner Rd, San Antonio, TX 78240\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::437231.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"437231.0\", \"name\": \"Biga on the Banks\", \"City\": \"San Antonio\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"203 S Saint Marys St, San Antonio, TX 78205-2714\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Restaurant::437236.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"437236.0\", \"name\": \"The Guenther House\", \"City\": \"San Antonio\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"205 East Guenther St Parking is located on South Alamo Street Across from Blue Star Contemporary, San Antonio, TX 78204-1404\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [], [], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/Chicago\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::105056\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 76.4}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 76.4}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 83.56}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 83.56}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 142.24}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 142.24}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 239.03}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 239.03}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 241.31}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 241.31}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 249.73}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 249.73}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 272.42}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 272.42}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 299.37}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 299.37}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 321.52}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 321.52}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 347.82}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 347.82}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 418.29}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 418.29}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 434.93}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 434.93}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 440.29}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 440.29}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 540.91}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 540.91}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 565.44}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 565.44}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 592.73}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 592.73}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 612.78}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 612.78}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 686.73}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 686.73}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 823.96}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 823.96}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 839.75}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 849.83}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 904.97}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 904.97}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1024.02}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1024.02}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1162.19}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1183.67}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1394.11}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1438.42}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1452.36}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1452.36}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1463.29}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1507.41}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1550.53}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1567.54}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1580.73}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1604.7}, {\"source\": \"Attraction::105056\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1607.81}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1607.81}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1624.51}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1694.79}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1738.7}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1761.79}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1782.43}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1811.57}, {\"source\": \"Attraction::103610\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1852.53}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1852.53}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1867.56}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1867.88}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1916.57}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1972.68}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2006.96}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2139.67}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2145.03}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2212.35}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2240.49}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2262.91}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2266.36}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2315.12}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2349.77}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2382.72}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2768.2}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3050.41}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3673.03}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3718.41}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3987.71}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3987.71}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4151.76}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4151.76}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4201.67}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4201.67}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4213.65}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4213.65}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4357.99}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4357.99}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4359.35}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4359.35}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4444.9}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4574.99}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4667.1}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4690.34}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4730.78}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4831.68}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4920.22}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4942.09}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4973.51}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4973.81}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4973.81}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5010.11}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5235.47}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5235.47}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5463.48}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5703.36}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5749.48}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5749.48}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5814.83}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5814.83}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6295.23}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6484.61}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6484.61}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6525.47}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6525.47}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6557.49}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6557.49}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6613.18}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6613.18}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6749.34}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6749.34}, {\"source\": \"Attraction::116413\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6858.44}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6858.44}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7087.55}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::470027.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7243.62}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8865.16}, {\"source\": \"Accommodation::4085510.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 9565.95}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10024.79}, {\"source\": \"Restaurant::437236.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10024.79}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 10405.28}, {\"source\": \"Restaurant::469993.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 10405.28}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::116413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 10938.38}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11065.86}, {\"source\": \"Restaurant::1238474.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11065.86}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11067.0}, {\"source\": \"Restaurant::437240.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11067.0}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11111.49}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11111.49}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11131.63}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11131.82}, {\"source\": \"Restaurant::437231.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11131.82}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 11140.6}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11377.34}, {\"source\": \"Restaurant::23041850.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11377.34}, {\"source\": \"Attraction::108413\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11408.86}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11408.86}, {\"source\": \"Attraction::1931876\", \"target\": \"Restaurant::1233077.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 12881.97}, {\"source\": \"Restaurant::1233077.0\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 12881.97}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 13344.79}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 13548.55}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::23041850.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13574.9}, {\"source\": \"Attraction::108031\", \"target\": \"Restaurant::470027.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 13636.74}, {\"source\": \"Restaurant::470027.0\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 13636.74}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13762.78}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::437231.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13789.6}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Attraction::108031\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 13794.77}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::1238474.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13895.25}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Restaurant::470027.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13955.66}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Attraction::105056\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14001.37}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::437240.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14073.41}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14074.77}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::437236.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14148.45}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Attraction::103610\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14167.21}, {\"source\": \"Accommodation::21481905.0\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14170.29}, {\"source\": \"Accommodation::6.58e+17\", \"target\": \"Restaurant::469993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14302.53}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Restaurant::470027.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14478.9}, {\"source\": \"Accommodation::7.33e+17\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14678.74}, {\"source\": \"Accommodation::23045248.0\", \"target\": \"Attraction::108413\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14766.11}, {\"source\": \"Attraction::145405\", \"target\": \"Restaurant::470027.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 15553.34}, {\"source\": \"Restaurant::470027.0\", \"target\": \"Attraction::145405\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 15553.34}, {\"source\": \"Attraction::1931876\", \"target\": \"Restaurant::437290.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 15680.24}, {\"source\": \"Restaurant::437290.0\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 15680.24}, {\"source\": \"Attraction::1931876\", \"target\": \"Restaurant::26336409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 15735.36}, {\"source\": \"Restaurant::26336409.0\", \"target\": \"Attraction::1931876\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 15735.36}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3718778\", \"dep_time\": \"21:13\", \"arr_time\": \"23:26\", \"local_activity_start_after_arrival_buffer\": \"23:56\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F0781637\", \"dep_time\": \"21:05\", \"arr_time\": \"23:28\", \"local_activity_start_after_arrival_buffer\": \"23:58\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F3288035\", \"dep_time\": \"20:56\", \"arr_time\": \"23:05\", \"local_activity_start_after_arrival_buffer\": \"23:35\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F1372422\", \"dep_time\": \"13:47\", \"arr_time\": \"16:10\", \"local_activity_start_after_arrival_buffer\": \"16:40\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F2584203\", \"dep_time\": \"14:29\", \"arr_time\": \"16:25\", \"local_activity_start_after_arrival_buffer\": \"16:55\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2803046\", \"dep_time\": \"06:22\", \"arr_time\": \"10:00\", \"latest_local_activity_finish_before_airport_buffer\": \"04:22\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F1901514\", \"dep_time\": \"05:56\", \"arr_time\": \"10:16\", \"latest_local_activity_finish_before_airport_buffer\": \"03:56\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F2584235\", \"dep_time\": \"17:50\", \"arr_time\": \"21:42\", \"latest_local_activity_finish_before_airport_buffer\": \"15:50\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F0784902\", \"dep_time\": \"08:40\", \"arr_time\": \"12:40\", \"latest_local_activity_finish_before_airport_buffer\": \"06:40\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F1372455\", \"dep_time\": \"17:32\", \"arr_time\": \"21:40\", \"latest_local_activity_finish_before_airport_buffer\": \"15:32\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::1238474.0\", \"Restaurant::470027.0\", \"Restaurant::437236.0\"], \"lunch\": [\"Restaurant::1233077.0\", \"Restaurant::437240.0\", \"Restaurant::469993.0\", \"Restaurant::1238474.0\", \"Restaurant::470027.0\", \"Restaurant::437236.0\"], \"dinner\": [\"Restaurant::1233077.0\", \"Restaurant::23041850.0\", \"Restaurant::26336409.0\", \"Restaurant::437240.0\", \"Restaurant::469993.0\", \"Restaurant::1238474.0\", \"Restaurant::437290.0\", \"Restaurant::437231.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::1931876\", \"Attraction::105056\", \"Attraction::103610\", \"Attraction::169799\", \"Attraction::116411\", \"Attraction::116413\", \"Attraction::145405\", \"Attraction::108413\", \"Attraction::108031\", \"Attraction::106308\"], \"afternoon_attraction\": [\"Attraction::1931876\", \"Attraction::105056\", \"Attraction::103610\", \"Attraction::169799\", \"Attraction::116411\", \"Attraction::116413\", \"Attraction::145405\", \"Attraction::108413\", \"Attraction::108031\", \"Attraction::106308\"]}, \"event_slots_by_date\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::1238474.0\", \"name\": \"Zocca Cuisine D'Italia\"}, {\"node_key\": \"Restaurant::470027.0\", \"name\": \"Magnolia Pancake Haus\"}, {\"node_key\": \"Restaurant::437236.0\", \"name\": \"The Guenther House\"}], \"lunch\": [{\"node_key\": \"Restaurant::1233077.0\", \"name\": \"Chama Gaucha Brazilian Steakhouse - San Antonio\"}, {\"node_key\": \"Restaurant::437240.0\", \"name\": \"Boudro's Texas Bistro\"}, {\"node_key\": \"Restaurant::469993.0\", \"name\": \"Rosario's ComidaMex & Bar\"}, {\"node_key\": \"Restaurant::1238474.0\", \"name\": \"Zocca Cuisine D'Italia\"}, {\"node_key\": \"Restaurant::470027.0\", \"name\": \"Magnolia Pancake Haus\"}, {\"node_key\": \"Restaurant::437236.0\", \"name\": \"The Guenther House\"}], \"dinner\": [{\"node_key\": \"Restaurant::1233077.0\", \"name\": \"Chama Gaucha Brazilian Steakhouse - San Antonio\"}, {\"node_key\": \"Restaurant::23041850.0\", \"name\": \"1Watson\"}, {\"node_key\": \"Restaurant::26336409.0\", \"name\": \"Brenner's on the River Walk\"}, {\"node_key\": \"Restaurant::437240.0\", \"name\": \"Boudro's Texas Bistro\"}, {\"node_key\": \"Restaurant::469993.0\", \"name\": \"Rosario's ComidaMex & Bar\"}, {\"node_key\": \"Restaurant::1238474.0\", \"name\": \"Zocca Cuisine D'Italia\"}, {\"node_key\": \"Restaurant::437290.0\", \"name\": \"Bohanan's Prime Steak and Seafood\"}, {\"node_key\": \"Restaurant::437231.0\", \"name\": \"Biga on the Banks\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-01\": [{\"node_key\": \"Event::vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\"}], \"2024-11-02\": [], \"2024-11-03\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-01\", \"required_slots\": {\"Flight::F3718778\": [], \"Flight::F0781637\": [], \"Flight::F3288035\": [], \"Flight::F1372422\": [\"dinner\"], \"Flight::F2584203\": [\"dinner\"]}, \"event_allowed_node_keys\": [\"Event::vvG1zZb49KDdSL\"], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-02\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-03\", \"required_slots\": {\"Flight::F2803046\": [], \"Flight::F1901514\": [], \"Flight::F2584235\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F0784902\": [], \"Flight::F1372455\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_61",
+    "query_text": "Plan a 3-day trip for 5 people from Miami to San Antonio from November 1st to November 3rd, 2024, with a budget of $6,750.",
+    "request": {
+      "org": "Miami",
+      "dest": "San Antonio",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-01', '2024-11-02', '2024-11-03']",
+      "people_number": 5,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'event': None, 'attraction': None, 'transportation': None}",
+      "budget": 6750,
+      "query": "Plan a 3-day trip for 5 people from Miami to San Antonio from November 1st to November 3rd, 2024, with a budget of $6,750.",
+      "level": "medium",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-01",
+      "2024-11-02",
+      "2024-11-03"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "event": null,
+      "attraction": null,
+      "transportation": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3718778",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Miami",
+          "DestCityName": "San Antonio",
+          "DepTime": "21:13",
+          "ArrTime": "23:26",
+          "Price": 244
+        }
+      },
+      {
+        "node_key": "Flight::F0781637",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Miami",
+          "DestCityName": "San Antonio",
+          "DepTime": "21:05",
+          "ArrTime": "23:28",
+          "Price": 313
+        }
+      },
+      {
+        "node_key": "Flight::F3288035",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Miami",
+          "DestCityName": "San Antonio",
+          "DepTime": "20:56",
+          "ArrTime": "23:05",
+          "Price": 336
+        }
+      },
+      {
+        "node_key": "Flight::F1372422",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Miami",
+          "DestCityName": "San Antonio",
+          "DepTime": "13:47",
+          "ArrTime": "16:10",
+          "Price": 355
+        }
+      },
+      {
+        "node_key": "Flight::F2584203",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Miami",
+          "DestCityName": "San Antonio",
+          "DepTime": "14:29",
+          "ArrTime": "16:25",
+          "Price": 544
+        }
+      },
+      {
+        "node_key": "Flight::F2803046",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "San Antonio",
+          "DestCityName": "Miami",
+          "DepTime": "06:22",
+          "ArrTime": "10:00",
+          "Price": 279
+        }
+      },
+      {
+        "node_key": "Flight::F1901514",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "San Antonio",
+          "DestCityName": "Miami",
+          "DepTime": "05:56",
+          "ArrTime": "10:16",
+          "Price": 317
+        }
+      },
+      {
+        "node_key": "Flight::F2584235",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "San Antonio",
+          "DestCityName": "Miami",
+          "DepTime": "17:50",
+          "ArrTime": "21:42",
+          "Price": 370
+        }
+      },
+      {
+        "node_key": "Flight::F0784902",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "San Antonio",
+          "DestCityName": "Miami",
+          "DepTime": "08:40",
+          "ArrTime": "12:40",
+          "Price": 496
+        }
+      },
+      {
+        "node_key": "Flight::F1372455",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "San Antonio",
+          "DestCityName": "Miami",
+          "DepTime": "17:32",
+          "ArrTime": "21:40",
+          "Price": 517
+        }
+      },
+      {
+        "node_key": "Accommodation::21481905.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21481905.0",
+          "name": "The Tobin Hill Maids Quarters by The Pearl",
+          "City": "San Antonio",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$90 per night",
+            "originalPrice": null,
+            "price": "$90",
+            "qualifier": "night",
+            "total": "$446 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  411 reviews",
+            "localizedLabel": "4.98 (411)",
+            "average": 4.98,
+            "reviewsCount": 411
+          },
+          "coordinates": {
+            "latitude": 29.44476,
+            "longitude": -98.49096
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7.33e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7.33e+17",
+          "name": "Private Unit Near Downtown San Antonio",
+          "City": "San Antonio",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$62 per night",
+            "originalPrice": null,
+            "price": "$62",
+            "qualifier": "night",
+            "total": "$308 total"
+          },
+          "rating": {
+            "label": "4.88 out of 5 average rating,  95 reviews",
+            "localizedLabel": "4.88 (95)",
+            "average": 4.88,
+            "reviewsCount": 95
+          },
+          "coordinates": {
+            "latitude": 29.4278228,
+            "longitude": -98.4741077
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::4085510.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "4085510.0",
+          "name": "Southtown Retama | Riverwalk 6min | Walkscore 81",
+          "City": "San Antonio",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No children under 10 & No parties",
+          "pricing": {
+            "label": "$93 per night",
+            "originalPrice": null,
+            "price": "$93",
+            "qualifier": "night",
+            "total": "$463 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  720 reviews",
+            "localizedLabel": "4.9 (720)",
+            "average": 4.9,
+            "reviewsCount": 720
+          },
+          "coordinates": {
+            "latitude": 29.41016,
+            "longitude": -98.48715
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::6.58e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "6.58e+17",
+          "name": "Private room in NW San Antonio",
+          "City": "San Antonio",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$52 per night",
+            "originalPrice": null,
+            "price": "$52",
+            "qualifier": "night",
+            "total": "$260 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  221 reviews",
+            "localizedLabel": "4.91 (221)",
+            "average": 4.91,
+            "reviewsCount": 221
+          },
+          "coordinates": {
+            "latitude": 29.48154,
+            "longitude": -98.61782
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::23045248.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "23045248.0",
+          "name": "Royal Bluebird EnSuite 9 Mins to Riverwalk & Alamo",
+          "City": "San Antonio",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$78 per night, originally $90",
+            "originalPrice": "$90",
+            "price": "$78",
+            "qualifier": "night",
+            "total": "$388 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  49 reviews",
+            "localizedLabel": "5.0 (49)",
+            "average": 5,
+            "reviewsCount": 49
+          },
+          "coordinates": {
+            "latitude": 29.46163,
+            "longitude": -98.46538
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::1931876",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1931876",
+          "name": "Morgan's Wonderland",
+          "City": "San Antonio",
+          "subtype": [
+            "Theme Parks"
+          ],
+          "subcategories": [
+            "Water & Amusement Parks"
+          ],
+          "visit_duration": "5.0",
+          "rating": "5.0",
+          "rankingString": "#4 of 590 things to do in San Antonio",
+          "address": "5223 David Edward Dr, San Antonio, TX 78233-6941",
+          "description": "Experience the joy of what it means to have Ultra-Accessible™, fully-inclusive fun at Morgan’s Wonderland and Morgan’s Inspiration Island. Our 25+ accessible rides, playscapes, and interactive elements are spread out over a colorful 25-acre area that offers enough fun to keep your family entertained all day long."
+        }
+      },
+      {
+        "node_key": "Attraction::105056",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105056",
+          "name": "San Antonio River Walk",
+          "City": "San Antonio",
+          "subtype": [
+            "Scenic Walking Areas"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#1 of 590 things to do in San Antonio",
+          "address": "849 E Commerce St, San Antonio, TX 78205-3939",
+          "description": "Also known as Paseo del Rio, this 15-mile-long river walk is a must-do in San Antonio. Opt for a self-guided walking or bike tour of the riverside paths, lined with beautiful cypress trees, shops, museums, hotels and of course, Tex-Mex restaurants. But one of the best ways to experience the River Walk is on a hop-on, hop-off cruise, which glides past iconic spots like the Arneson River Theatre, Marriage Island, and the San Antonio Museum of Art. Visit during festivals and holidays like St Pat..."
+        }
+      },
+      {
+        "node_key": "Attraction::103610",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103610",
+          "name": "The Alamo",
+          "City": "San Antonio",
+          "subtype": [
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 590 things to do in San Antonio",
+          "address": "300 Alamo Plaza, San Antonio, TX 78205-2606",
+          "description": "Established in 1718 as Mission San Antonio de Valero, for over 300 years the former mission now known as the Alamo has been a crossroads of history. Having existed under six flags of independent nations and served as a garrison for five different armies, the Alamo has a rich history and a heritage to inspire Texans and people around the world. Although the Alamo is best known as the site of the 1836 Battle of the Alamo, all 300 years of Alamo history are vital to our story. Visitors can take ..."
+        }
+      },
+      {
+        "node_key": "Attraction::169799",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "169799",
+          "name": "Natural Bridge Caverns",
+          "City": "San Antonio",
+          "subtype": [
+            "Caverns & Caves"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#17 of 590 things to do in San Antonio",
+          "address": "26495 Natural Bridge Caverns Road, San Antonio, TX 78266-2671",
+          "description": "Natural Bridge Caverns is one of Texas’ largest underground attractions that is best explored on a guided tour. The Discovery Tour takes you through the most spectacular part of the caverns 180 feet underground, whilst the Hidden Passages tour shows you a system of huge underground chambers—or experience both on a combo tour. Otherwise, navigate the outdoor Twisted Trails rope course, find your way out of the AMAZEn’ Ranch Roundup maze, and pan for fossils at the Mining Company. Don’t miss th..."
+        }
+      },
+      {
+        "node_key": "Attraction::116411",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "116411",
+          "name": "San Antonio River",
+          "City": "San Antonio",
+          "subtype": [
+            "Bodies of Water"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#15 of 590 things to do in San Antonio",
+          "address": "San Antonio, TX",
+          "description": "Scenic river winds through the town of San Antonio."
+        }
+      },
+      {
+        "node_key": "Attraction::116413",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "116413",
+          "name": "Mission San Jose",
+          "City": "San Antonio",
+          "subtype": [
+            "Missions",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#5 of 590 things to do in San Antonio",
+          "address": "San Antonio, TX",
+          "description": "Founded in 1720, this Spanish frontier mission, the largest of the five San Antonio missions, is best known for its rose window.  On Sundays, this Texas and U.S. National historic site offers a mariachi mass."
+        }
+      },
+      {
+        "node_key": "Attraction::145405",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "145405",
+          "name": "San Fernando De Bexar Cathedral",
+          "City": "San Antonio",
+          "subtype": [
+            "Churches & Cathedrals"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 590 things to do in San Antonio",
+          "address": "115 W Main Plz, San Antonio, TX 78205-2718",
+          "description": "This cathedral was built in 1873 to replace the original founded more than one hundred years earlier."
+        }
+      },
+      {
+        "node_key": "Attraction::108413",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108413",
+          "name": "San Antonio Missions National Historical Park",
+          "City": "San Antonio",
+          "subtype": [
+            "Parks",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#6 of 590 things to do in San Antonio",
+          "address": "S River Walk, San Antonio, TX",
+          "description": "Historical area that stretches nine miles and contains four important 18th-century missions."
+        }
+      },
+      {
+        "node_key": "Attraction::108031",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108031",
+          "name": "Japanese Tea Gardens",
+          "City": "San Antonio",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#13 of 590 things to do in San Antonio",
+          "address": "3853 N St. Mary_s St Brackenridge Park, San Antonio, TX 78212-3170",
+          "description": "Originally a rock quarry, part of the tea garden came from a donation by George W. Brackenridge and another section from Emma Koehler. In 1915 Ray Lambert, city parks commissioner, thought it would make a nice location for a lily pond. Ultimately, it grew to become a tea garden. The latest renovations began in 2007 and cost about $1.6 million, compared with the $7,000 Lambert originally spent to open the park. It is a Registered Texas Historic Landmark and on the National Register of Historic..."
+        }
+      },
+      {
+        "node_key": "Attraction::106308",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "106308",
+          "name": "Natural Bridge Wildlife Ranch",
+          "City": "San Antonio",
+          "subtype": [
+            "Zoos"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#35 of 590 things to do in San Antonio",
+          "address": "26515 Natural Bridge Caverns Rd, San Antonio, TX 78266-2671",
+          "description": "Natural Bridge Wildlife Ranch is an African Safari, Texas-Style. View and feed more than 700 animals representing over 45 species from all over the world in the comfort of your own car. Since 1984, 450 acres of rolling hills, creek beds, and magnificent oak trees that make up the safari drive-thru in the scenic Texas Hill Country has been open to the public. Additionally, the Walk-A-Bout area features several bird and primate species, a family of giraffes, the Safari Camp Grill, and the Safar..."
+        }
+      },
+      {
+        "node_key": "Restaurant::1233077.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1233077.0",
+          "name": "Chama Gaucha Brazilian Steakhouse - San Antonio",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Brazilian"
+          ],
+          "avg_cost": "56.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "18318 Sonterra Pl, San Antonio, TX 78258",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 840,
+                  "openHours": "14:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::23041850.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "23041850.0",
+          "name": "1Watson",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Latin",
+            "Bar",
+            "Spanish"
+          ],
+          "avg_cost": "35.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "111 Soledad St 14th Floor, San Antonio, TX 78205-2230",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::26336409.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "26336409.0",
+          "name": "Brenner's on the River Walk",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "56.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "215 Losoya St, San Antonio, TX 78205",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::437240.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "437240.0",
+          "name": "Boudro's Texas Bistro",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Southwestern"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "421 E Commerce St, San Antonio, TX 78205-2814",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::469993.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "469993.0",
+          "name": "Rosario's ComidaMex & Bar",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Bar"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "722 S Saint Mary's Street, San Antonio, TX 78205-3419",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1238474.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1238474.0",
+          "name": "Zocca Cuisine D'Italia",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Contemporary"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "420 W Market St On the Riverwalk, San Antonio, TX 78205-2920",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 360,
+                  "openHours": "06:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::437290.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "437290.0",
+          "name": "Bohanan's Prime Steak and Seafood",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood",
+            "Contemporary"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "219 E Houston St 2nd Floor, San Antonio, TX 78205-1854",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::470027.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "470027.0",
+          "name": "Magnolia Pancake Haus",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "10333 Huebner Rd, San Antonio, TX 78240",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::437231.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "437231.0",
+          "name": "Biga on the Banks",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "203 S Saint Marys St, San Antonio, TX 78205-2714",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::437236.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "437236.0",
+          "name": "The Guenther House",
+          "City": "San Antonio",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "205 East Guenther St Parking is located on South Alamo Street Across from Blue Star Contemporary, San Antonio, TX 78204-1404",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/Chicago"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 76.4
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 76.4
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 83.56
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 83.56
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 142.24
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 142.24
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 239.03
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 239.03
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 241.31
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 241.31
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 249.73
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 249.73
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 272.42
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 272.42
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 299.37
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 299.37
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 321.52
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 321.52
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 347.82
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 347.82
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 418.29
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 418.29
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 434.93
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 434.93
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 440.29
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 440.29
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 540.91
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 540.91
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 565.44
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 565.44
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 592.73
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 592.73
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 612.78
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 612.78
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 686.73
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 686.73
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 823.96
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 823.96
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 839.75
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 849.83
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 904.97
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 904.97
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1024.02
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1024.02
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1162.19
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1183.67
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1394.11
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1438.42
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1452.36
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1452.36
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1463.29
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1507.41
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1550.53
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1567.54
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1580.73
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1604.7
+      },
+      {
+        "source": "Attraction::105056",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1607.81
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1607.81
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1624.51
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1694.79
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1738.7
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1761.79
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1782.43
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1811.57
+      },
+      {
+        "source": "Attraction::103610",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1852.53
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1852.53
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1867.56
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1867.88
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1916.57
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1972.68
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2006.96
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2139.67
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2145.03
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2212.35
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2240.49
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2262.91
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2266.36
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2315.12
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2349.77
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2382.72
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2768.2
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3050.41
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3673.03
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3718.41
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3987.71
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3987.71
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4151.76
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4151.76
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4201.67
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4201.67
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4213.65
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4213.65
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4357.99
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4357.99
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4359.35
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4359.35
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4444.9
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4574.99
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4667.1
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4690.34
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4730.78
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4831.68
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4920.22
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4942.09
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4973.51
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4973.81
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4973.81
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5010.11
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5235.47
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5235.47
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5463.48
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5703.36
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5749.48
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5749.48
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5814.83
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5814.83
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6295.23
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6484.61
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6484.61
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6525.47
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6525.47
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6557.49
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6557.49
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6613.18
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6613.18
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6749.34
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6749.34
+      },
+      {
+        "source": "Attraction::116413",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6858.44
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6858.44
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7087.55
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::470027.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7243.62
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8865.16
+      },
+      {
+        "source": "Accommodation::4085510.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 9565.95
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10024.79
+      },
+      {
+        "source": "Restaurant::437236.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10024.79
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 10405.28
+      },
+      {
+        "source": "Restaurant::469993.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 10405.28
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::116413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 10938.38
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11065.86
+      },
+      {
+        "source": "Restaurant::1238474.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11065.86
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11067.0
+      },
+      {
+        "source": "Restaurant::437240.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11067.0
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11111.49
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11111.49
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11131.63
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11131.82
+      },
+      {
+        "source": "Restaurant::437231.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11131.82
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 11140.6
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11377.34
+      },
+      {
+        "source": "Restaurant::23041850.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11377.34
+      },
+      {
+        "source": "Attraction::108413",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11408.86
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11408.86
+      },
+      {
+        "source": "Attraction::1931876",
+        "target": "Restaurant::1233077.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 12881.97
+      },
+      {
+        "source": "Restaurant::1233077.0",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 12881.97
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 13344.79
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 13548.55
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::23041850.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13574.9
+      },
+      {
+        "source": "Attraction::108031",
+        "target": "Restaurant::470027.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 13636.74
+      },
+      {
+        "source": "Restaurant::470027.0",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 13636.74
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13762.78
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::437231.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13789.6
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Attraction::108031",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 13794.77
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::1238474.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13895.25
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Restaurant::470027.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13955.66
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Attraction::105056",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14001.37
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::437240.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14073.41
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14074.77
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::437236.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14148.45
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Attraction::103610",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14167.21
+      },
+      {
+        "source": "Accommodation::21481905.0",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14170.29
+      },
+      {
+        "source": "Accommodation::6.58e+17",
+        "target": "Restaurant::469993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14302.53
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Restaurant::470027.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14478.9
+      },
+      {
+        "source": "Accommodation::7.33e+17",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14678.74
+      },
+      {
+        "source": "Accommodation::23045248.0",
+        "target": "Attraction::108413",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14766.11
+      },
+      {
+        "source": "Attraction::145405",
+        "target": "Restaurant::470027.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 15553.34
+      },
+      {
+        "source": "Restaurant::470027.0",
+        "target": "Attraction::145405",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 15553.34
+      },
+      {
+        "source": "Attraction::1931876",
+        "target": "Restaurant::437290.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 15680.24
+      },
+      {
+        "source": "Restaurant::437290.0",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 15680.24
+      },
+      {
+        "source": "Attraction::1931876",
+        "target": "Restaurant::26336409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 15735.36
+      },
+      {
+        "source": "Restaurant::26336409.0",
+        "target": "Attraction::1931876",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 15735.36
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-01",
+        "2024-11-02",
+        "2024-11-03"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3718778",
+          "dep_time": "21:13",
+          "arr_time": "23:26",
+          "local_activity_start_after_arrival_buffer": "23:56",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F0781637",
+          "dep_time": "21:05",
+          "arr_time": "23:28",
+          "local_activity_start_after_arrival_buffer": "23:58",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F3288035",
+          "dep_time": "20:56",
+          "arr_time": "23:05",
+          "local_activity_start_after_arrival_buffer": "23:35",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F1372422",
+          "dep_time": "13:47",
+          "arr_time": "16:10",
+          "local_activity_start_after_arrival_buffer": "16:40",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F2584203",
+          "dep_time": "14:29",
+          "arr_time": "16:25",
+          "local_activity_start_after_arrival_buffer": "16:55",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2803046",
+          "dep_time": "06:22",
+          "arr_time": "10:00",
+          "latest_local_activity_finish_before_airport_buffer": "04:22",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F1901514",
+          "dep_time": "05:56",
+          "arr_time": "10:16",
+          "latest_local_activity_finish_before_airport_buffer": "03:56",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F2584235",
+          "dep_time": "17:50",
+          "arr_time": "21:42",
+          "latest_local_activity_finish_before_airport_buffer": "15:50",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F0784902",
+          "dep_time": "08:40",
+          "arr_time": "12:40",
+          "latest_local_activity_finish_before_airport_buffer": "06:40",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F1372455",
+          "dep_time": "17:32",
+          "arr_time": "21:40",
+          "latest_local_activity_finish_before_airport_buffer": "15:32",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::1238474.0",
+          "Restaurant::470027.0",
+          "Restaurant::437236.0"
+        ],
+        "lunch": [
+          "Restaurant::1233077.0",
+          "Restaurant::437240.0",
+          "Restaurant::469993.0",
+          "Restaurant::1238474.0",
+          "Restaurant::470027.0",
+          "Restaurant::437236.0"
+        ],
+        "dinner": [
+          "Restaurant::1233077.0",
+          "Restaurant::23041850.0",
+          "Restaurant::26336409.0",
+          "Restaurant::437240.0",
+          "Restaurant::469993.0",
+          "Restaurant::1238474.0",
+          "Restaurant::437290.0",
+          "Restaurant::437231.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::1931876",
+          "Attraction::105056",
+          "Attraction::103610",
+          "Attraction::169799",
+          "Attraction::116411",
+          "Attraction::116413",
+          "Attraction::145405",
+          "Attraction::108413",
+          "Attraction::108031",
+          "Attraction::106308"
+        ],
+        "afternoon_attraction": [
+          "Attraction::1931876",
+          "Attraction::105056",
+          "Attraction::103610",
+          "Attraction::169799",
+          "Attraction::116411",
+          "Attraction::116413",
+          "Attraction::145405",
+          "Attraction::108413",
+          "Attraction::108031",
+          "Attraction::106308"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-01": [
+          "Event::vvG1zZb49KDdSL"
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::1238474.0",
+            "name": "Zocca Cuisine D'Italia"
+          },
+          {
+            "node_key": "Restaurant::470027.0",
+            "name": "Magnolia Pancake Haus"
+          },
+          {
+            "node_key": "Restaurant::437236.0",
+            "name": "The Guenther House"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::1233077.0",
+            "name": "Chama Gaucha Brazilian Steakhouse - San Antonio"
+          },
+          {
+            "node_key": "Restaurant::437240.0",
+            "name": "Boudro's Texas Bistro"
+          },
+          {
+            "node_key": "Restaurant::469993.0",
+            "name": "Rosario's ComidaMex & Bar"
+          },
+          {
+            "node_key": "Restaurant::1238474.0",
+            "name": "Zocca Cuisine D'Italia"
+          },
+          {
+            "node_key": "Restaurant::470027.0",
+            "name": "Magnolia Pancake Haus"
+          },
+          {
+            "node_key": "Restaurant::437236.0",
+            "name": "The Guenther House"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::1233077.0",
+            "name": "Chama Gaucha Brazilian Steakhouse - San Antonio"
+          },
+          {
+            "node_key": "Restaurant::23041850.0",
+            "name": "1Watson"
+          },
+          {
+            "node_key": "Restaurant::26336409.0",
+            "name": "Brenner's on the River Walk"
+          },
+          {
+            "node_key": "Restaurant::437240.0",
+            "name": "Boudro's Texas Bistro"
+          },
+          {
+            "node_key": "Restaurant::469993.0",
+            "name": "Rosario's ComidaMex & Bar"
+          },
+          {
+            "node_key": "Restaurant::1238474.0",
+            "name": "Zocca Cuisine D'Italia"
+          },
+          {
+            "node_key": "Restaurant::437290.0",
+            "name": "Bohanan's Prime Steak and Seafood"
+          },
+          {
+            "node_key": "Restaurant::437231.0",
+            "name": "Biga on the Banks"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-01": [
+          {
+            "node_key": "Event::vvG1zZb49KDdSL",
+            "name": "A Beautiful Noise"
+          }
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-01",
+          "required_slots": {
+            "Flight::F3718778": [],
+            "Flight::F0781637": [],
+            "Flight::F3288035": [],
+            "Flight::F1372422": [
+              "dinner"
+            ],
+            "Flight::F2584203": [
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [
+            "Event::vvG1zZb49KDdSL"
+          ],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-02",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-03",
+          "required_slots": {
+            "Flight::F2803046": [],
+            "Flight::F1901514": [],
+            "Flight::F2584235": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F0784902": [],
+            "Flight::F1372455": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-01": [
+        "Event::vvG1zZb49KDdSL"
+      ],
+      "2024-11-02": [],
+      "2024-11-03": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

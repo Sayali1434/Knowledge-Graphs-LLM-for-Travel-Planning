@@ -1,0 +1,3239 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_44\", \"query_text\": \"Plan a 3-day trip for 1 person from Indianapolis to Baltimore from November 1st to November 3rd, 2024, with a budget of $1,500.\", \"request\": {\"org\": \"Indianapolis\", \"dest\": \"Baltimore\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-01', '2024-11-02', '2024-11-03']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 1500, \"query\": \"Plan a 3-day trip for 1 person from Indianapolis to Baltimore from November 1st to November 3rd, 2024, with a budget of $1,500.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; ; Spending Preference: Economical Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F1596848\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Indianapolis\", \"DestCityName\": \"Baltimore\", \"DepTime\": \"05:27\", \"ArrTime\": \"06:54\", \"Price\": 115}}, {\"node_key\": \"Flight::F2173319\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Indianapolis\", \"DestCityName\": \"Baltimore\", \"DepTime\": \"05:59\", \"ArrTime\": \"07:24\", \"Price\": 133}}, {\"node_key\": \"Flight::F3936081\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Indianapolis\", \"DestCityName\": \"Baltimore\", \"DepTime\": \"05:47\", \"ArrTime\": \"07:13\", \"Price\": 135}}, {\"node_key\": \"Flight::F0634980\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Indianapolis\", \"DestCityName\": \"Baltimore\", \"DepTime\": \"05:46\", \"ArrTime\": \"07:17\", \"Price\": 141}}, {\"node_key\": \"Flight::F0003275\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Indianapolis\", \"DestCityName\": \"Baltimore\", \"DepTime\": \"05:47\", \"ArrTime\": \"07:29\", \"Price\": 210}}, {\"node_key\": \"Flight::F2202336\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Baltimore\", \"DestCityName\": \"Indianapolis\", \"DepTime\": \"22:15\", \"ArrTime\": \"23:49\", \"Price\": 117}}, {\"node_key\": \"Flight::F0640398\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Baltimore\", \"DestCityName\": \"Indianapolis\", \"DepTime\": \"21:52\", \"ArrTime\": \"23:44\", \"Price\": 181}}, {\"node_key\": \"Flight::F1564948\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Baltimore\", \"DestCityName\": \"Indianapolis\", \"DepTime\": \"23:00\", \"ArrTime\": \"00:29\", \"Price\": 191}}, {\"node_key\": \"Flight::F0009063\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Baltimore\", \"DestCityName\": \"Indianapolis\", \"DepTime\": \"22:45\", \"ArrTime\": \"00:26\", \"Price\": 227}}, {\"node_key\": \"Flight::F2655098\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Baltimore\", \"DestCityName\": \"Indianapolis\", \"DepTime\": \"21:58\", \"ArrTime\": \"23:40\", \"Price\": 230}}, {\"node_key\": \"Accommodation::4663402.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"4663402.0\", \"name\": \"Notel 9 Getaway Suite with Sauna\", \"City\": \"Baltimore\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$80 per night\", \"originalPrice\": null, \"price\": \"$80\", \"qualifier\": \"night\", \"total\": \"$398 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  386 reviews\", \"localizedLabel\": \"4.96 (386)\", \"average\": 4.96, \"reviewsCount\": 386}, \"coordinates\": {\"latitude\": 39.2881, \"longitude\": -76.59081}}}, {\"node_key\": \"Accommodation::159003.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"159003.0\", \"name\": \"Secret Garden in the City\", \"City\": \"Baltimore\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$139 per night\", \"originalPrice\": null, \"price\": \"$139\", \"qualifier\": \"night\", \"total\": \"$692 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  648 reviews\", \"localizedLabel\": \"4.91 (648)\", \"average\": 4.91, \"reviewsCount\": 648}, \"coordinates\": {\"latitude\": 39.2843, \"longitude\": -76.5952}}}, {\"node_key\": \"Accommodation::22261026.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"22261026.0\", \"name\": \"Romantic Hot Tub Getaway, Walk to Fells Point\", \"City\": \"Baltimore\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No children under 10 & No pets\", \"pricing\": {\"label\": \"$131 per night\", \"originalPrice\": null, \"price\": \"$131\", \"qualifier\": \"night\", \"total\": \"$652 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  625 reviews\", \"localizedLabel\": \"4.95 (625)\", \"average\": 4.95, \"reviewsCount\": 625}, \"coordinates\": {\"latitude\": 39.28921, \"longitude\": -76.58592}}}, {\"node_key\": \"Accommodation::5.71e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.71e+17\", \"name\": \"Cheerful room near UMB & Convention center, has TV\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$68 per night\", \"originalPrice\": null, \"price\": \"$68\", \"qualifier\": \"night\", \"total\": \"$339 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  62 reviews\", \"localizedLabel\": \"4.9 (62)\", \"average\": 4.9, \"reviewsCount\": 62}, \"coordinates\": {\"latitude\": 39.28594, \"longitude\": -76.62852}}}, {\"node_key\": \"Accommodation::49749736.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"49749736.0\", \"name\": \"Large comfortable space w/ private entrance & bath\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$52 per night\", \"originalPrice\": null, \"price\": \"$52\", \"qualifier\": \"night\", \"total\": \"$257 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  132 reviews\", \"localizedLabel\": \"4.95 (132)\", \"average\": 4.95, \"reviewsCount\": 132}, \"coordinates\": {\"latitude\": 39.35488, \"longitude\": -76.56778}}}, {\"node_key\": \"Accommodation::23257804.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"23257804.0\", \"name\": \"Private ❤️ Love Nest ❤️ Downtown near Inner Harbor\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$73 per night\", \"originalPrice\": null, \"price\": \"$73\", \"qualifier\": \"night\", \"total\": \"$365 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  473 reviews\", \"localizedLabel\": \"4.91 (473)\", \"average\": 4.91, \"reviewsCount\": 473}, \"coordinates\": {\"latitude\": 39.2857, \"longitude\": -76.62448}}}, {\"node_key\": \"Accommodation::698917.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"698917.0\", \"name\": \"Guesthouse Bedroom 2/Private Parking - Mt. Vernon\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$132 per night\", \"originalPrice\": null, \"price\": \"$132\", \"qualifier\": \"night\", \"total\": \"$657 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  677 reviews\", \"localizedLabel\": \"4.97 (677)\", \"average\": 4.97, \"reviewsCount\": 677}, \"coordinates\": {\"latitude\": 39.30273, \"longitude\": -76.61493}}}, {\"node_key\": \"Accommodation::47391963.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"47391963.0\", \"name\": \"Cozy loft in great location\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$62 per night, originally $68\", \"originalPrice\": \"$68\", \"price\": \"$62\", \"qualifier\": \"night\", \"total\": \"$308 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  147 reviews\", \"localizedLabel\": \"4.93 (147)\", \"average\": 4.93, \"reviewsCount\": 147}, \"coordinates\": {\"latitude\": 39.28319, \"longitude\": -76.63005}}}, {\"node_key\": \"Accommodation::23358036.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"23358036.0\", \"name\": \"Private Queen Suite (B) Fells and Hopkins Medical\", \"City\": \"Baltimore\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$63 per night, originally $75\", \"originalPrice\": \"$75\", \"price\": \"$63\", \"qualifier\": \"night\", \"total\": \"$313 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  440 reviews\", \"localizedLabel\": \"4.98 (440)\", \"average\": 4.98, \"reviewsCount\": 440}, \"coordinates\": {\"latitude\": 39.28923, \"longitude\": -76.59314}}}, {\"node_key\": \"Accommodation::17326086.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"17326086.0\", \"name\": \"Entire Comfy Studio @Charles Village -5min frm JHU\", \"City\": \"Baltimore\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$89 per night, originally $99\", \"originalPrice\": \"$99\", \"price\": \"$89\", \"qualifier\": \"night\", \"total\": \"$443 total\"}, \"rating\": {\"label\": \"4.69 out of 5 average rating,  425 reviews\", \"localizedLabel\": \"4.69 (425)\", \"average\": 4.69, \"reviewsCount\": 425}, \"coordinates\": {\"latitude\": 39.32344, \"longitude\": -76.61663}}}, {\"node_key\": \"Attraction::104307\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104307\", \"name\": \"Oriole Park at Camden Yards\", \"City\": \"Baltimore\", \"subtype\": [\"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#6 of 405 things to do in Baltimore\", \"address\": \"333 W Camden St, Baltimore, MD 21201-2435\", \"description\": \"One of major league baseball's newest stadiums, the Orioles' home field has the intimate feel and charm of an old-fashioned park.\"}}, {\"node_key\": \"Attraction::103081\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103081\", \"name\": \"The Walters Art Museum\", \"City\": \"Baltimore\", \"subtype\": [\"Art Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#3 of 405 things to do in Baltimore\", \"address\": \"600 N Charles St, Baltimore, MD 21201-5118\", \"description\": \"The Walters Art Museum is a cultural hub in the heart of Baltimore. Located in the city’s Mount Vernon neighborhood, the Walters is free for all. The museum’s collection spans more than seven millennia, from 5,000 BCE to the 21st century, and encompasses 36,000 objects from around the world. Walking through the museum’s historic buildings, visitors encounter a stunning panorama of thousands of years of art, from romantic 19th-century images of French gardens to mesmerizing Ethiopian icons, ri...\"}}, {\"node_key\": \"Attraction::12093928\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"12093928\", \"name\": \"Sagamore Spirit Distillery\", \"City\": \"Baltimore\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 405 things to do in Baltimore\", \"address\": \"301 E Cromwell St, Baltimore, MD 21230-5012\", \"description\": \"The Sagamore Spirit Distillery is open Wednesday through Sunday for guided distillery tours and rye whiskey tastings. Located in the heart of Baltimore's Port Covington neighborhood with stunning waterfront views, Sagamore Spirit also offers a full calendar of indoor and outdoor events, including cocktail classes, glass blowing, and waterfront yoga. Sagamore Spirit is recognized internationally for their American Straight Rye Whiskies and is the recipient of over 100 awards for excellence in ...\"}}, {\"node_key\": \"Attraction::102859\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"102859\", \"name\": \"National Aquarium\", \"City\": \"Baltimore\", \"subtype\": [\"Aquariums\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#23 of 405 things to do in Baltimore\", \"address\": \"501 E Pratt St, Baltimore, MD 21202-3194\", \"description\": \"Considered one of the world's best aquariums, the National Aquarium's mission is to inspire conservation of the world's aquatic treasures. It champions environmental initiatives by engaging with visitors, volunteers, education groups and schools to actively participate in the preservation of the world's natural resources and living systems. The National Aquarium delivers meaningful experiences through its living collection of more than 20,000 animals from more than 800 species of fish, birds,...\"}}, {\"node_key\": \"Attraction::261225\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"261225\", \"name\": \"Inner Harbor\", \"City\": \"Baltimore\", \"subtype\": [\"Marinas\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#26 of 405 things to do in Baltimore\", \"address\": \"Baltimore, MD 21202\", \"description\": \"As one of America's oldest seaports, Inner Harbor is now an important landmark and popular tourist destination. Follow the brick promenade through this bustling complex of eateries, stores, museums and entertainment venues. Rent a paddle boat to have some fun in the water with the kids, or take them to the National Aquarium which is one of the nation’s largest. History buffs will enjoy touring the heritage ships anchored in the harbor, while travelers of all ages can soak up the marvelous vie...\"}}, {\"node_key\": \"Attraction::109069\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109069\", \"name\": \"Fort McHenry National Monument And Historic Shrine\", \"City\": \"Baltimore\", \"subtype\": [\"Monuments & Statues\", \"National Parks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 405 things to do in Baltimore\", \"address\": \"2400 East Fort Avenue, Baltimore, MD 21230-5390\", \"description\": \"A unit of the National Park Service. Site of the Battle of Baltimore during the War of 1812, where Francis Scott Key was inspired to pen \\\"The Star-Spangled Banner\\\" in September of 1814.\"}}, {\"node_key\": \"Attraction::109074\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109074\", \"name\": \"Fell's Point\", \"City\": \"Baltimore\", \"subtype\": [\"Neighborhoods\", \"Historic Walking Areas\"], \"subcategories\": [\"Sights & Landmarks\", \"Other\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 405 things to do in Baltimore\", \"address\": \"Fell St, Baltimore, MD 21231\", \"description\": \"Dating back to the 18th century, this charming Baltimore district has cobblestone streets and a thriving culture by the waterfront. Wander through its quaint streets as you discover craft and antique shops, coffee houses and art galleries, then treat yourself to fresh seafood or a yummy burger at the Broadway Market. After dark, more than 100 pubs await you. Fell’s Point is a short drive from downtown Baltimore, but you can take a water taxi from the Inner Harbor for a more unique experience....\"}}, {\"node_key\": \"Attraction::144284\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144284\", \"name\": \"American Visionary Art Museum\", \"City\": \"Baltimore\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 405 things to do in Baltimore\", \"address\": \"800 Key Hwy, Baltimore, MD 21230-3940\", \"description\": \"The American Visionary Art Museum is the nation's museum for self-taught, intuitive artistry. Three historic buildings house wonders created by farmers, housewives, mechanics, the disabled, the homeless, as well as the occasional neurosurgeon—all inspired by the fire within. From carved roots to embroidered rags, tattoos to toothpicks, ‘the visionary’ transforms dreams, loss, hopes, and ideals into powerful works of art. \\\"one of the most fantastic museums anywhere in America\\\" - CNN \\\"Best Muse...\"}}, {\"node_key\": \"Attraction::109078\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109078\", \"name\": \"B&O Railroad Museum\", \"City\": \"Baltimore\", \"subtype\": [\"Specialty Museums\", \"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 405 things to do in Baltimore\", \"address\": \"901 W Pratt St, Baltimore, MD 21223-2699\", \"description\": \"The B&O Railroad Museum, a full affiliate of the Smithsonian Institution and the birthplace of American Railroading, is home to the oldest, most comprehensive collection of railroad artifacts in the Western Hemisphere including an unparalleled roster of 19th and 20th century railroad equipment. You’ll enjoy exploring our expansive Museum campus, known as the Mount Clare Shops and Station and was the original railroading complex of the Baltimore and Ohio Railroad (B&O). Founded in 1827, the B&...\"}}, {\"node_key\": \"Attraction::109079\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109079\", \"name\": \"Baltimore Museum of Art\", \"City\": \"Baltimore\", \"subtype\": [\"Points of Interest & Landmarks\", \"Historic Sites\", \"Art Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 405 things to do in Baltimore\", \"address\": \"10 Art Museum Dr, Baltimore, MD 21218-3898\", \"description\": \"Over 100 years ago, The Baltimore Museum of Art (BMA) was founded on the belief that access to art and ideas is integral to a vibrant and healthy civic life. This belief is at the heart of the BMA and remains our core value. The BMA has long focused on acquiring the art of the present moment, while maintaining and deepening a historic collection made relevant through vigorous development and reinterpretation in all collecting areas. Through the courageous and risk-taking vision of previous Mu...\"}}, {\"node_key\": \"Restaurant::26263847.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"26263847.0\", \"name\": \"Toki Underground Baltimore\", \"City\": \"Baltimore\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Japanese\", \"Bar\", \"Asian\", \"Pub\", \"Dining bars\"], \"avg_cost\": \"40.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2731 Greenmount Avenue, Baltimore, MD 21218\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [], [], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2232358.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2232358.0\", \"name\": \"Thames Street Oyster House\", \"City\": \"Baltimore\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\", \"Seafood\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1728 Thames St, Baltimore, MD 21231-3416\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::3521060.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3521060.0\", \"name\": \"Miss Shirley's Cafe, Inner Harbor\", \"City\": \"Baltimore\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"750 E Pratt St Inner Harbor, Baltimore, MD 21202-3142\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::796061.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"796061.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\", \"City\": \"Baltimore\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Steakhouse\", \"Brazilian\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"600 E. Pratt St #102, Baltimore, MD 21202\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::439301.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"439301.0\", \"name\": \"Dalesio's of Little Italy Restaurant\", \"City\": \"Baltimore\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\", \"Northern-Italian\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"829 Eastern Ave Little Italy, Baltimore, MD 21202-4355\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::439092.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"439092.0\", \"name\": \"Charleston Restaurant\", \"City\": \"Baltimore\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"1000 Lancaster St, Baltimore, MD 21202-4631\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::485984.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"485984.0\", \"name\": \"Blue Moon Cafe\", \"City\": \"Baltimore\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Cafe\", \"International\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1621 Aliceanna St, Baltimore, MD 21231-2925\", \"hours\": {\"weekRanges\": [[{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::439234.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"439234.0\", \"name\": \"La Scala\", \"City\": \"Baltimore\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"64.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"1012 Eastern Ave., Baltimore, MD 21202-4326\", \"hours\": {\"weekRanges\": [[{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 990, \"openHours\": \"16:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1026365.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1026365.0\", \"name\": \"Nick's Fish House\", \"City\": \"Baltimore\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\", \"Seafood\", \"Balti\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"2600 Insulator Dr, Baltimore, MD 21230-5023\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::527381.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"527381.0\", \"name\": \"La Tavola\", \"City\": \"Baltimore\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Italian\", \"Seafood\"], \"avg_cost\": \"40.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"248 Albemarle St, Baltimore, MD 21202-4455\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7G8Pw\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7G8Pw\", \"name\": \"A Drag Queen Christmas 18+\", \"city\": \"Baltimore\", \"dateTitle\": \"15-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7G8Pw\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uIxK\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uIxK\", \"name\": \"Anthony Hamilton\", \"city\": \"Baltimore\", \"dateTitle\": \"15-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"R&B\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uIxK\", \"availabilityStarts\": \"2024-08-02T15:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7GN1a\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7GN1a\", \"name\": \"Average White Band\", \"city\": \"Baltimore\", \"dateTitle\": \"10-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7GN1a\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7G8Op\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7G8Op\", \"name\": \"Babymetal w/ Scene Queen\", \"city\": \"Baltimore\", \"dateTitle\": \"16-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7G8Op\", \"availabilityStarts\": \"2024-06-07T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uEPw\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uEPw\", \"name\": \"Cavetown w/ Frankie Cosmos\", \"city\": \"Baltimore\", \"dateTitle\": \"13-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uEPw\", \"availabilityStarts\": \"2024-08-01T15:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7CA17\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7CA17\", \"name\": \"Houndmouth\", \"city\": \"Baltimore\", \"dateTitle\": \"12-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7CA17\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7C9j8\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7C9j8\", \"name\": \"Jessie Murph\", \"city\": \"Baltimore\", \"dateTitle\": \"15-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7C9j8\", \"availabilityStarts\": \"2024-08-23T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7u_at\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u_at\", \"name\": \"Microwave\", \"city\": \"Baltimore\", \"dateTitle\": \"20-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u_at\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7CkC_\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7CkC_\", \"name\": \"Real Friends\", \"city\": \"Baltimore\", \"dateTitle\": \"19-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7CkC_\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7u4uZ\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u4uZ\", \"name\": \"Rudolph the Red-Nosed Reindeer\", \"city\": \"Baltimore\", \"dateTitle\": \"19-11-2024\", \"segmentName\": \"Arts & Theatre\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u4uZ\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 126.36}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 198.27}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 198.27}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 318.29}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 326.03}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 326.03}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::109078\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 336.11}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 346.04}, {\"source\": \"Restaurant::2232358.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 346.04}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::109078\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 356.2}, {\"source\": \"Accommodation::17326086.0\", \"target\": \"Attraction::109079\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 383.27}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 390.47}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 421.78}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 457.32}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 522.53}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 522.53}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 567.56}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 567.56}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 576.73}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 578.39}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 578.39}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 595.26}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 612.13}, {\"source\": \"Restaurant::485984.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 612.13}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 633.72}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 637.19}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 637.19}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 649.85}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 654.09}, {\"source\": \"Accommodation::17326086.0\", \"target\": \"Restaurant::26263847.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 664.51}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 666.05}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 681.11}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 681.11}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::109078\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 700.52}, {\"source\": \"Attraction::12093928\", \"target\": \"Restaurant::1026365.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 707.96}, {\"source\": \"Restaurant::1026365.0\", \"target\": \"Attraction::12093928\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 707.96}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 712.89}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 715.64}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 723.52}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 723.52}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 723.89}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 733.9}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 733.9}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 734.16}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 734.16}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 736.34}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 744.29}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 744.29}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 749.01}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 749.01}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 782.01}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 782.01}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 798.82}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 822.37}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 822.37}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 833.55}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 867.76}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 874.54}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 907.24}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 920.07}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 926.37}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 934.94}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 934.94}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 945.46}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 960.28}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 966.36}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 966.36}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1001.86}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1002.86}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1003.34}, {\"source\": \"Attraction::109079\", \"target\": \"Restaurant::26263847.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1003.58}, {\"source\": \"Restaurant::26263847.0\", \"target\": \"Attraction::109079\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1003.58}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1021.37}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1027.47}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1027.47}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1034.79}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1072.39}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1077.77}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1086.13}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1094.4}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1126.98}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1126.98}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1136.58}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1136.58}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1139.52}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1139.52}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1140.29}, {\"source\": \"Restaurant::485984.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1140.29}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1142.55}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1238.61}, {\"source\": \"Restaurant::485984.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1238.61}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1240.79}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1250.72}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1269.63}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1269.63}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1271.29}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1289.11}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1289.11}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1321.13}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1321.13}, {\"source\": \"Attraction::144284\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1328.34}, {\"source\": \"Restaurant::2232358.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1328.34}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1351.06}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1368.13}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1368.13}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1377.7}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1380.88}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1384.34}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1419.8}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1419.83}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1419.83}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1420.75}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1441.05}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1456.34}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1456.34}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1459.13}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1473.62}, {\"source\": \"Attraction::102859\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1488.73}, {\"source\": \"Restaurant::2232358.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1488.73}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1489.26}, {\"source\": \"Accommodation::159003.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1530.29}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1535.39}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1543.49}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1560.34}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::485984.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1616.04}, {\"source\": \"Restaurant::485984.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1616.04}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1622.71}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1625.59}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1632.62}, {\"source\": \"Restaurant::3521060.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1632.62}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1659.29}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1664.55}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1664.55}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1678.6}, {\"source\": \"Restaurant::527381.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1678.6}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1683.28}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1715.92}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1715.92}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1732.69}, {\"source\": \"Attraction::109074\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1778.29}, {\"source\": \"Restaurant::796061.0\", \"target\": \"Attraction::109074\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1778.29}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1780.87}, {\"source\": \"Restaurant::439301.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1780.87}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1796.08}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1833.94}, {\"source\": \"Attraction::261225\", \"target\": \"Restaurant::2232358.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1852.86}, {\"source\": \"Restaurant::2232358.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1852.86}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1853.0}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1866.5}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1866.5}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1876.24}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1879.34}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1879.37}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1880.01}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1880.01}, {\"source\": \"Attraction::104307\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1885.72}, {\"source\": \"Restaurant::439234.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1885.72}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1900.13}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1930.59}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::439301.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1951.77}, {\"source\": \"Accommodation::4663402.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1956.21}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1959.22}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1980.7}, {\"source\": \"Accommodation::5.71e+17\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2003.97}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Restaurant::796061.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2006.06}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Attraction::102859\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2008.02}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2016.31}, {\"source\": \"Accommodation::22261026.0\", \"target\": \"Attraction::144284\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2051.95}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Attraction::261225\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2065.05}, {\"source\": \"Attraction::103081\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2087.6}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2087.6}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::439234.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2118.24}, {\"source\": \"Accommodation::23257804.0\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2130.32}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Restaurant::527381.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2134.38}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Restaurant::26263847.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2154.98}, {\"source\": \"Accommodation::23358036.0\", \"target\": \"Attraction::103081\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2162.31}, {\"source\": \"Accommodation::47391963.0\", \"target\": \"Restaurant::3521060.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2174.75}, {\"source\": \"Attraction::12093928\", \"target\": \"Restaurant::439092.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2179.26}, {\"source\": \"Restaurant::439092.0\", \"target\": \"Attraction::12093928\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2179.26}, {\"source\": \"Accommodation::698917.0\", \"target\": \"Attraction::104307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2180.38}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1596848\", \"dep_time\": \"05:27\", \"arr_time\": \"06:54\", \"local_activity_start_after_arrival_buffer\": \"07:24\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2173319\", \"dep_time\": \"05:59\", \"arr_time\": \"07:24\", \"local_activity_start_after_arrival_buffer\": \"07:54\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3936081\", \"dep_time\": \"05:47\", \"arr_time\": \"07:13\", \"local_activity_start_after_arrival_buffer\": \"07:43\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0634980\", \"dep_time\": \"05:46\", \"arr_time\": \"07:17\", \"local_activity_start_after_arrival_buffer\": \"07:47\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0003275\", \"dep_time\": \"05:47\", \"arr_time\": \"07:29\", \"local_activity_start_after_arrival_buffer\": \"07:59\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2202336\", \"dep_time\": \"22:15\", \"arr_time\": \"23:49\", \"latest_local_activity_finish_before_airport_buffer\": \"20:15\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0640398\", \"dep_time\": \"21:52\", \"arr_time\": \"23:44\", \"latest_local_activity_finish_before_airport_buffer\": \"19:52\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1564948\", \"dep_time\": \"23:00\", \"arr_time\": \"00:29\", \"latest_local_activity_finish_before_airport_buffer\": \"21:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0009063\", \"dep_time\": \"22:45\", \"arr_time\": \"00:26\", \"latest_local_activity_finish_before_airport_buffer\": \"20:45\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2655098\", \"dep_time\": \"21:58\", \"arr_time\": \"23:40\", \"latest_local_activity_finish_before_airport_buffer\": \"19:58\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::3521060.0\", \"Restaurant::485984.0\"], \"lunch\": [\"Restaurant::26263847.0\", \"Restaurant::2232358.0\", \"Restaurant::3521060.0\", \"Restaurant::796061.0\", \"Restaurant::485984.0\", \"Restaurant::1026365.0\", \"Restaurant::527381.0\"], \"dinner\": [\"Restaurant::26263847.0\", \"Restaurant::2232358.0\", \"Restaurant::796061.0\", \"Restaurant::439301.0\", \"Restaurant::439092.0\", \"Restaurant::439234.0\", \"Restaurant::1026365.0\", \"Restaurant::527381.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::104307\", \"Attraction::103081\", \"Attraction::12093928\", \"Attraction::102859\", \"Attraction::261225\", \"Attraction::109069\", \"Attraction::109074\", \"Attraction::144284\", \"Attraction::109078\", \"Attraction::109079\"], \"afternoon_attraction\": [\"Attraction::104307\", \"Attraction::103081\", \"Attraction::12093928\", \"Attraction::102859\", \"Attraction::261225\", \"Attraction::109069\", \"Attraction::109074\", \"Attraction::144284\", \"Attraction::109078\", \"Attraction::109079\"]}, \"event_slots_by_date\": {\"2024-11-01\": [], \"2024-11-02\": [], \"2024-11-03\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::3521060.0\", \"name\": \"Miss Shirley's Cafe, Inner Harbor\"}, {\"node_key\": \"Restaurant::485984.0\", \"name\": \"Blue Moon Cafe\"}], \"lunch\": [{\"node_key\": \"Restaurant::26263847.0\", \"name\": \"Toki Underground Baltimore\"}, {\"node_key\": \"Restaurant::2232358.0\", \"name\": \"Thames Street Oyster House\"}, {\"node_key\": \"Restaurant::3521060.0\", \"name\": \"Miss Shirley's Cafe, Inner Harbor\"}, {\"node_key\": \"Restaurant::796061.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\"}, {\"node_key\": \"Restaurant::485984.0\", \"name\": \"Blue Moon Cafe\"}, {\"node_key\": \"Restaurant::1026365.0\", \"name\": \"Nick's Fish House\"}, {\"node_key\": \"Restaurant::527381.0\", \"name\": \"La Tavola\"}], \"dinner\": [{\"node_key\": \"Restaurant::26263847.0\", \"name\": \"Toki Underground Baltimore\"}, {\"node_key\": \"Restaurant::2232358.0\", \"name\": \"Thames Street Oyster House\"}, {\"node_key\": \"Restaurant::796061.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\"}, {\"node_key\": \"Restaurant::439301.0\", \"name\": \"Dalesio's of Little Italy Restaurant\"}, {\"node_key\": \"Restaurant::439092.0\", \"name\": \"Charleston Restaurant\"}, {\"node_key\": \"Restaurant::439234.0\", \"name\": \"La Scala\"}, {\"node_key\": \"Restaurant::1026365.0\", \"name\": \"Nick's Fish House\"}, {\"node_key\": \"Restaurant::527381.0\", \"name\": \"La Tavola\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-01\": [], \"2024-11-02\": [], \"2024-11-03\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-01\", \"required_slots\": {\"Flight::F1596848\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2173319\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3936081\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0634980\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0003275\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-02\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-03\", \"required_slots\": {\"Flight::F2202336\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0640398\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1564948\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0009063\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2655098\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-01\": [], \"2024-11-02\": [], \"2024-11-03\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_44",
+    "query_text": "Plan a 3-day trip for 1 person from Indianapolis to Baltimore from November 1st to November 3rd, 2024, with a budget of $1,500.",
+    "request": {
+      "org": "Indianapolis",
+      "dest": "Baltimore",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-01', '2024-11-02', '2024-11-03']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 1500,
+      "query": "Plan a 3-day trip for 1 person from Indianapolis to Baltimore from November 1st to November 3rd, 2024, with a budget of $1,500.",
+      "level": "easy",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; ; Spending Preference: Economical Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-01",
+      "2024-11-02",
+      "2024-11-03"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1596848",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Indianapolis",
+          "DestCityName": "Baltimore",
+          "DepTime": "05:27",
+          "ArrTime": "06:54",
+          "Price": 115
+        }
+      },
+      {
+        "node_key": "Flight::F2173319",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Indianapolis",
+          "DestCityName": "Baltimore",
+          "DepTime": "05:59",
+          "ArrTime": "07:24",
+          "Price": 133
+        }
+      },
+      {
+        "node_key": "Flight::F3936081",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Indianapolis",
+          "DestCityName": "Baltimore",
+          "DepTime": "05:47",
+          "ArrTime": "07:13",
+          "Price": 135
+        }
+      },
+      {
+        "node_key": "Flight::F0634980",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Indianapolis",
+          "DestCityName": "Baltimore",
+          "DepTime": "05:46",
+          "ArrTime": "07:17",
+          "Price": 141
+        }
+      },
+      {
+        "node_key": "Flight::F0003275",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Indianapolis",
+          "DestCityName": "Baltimore",
+          "DepTime": "05:47",
+          "ArrTime": "07:29",
+          "Price": 210
+        }
+      },
+      {
+        "node_key": "Flight::F2202336",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Baltimore",
+          "DestCityName": "Indianapolis",
+          "DepTime": "22:15",
+          "ArrTime": "23:49",
+          "Price": 117
+        }
+      },
+      {
+        "node_key": "Flight::F0640398",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Baltimore",
+          "DestCityName": "Indianapolis",
+          "DepTime": "21:52",
+          "ArrTime": "23:44",
+          "Price": 181
+        }
+      },
+      {
+        "node_key": "Flight::F1564948",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Baltimore",
+          "DestCityName": "Indianapolis",
+          "DepTime": "23:00",
+          "ArrTime": "00:29",
+          "Price": 191
+        }
+      },
+      {
+        "node_key": "Flight::F0009063",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Baltimore",
+          "DestCityName": "Indianapolis",
+          "DepTime": "22:45",
+          "ArrTime": "00:26",
+          "Price": 227
+        }
+      },
+      {
+        "node_key": "Flight::F2655098",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Baltimore",
+          "DestCityName": "Indianapolis",
+          "DepTime": "21:58",
+          "ArrTime": "23:40",
+          "Price": 230
+        }
+      },
+      {
+        "node_key": "Accommodation::4663402.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "4663402.0",
+          "name": "Notel 9 Getaway Suite with Sauna",
+          "City": "Baltimore",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$80 per night",
+            "originalPrice": null,
+            "price": "$80",
+            "qualifier": "night",
+            "total": "$398 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  386 reviews",
+            "localizedLabel": "4.96 (386)",
+            "average": 4.96,
+            "reviewsCount": 386
+          },
+          "coordinates": {
+            "latitude": 39.2881,
+            "longitude": -76.59081
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::159003.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "159003.0",
+          "name": "Secret Garden in the City",
+          "City": "Baltimore",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$139 per night",
+            "originalPrice": null,
+            "price": "$139",
+            "qualifier": "night",
+            "total": "$692 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  648 reviews",
+            "localizedLabel": "4.91 (648)",
+            "average": 4.91,
+            "reviewsCount": 648
+          },
+          "coordinates": {
+            "latitude": 39.2843,
+            "longitude": -76.5952
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::22261026.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "22261026.0",
+          "name": "Romantic Hot Tub Getaway, Walk to Fells Point",
+          "City": "Baltimore",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No children under 10 & No pets",
+          "pricing": {
+            "label": "$131 per night",
+            "originalPrice": null,
+            "price": "$131",
+            "qualifier": "night",
+            "total": "$652 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  625 reviews",
+            "localizedLabel": "4.95 (625)",
+            "average": 4.95,
+            "reviewsCount": 625
+          },
+          "coordinates": {
+            "latitude": 39.28921,
+            "longitude": -76.58592
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5.71e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.71e+17",
+          "name": "Cheerful room near UMB & Convention center, has TV",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$68 per night",
+            "originalPrice": null,
+            "price": "$68",
+            "qualifier": "night",
+            "total": "$339 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  62 reviews",
+            "localizedLabel": "4.9 (62)",
+            "average": 4.9,
+            "reviewsCount": 62
+          },
+          "coordinates": {
+            "latitude": 39.28594,
+            "longitude": -76.62852
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::49749736.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "49749736.0",
+          "name": "Large comfortable space w/ private entrance & bath",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$52 per night",
+            "originalPrice": null,
+            "price": "$52",
+            "qualifier": "night",
+            "total": "$257 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  132 reviews",
+            "localizedLabel": "4.95 (132)",
+            "average": 4.95,
+            "reviewsCount": 132
+          },
+          "coordinates": {
+            "latitude": 39.35488,
+            "longitude": -76.56778
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::23257804.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "23257804.0",
+          "name": "Private ❤️ Love Nest ❤️ Downtown near Inner Harbor",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$73 per night",
+            "originalPrice": null,
+            "price": "$73",
+            "qualifier": "night",
+            "total": "$365 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  473 reviews",
+            "localizedLabel": "4.91 (473)",
+            "average": 4.91,
+            "reviewsCount": 473
+          },
+          "coordinates": {
+            "latitude": 39.2857,
+            "longitude": -76.62448
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::698917.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "698917.0",
+          "name": "Guesthouse Bedroom 2/Private Parking - Mt. Vernon",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$132 per night",
+            "originalPrice": null,
+            "price": "$132",
+            "qualifier": "night",
+            "total": "$657 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  677 reviews",
+            "localizedLabel": "4.97 (677)",
+            "average": 4.97,
+            "reviewsCount": 677
+          },
+          "coordinates": {
+            "latitude": 39.30273,
+            "longitude": -76.61493
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::47391963.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "47391963.0",
+          "name": "Cozy loft in great location",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$62 per night, originally $68",
+            "originalPrice": "$68",
+            "price": "$62",
+            "qualifier": "night",
+            "total": "$308 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  147 reviews",
+            "localizedLabel": "4.93 (147)",
+            "average": 4.93,
+            "reviewsCount": 147
+          },
+          "coordinates": {
+            "latitude": 39.28319,
+            "longitude": -76.63005
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::23358036.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "23358036.0",
+          "name": "Private Queen Suite (B) Fells and Hopkins Medical",
+          "City": "Baltimore",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$63 per night, originally $75",
+            "originalPrice": "$75",
+            "price": "$63",
+            "qualifier": "night",
+            "total": "$313 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  440 reviews",
+            "localizedLabel": "4.98 (440)",
+            "average": 4.98,
+            "reviewsCount": 440
+          },
+          "coordinates": {
+            "latitude": 39.28923,
+            "longitude": -76.59314
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::17326086.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "17326086.0",
+          "name": "Entire Comfy Studio @Charles Village -5min frm JHU",
+          "City": "Baltimore",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$89 per night, originally $99",
+            "originalPrice": "$99",
+            "price": "$89",
+            "qualifier": "night",
+            "total": "$443 total"
+          },
+          "rating": {
+            "label": "4.69 out of 5 average rating,  425 reviews",
+            "localizedLabel": "4.69 (425)",
+            "average": 4.69,
+            "reviewsCount": 425
+          },
+          "coordinates": {
+            "latitude": 39.32344,
+            "longitude": -76.61663
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::104307",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104307",
+          "name": "Oriole Park at Camden Yards",
+          "City": "Baltimore",
+          "subtype": [
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#6 of 405 things to do in Baltimore",
+          "address": "333 W Camden St, Baltimore, MD 21201-2435",
+          "description": "One of major league baseball's newest stadiums, the Orioles' home field has the intimate feel and charm of an old-fashioned park."
+        }
+      },
+      {
+        "node_key": "Attraction::103081",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103081",
+          "name": "The Walters Art Museum",
+          "City": "Baltimore",
+          "subtype": [
+            "Art Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#3 of 405 things to do in Baltimore",
+          "address": "600 N Charles St, Baltimore, MD 21201-5118",
+          "description": "The Walters Art Museum is a cultural hub in the heart of Baltimore. Located in the city’s Mount Vernon neighborhood, the Walters is free for all. The museum’s collection spans more than seven millennia, from 5,000 BCE to the 21st century, and encompasses 36,000 objects from around the world. Walking through the museum’s historic buildings, visitors encounter a stunning panorama of thousands of years of art, from romantic 19th-century images of French gardens to mesmerizing Ethiopian icons, ri..."
+        }
+      },
+      {
+        "node_key": "Attraction::12093928",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "12093928",
+          "name": "Sagamore Spirit Distillery",
+          "City": "Baltimore",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#2 of 405 things to do in Baltimore",
+          "address": "301 E Cromwell St, Baltimore, MD 21230-5012",
+          "description": "The Sagamore Spirit Distillery is open Wednesday through Sunday for guided distillery tours and rye whiskey tastings. Located in the heart of Baltimore's Port Covington neighborhood with stunning waterfront views, Sagamore Spirit also offers a full calendar of indoor and outdoor events, including cocktail classes, glass blowing, and waterfront yoga. Sagamore Spirit is recognized internationally for their American Straight Rye Whiskies and is the recipient of over 100 awards for excellence in ..."
+        }
+      },
+      {
+        "node_key": "Attraction::102859",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "102859",
+          "name": "National Aquarium",
+          "City": "Baltimore",
+          "subtype": [
+            "Aquariums"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#23 of 405 things to do in Baltimore",
+          "address": "501 E Pratt St, Baltimore, MD 21202-3194",
+          "description": "Considered one of the world's best aquariums, the National Aquarium's mission is to inspire conservation of the world's aquatic treasures. It champions environmental initiatives by engaging with visitors, volunteers, education groups and schools to actively participate in the preservation of the world's natural resources and living systems. The National Aquarium delivers meaningful experiences through its living collection of more than 20,000 animals from more than 800 species of fish, birds,..."
+        }
+      },
+      {
+        "node_key": "Attraction::261225",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "261225",
+          "name": "Inner Harbor",
+          "City": "Baltimore",
+          "subtype": [
+            "Marinas"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#26 of 405 things to do in Baltimore",
+          "address": "Baltimore, MD 21202",
+          "description": "As one of America's oldest seaports, Inner Harbor is now an important landmark and popular tourist destination. Follow the brick promenade through this bustling complex of eateries, stores, museums and entertainment venues. Rent a paddle boat to have some fun in the water with the kids, or take them to the National Aquarium which is one of the nation’s largest. History buffs will enjoy touring the heritage ships anchored in the harbor, while travelers of all ages can soak up the marvelous vie..."
+        }
+      },
+      {
+        "node_key": "Attraction::109069",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109069",
+          "name": "Fort McHenry National Monument And Historic Shrine",
+          "City": "Baltimore",
+          "subtype": [
+            "Monuments & Statues",
+            "National Parks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#4 of 405 things to do in Baltimore",
+          "address": "2400 East Fort Avenue, Baltimore, MD 21230-5390",
+          "description": "A unit of the National Park Service. Site of the Battle of Baltimore during the War of 1812, where Francis Scott Key was inspired to pen \"The Star-Spangled Banner\" in September of 1814."
+        }
+      },
+      {
+        "node_key": "Attraction::109074",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109074",
+          "name": "Fell's Point",
+          "City": "Baltimore",
+          "subtype": [
+            "Neighborhoods",
+            "Historic Walking Areas"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Other"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#10 of 405 things to do in Baltimore",
+          "address": "Fell St, Baltimore, MD 21231",
+          "description": "Dating back to the 18th century, this charming Baltimore district has cobblestone streets and a thriving culture by the waterfront. Wander through its quaint streets as you discover craft and antique shops, coffee houses and art galleries, then treat yourself to fresh seafood or a yummy burger at the Broadway Market. After dark, more than 100 pubs await you. Fell’s Point is a short drive from downtown Baltimore, but you can take a water taxi from the Inner Harbor for a more unique experience...."
+        }
+      },
+      {
+        "node_key": "Attraction::144284",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144284",
+          "name": "American Visionary Art Museum",
+          "City": "Baltimore",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#9 of 405 things to do in Baltimore",
+          "address": "800 Key Hwy, Baltimore, MD 21230-3940",
+          "description": "The American Visionary Art Museum is the nation's museum for self-taught, intuitive artistry. Three historic buildings house wonders created by farmers, housewives, mechanics, the disabled, the homeless, as well as the occasional neurosurgeon—all inspired by the fire within. From carved roots to embroidered rags, tattoos to toothpicks, ‘the visionary’ transforms dreams, loss, hopes, and ideals into powerful works of art. \"one of the most fantastic museums anywhere in America\" - CNN \"Best Muse..."
+        }
+      },
+      {
+        "node_key": "Attraction::109078",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109078",
+          "name": "B&O Railroad Museum",
+          "City": "Baltimore",
+          "subtype": [
+            "Specialty Museums",
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#13 of 405 things to do in Baltimore",
+          "address": "901 W Pratt St, Baltimore, MD 21223-2699",
+          "description": "The B&O Railroad Museum, a full affiliate of the Smithsonian Institution and the birthplace of American Railroading, is home to the oldest, most comprehensive collection of railroad artifacts in the Western Hemisphere including an unparalleled roster of 19th and 20th century railroad equipment. You’ll enjoy exploring our expansive Museum campus, known as the Mount Clare Shops and Station and was the original railroading complex of the Baltimore and Ohio Railroad (B&O). Founded in 1827, the B&..."
+        }
+      },
+      {
+        "node_key": "Attraction::109079",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109079",
+          "name": "Baltimore Museum of Art",
+          "City": "Baltimore",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Historic Sites",
+            "Art Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#7 of 405 things to do in Baltimore",
+          "address": "10 Art Museum Dr, Baltimore, MD 21218-3898",
+          "description": "Over 100 years ago, The Baltimore Museum of Art (BMA) was founded on the belief that access to art and ideas is integral to a vibrant and healthy civic life. This belief is at the heart of the BMA and remains our core value. The BMA has long focused on acquiring the art of the present moment, while maintaining and deepening a historic collection made relevant through vigorous development and reinterpretation in all collecting areas. Through the courageous and risk-taking vision of previous Mu..."
+        }
+      },
+      {
+        "node_key": "Restaurant::26263847.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "26263847.0",
+          "name": "Toki Underground Baltimore",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Japanese",
+            "Bar",
+            "Asian",
+            "Pub",
+            "Dining bars"
+          ],
+          "avg_cost": "40.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "2731 Greenmount Avenue, Baltimore, MD 21218",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2232358.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2232358.0",
+          "name": "Thames Street Oyster House",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Seafood"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1728 Thames St, Baltimore, MD 21231-3416",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3521060.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3521060.0",
+          "name": "Miss Shirley's Cafe, Inner Harbor",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "750 E Pratt St Inner Harbor, Baltimore, MD 21202-3142",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::796061.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "796061.0",
+          "name": "Fogo de Chao Brazilian Steakhouse",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Brazilian"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "600 E. Pratt St #102, Baltimore, MD 21202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::439301.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "439301.0",
+          "name": "Dalesio's of Little Italy Restaurant",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "Northern-Italian"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "829 Eastern Ave Little Italy, Baltimore, MD 21202-4355",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::439092.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "439092.0",
+          "name": "Charleston Restaurant",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "1000 Lancaster St, Baltimore, MD 21202-4631",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::485984.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "485984.0",
+          "name": "Blue Moon Cafe",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe",
+            "International"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1621 Aliceanna St, Baltimore, MD 21231-2925",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 0,
+                  "openHours": "00:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 0,
+                  "openHours": "00:00",
+                  "close": 1439,
+                  "closeHours": "23:59"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::439234.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "439234.0",
+          "name": "La Scala",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "64.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "1012 Eastern Ave., Baltimore, MD 21202-4326",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1026365.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1026365.0",
+          "name": "Nick's Fish House",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Seafood",
+            "Balti"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "2600 Insulator Dr, Baltimore, MD 21230-5023",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::527381.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "527381.0",
+          "name": "La Tavola",
+          "City": "Baltimore",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "Seafood"
+          ],
+          "avg_cost": "40.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "248 Albemarle St, Baltimore, MD 21202-4455",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7G8Pw",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7G8Pw",
+          "name": "A Drag Queen Christmas 18+",
+          "city": "Baltimore",
+          "dateTitle": "15-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7G8Pw",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uIxK",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uIxK",
+          "name": "Anthony Hamilton",
+          "city": "Baltimore",
+          "dateTitle": "15-11-2024",
+          "segmentName": "Music",
+          "genreName": "R&B",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uIxK",
+            "availabilityStarts": "2024-08-02T15:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7GN1a",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7GN1a",
+          "name": "Average White Band",
+          "city": "Baltimore",
+          "dateTitle": "10-11-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7GN1a",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7G8Op",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7G8Op",
+          "name": "Babymetal w/ Scene Queen",
+          "city": "Baltimore",
+          "dateTitle": "16-11-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7G8Op",
+            "availabilityStarts": "2024-06-07T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uEPw",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uEPw",
+          "name": "Cavetown w/ Frankie Cosmos",
+          "city": "Baltimore",
+          "dateTitle": "13-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uEPw",
+            "availabilityStarts": "2024-08-01T15:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7CA17",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7CA17",
+          "name": "Houndmouth",
+          "city": "Baltimore",
+          "dateTitle": "12-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7CA17",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7C9j8",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7C9j8",
+          "name": "Jessie Murph",
+          "city": "Baltimore",
+          "dateTitle": "15-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7C9j8",
+            "availabilityStarts": "2024-08-23T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u_at",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u_at",
+          "name": "Microwave",
+          "city": "Baltimore",
+          "dateTitle": "20-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u_at",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7CkC_",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7CkC_",
+          "name": "Real Friends",
+          "city": "Baltimore",
+          "dateTitle": "19-11-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7CkC_",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u4uZ",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u4uZ",
+          "name": "Rudolph the Red-Nosed Reindeer",
+          "city": "Baltimore",
+          "dateTitle": "19-11-2024",
+          "segmentName": "Arts & Theatre",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u4uZ",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 126.36
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 198.27
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 198.27
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 318.29
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 326.03
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 326.03
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::109078",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 336.11
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 346.04
+      },
+      {
+        "source": "Restaurant::2232358.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 346.04
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::109078",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 356.2
+      },
+      {
+        "source": "Accommodation::17326086.0",
+        "target": "Attraction::109079",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 383.27
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 390.47
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 421.78
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 457.32
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 522.53
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 522.53
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 567.56
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 567.56
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 576.73
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 578.39
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 578.39
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 595.26
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 612.13
+      },
+      {
+        "source": "Restaurant::485984.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 612.13
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 633.72
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 637.19
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 637.19
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 649.85
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 654.09
+      },
+      {
+        "source": "Accommodation::17326086.0",
+        "target": "Restaurant::26263847.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 664.51
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 666.05
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 681.11
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 681.11
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::109078",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 700.52
+      },
+      {
+        "source": "Attraction::12093928",
+        "target": "Restaurant::1026365.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 707.96
+      },
+      {
+        "source": "Restaurant::1026365.0",
+        "target": "Attraction::12093928",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 707.96
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 712.89
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 715.64
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 723.52
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 723.52
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 723.89
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 733.9
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 733.9
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 734.16
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 734.16
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 736.34
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 744.29
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 744.29
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 749.01
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 749.01
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 782.01
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 782.01
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 798.82
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 822.37
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 822.37
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 833.55
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 867.76
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 874.54
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 907.24
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 920.07
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 926.37
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 934.94
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 934.94
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 945.46
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 960.28
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 966.36
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 966.36
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1001.86
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1002.86
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1003.34
+      },
+      {
+        "source": "Attraction::109079",
+        "target": "Restaurant::26263847.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1003.58
+      },
+      {
+        "source": "Restaurant::26263847.0",
+        "target": "Attraction::109079",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1003.58
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1021.37
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1027.47
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1027.47
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1034.79
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1072.39
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1077.77
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1086.13
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1094.4
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1126.98
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1126.98
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1136.58
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1136.58
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1139.52
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1139.52
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1140.29
+      },
+      {
+        "source": "Restaurant::485984.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1140.29
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1142.55
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1238.61
+      },
+      {
+        "source": "Restaurant::485984.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1238.61
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1240.79
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1250.72
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1269.63
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1269.63
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1271.29
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1289.11
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1289.11
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1321.13
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1321.13
+      },
+      {
+        "source": "Attraction::144284",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1328.34
+      },
+      {
+        "source": "Restaurant::2232358.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1328.34
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1351.06
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1368.13
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1368.13
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1377.7
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1380.88
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1384.34
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1419.8
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1419.83
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1419.83
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1420.75
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1441.05
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1456.34
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1456.34
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1459.13
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1473.62
+      },
+      {
+        "source": "Attraction::102859",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1488.73
+      },
+      {
+        "source": "Restaurant::2232358.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1488.73
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1489.26
+      },
+      {
+        "source": "Accommodation::159003.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1530.29
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1535.39
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1543.49
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1560.34
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::485984.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1616.04
+      },
+      {
+        "source": "Restaurant::485984.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1616.04
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1622.71
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1625.59
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1632.62
+      },
+      {
+        "source": "Restaurant::3521060.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1632.62
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1659.29
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1664.55
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1664.55
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1678.6
+      },
+      {
+        "source": "Restaurant::527381.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1678.6
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1683.28
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1715.92
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1715.92
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1732.69
+      },
+      {
+        "source": "Attraction::109074",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1778.29
+      },
+      {
+        "source": "Restaurant::796061.0",
+        "target": "Attraction::109074",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1778.29
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1780.87
+      },
+      {
+        "source": "Restaurant::439301.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1780.87
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1796.08
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1833.94
+      },
+      {
+        "source": "Attraction::261225",
+        "target": "Restaurant::2232358.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1852.86
+      },
+      {
+        "source": "Restaurant::2232358.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1852.86
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1853.0
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1866.5
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1866.5
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1876.24
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1879.34
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1879.37
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1880.01
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1880.01
+      },
+      {
+        "source": "Attraction::104307",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1885.72
+      },
+      {
+        "source": "Restaurant::439234.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1885.72
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1900.13
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1930.59
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::439301.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1951.77
+      },
+      {
+        "source": "Accommodation::4663402.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1956.21
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1959.22
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1980.7
+      },
+      {
+        "source": "Accommodation::5.71e+17",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2003.97
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Restaurant::796061.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2006.06
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Attraction::102859",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2008.02
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2016.31
+      },
+      {
+        "source": "Accommodation::22261026.0",
+        "target": "Attraction::144284",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2051.95
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Attraction::261225",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2065.05
+      },
+      {
+        "source": "Attraction::103081",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2087.6
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2087.6
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::439234.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2118.24
+      },
+      {
+        "source": "Accommodation::23257804.0",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2130.32
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Restaurant::527381.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2134.38
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Restaurant::26263847.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2154.98
+      },
+      {
+        "source": "Accommodation::23358036.0",
+        "target": "Attraction::103081",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2162.31
+      },
+      {
+        "source": "Accommodation::47391963.0",
+        "target": "Restaurant::3521060.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2174.75
+      },
+      {
+        "source": "Attraction::12093928",
+        "target": "Restaurant::439092.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2179.26
+      },
+      {
+        "source": "Restaurant::439092.0",
+        "target": "Attraction::12093928",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2179.26
+      },
+      {
+        "source": "Accommodation::698917.0",
+        "target": "Attraction::104307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2180.38
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-01",
+        "2024-11-02",
+        "2024-11-03"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1596848",
+          "dep_time": "05:27",
+          "arr_time": "06:54",
+          "local_activity_start_after_arrival_buffer": "07:24",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2173319",
+          "dep_time": "05:59",
+          "arr_time": "07:24",
+          "local_activity_start_after_arrival_buffer": "07:54",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3936081",
+          "dep_time": "05:47",
+          "arr_time": "07:13",
+          "local_activity_start_after_arrival_buffer": "07:43",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0634980",
+          "dep_time": "05:46",
+          "arr_time": "07:17",
+          "local_activity_start_after_arrival_buffer": "07:47",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0003275",
+          "dep_time": "05:47",
+          "arr_time": "07:29",
+          "local_activity_start_after_arrival_buffer": "07:59",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2202336",
+          "dep_time": "22:15",
+          "arr_time": "23:49",
+          "latest_local_activity_finish_before_airport_buffer": "20:15",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0640398",
+          "dep_time": "21:52",
+          "arr_time": "23:44",
+          "latest_local_activity_finish_before_airport_buffer": "19:52",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1564948",
+          "dep_time": "23:00",
+          "arr_time": "00:29",
+          "latest_local_activity_finish_before_airport_buffer": "21:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0009063",
+          "dep_time": "22:45",
+          "arr_time": "00:26",
+          "latest_local_activity_finish_before_airport_buffer": "20:45",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2655098",
+          "dep_time": "21:58",
+          "arr_time": "23:40",
+          "latest_local_activity_finish_before_airport_buffer": "19:58",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::3521060.0",
+          "Restaurant::485984.0"
+        ],
+        "lunch": [
+          "Restaurant::26263847.0",
+          "Restaurant::2232358.0",
+          "Restaurant::3521060.0",
+          "Restaurant::796061.0",
+          "Restaurant::485984.0",
+          "Restaurant::1026365.0",
+          "Restaurant::527381.0"
+        ],
+        "dinner": [
+          "Restaurant::26263847.0",
+          "Restaurant::2232358.0",
+          "Restaurant::796061.0",
+          "Restaurant::439301.0",
+          "Restaurant::439092.0",
+          "Restaurant::439234.0",
+          "Restaurant::1026365.0",
+          "Restaurant::527381.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::104307",
+          "Attraction::103081",
+          "Attraction::12093928",
+          "Attraction::102859",
+          "Attraction::261225",
+          "Attraction::109069",
+          "Attraction::109074",
+          "Attraction::144284",
+          "Attraction::109078",
+          "Attraction::109079"
+        ],
+        "afternoon_attraction": [
+          "Attraction::104307",
+          "Attraction::103081",
+          "Attraction::12093928",
+          "Attraction::102859",
+          "Attraction::261225",
+          "Attraction::109069",
+          "Attraction::109074",
+          "Attraction::144284",
+          "Attraction::109078",
+          "Attraction::109079"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-01": [],
+        "2024-11-02": [],
+        "2024-11-03": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::3521060.0",
+            "name": "Miss Shirley's Cafe, Inner Harbor"
+          },
+          {
+            "node_key": "Restaurant::485984.0",
+            "name": "Blue Moon Cafe"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::26263847.0",
+            "name": "Toki Underground Baltimore"
+          },
+          {
+            "node_key": "Restaurant::2232358.0",
+            "name": "Thames Street Oyster House"
+          },
+          {
+            "node_key": "Restaurant::3521060.0",
+            "name": "Miss Shirley's Cafe, Inner Harbor"
+          },
+          {
+            "node_key": "Restaurant::796061.0",
+            "name": "Fogo de Chao Brazilian Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::485984.0",
+            "name": "Blue Moon Cafe"
+          },
+          {
+            "node_key": "Restaurant::1026365.0",
+            "name": "Nick's Fish House"
+          },
+          {
+            "node_key": "Restaurant::527381.0",
+            "name": "La Tavola"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::26263847.0",
+            "name": "Toki Underground Baltimore"
+          },
+          {
+            "node_key": "Restaurant::2232358.0",
+            "name": "Thames Street Oyster House"
+          },
+          {
+            "node_key": "Restaurant::796061.0",
+            "name": "Fogo de Chao Brazilian Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::439301.0",
+            "name": "Dalesio's of Little Italy Restaurant"
+          },
+          {
+            "node_key": "Restaurant::439092.0",
+            "name": "Charleston Restaurant"
+          },
+          {
+            "node_key": "Restaurant::439234.0",
+            "name": "La Scala"
+          },
+          {
+            "node_key": "Restaurant::1026365.0",
+            "name": "Nick's Fish House"
+          },
+          {
+            "node_key": "Restaurant::527381.0",
+            "name": "La Tavola"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-01": [],
+        "2024-11-02": [],
+        "2024-11-03": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-01",
+          "required_slots": {
+            "Flight::F1596848": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2173319": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3936081": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0634980": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0003275": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-02",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-03",
+          "required_slots": {
+            "Flight::F2202336": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0640398": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1564948": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0009063": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2655098": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-01": [],
+      "2024-11-02": [],
+      "2024-11-03": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

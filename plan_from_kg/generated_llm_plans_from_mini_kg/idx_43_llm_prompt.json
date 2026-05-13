@@ -1,0 +1,3054 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_43\", \"query_text\": \"Plan a 3-day trip for 8 people from Washington to Savannah from November 12th to November 14th, 2024, with a budget of $7,200. The trip should avoid flights and adhere to house rules prohibiting parties.\", \"request\": {\"org\": \"Washington\", \"dest\": \"Savannah\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-12', '2024-11-13', '2024-11-14']\", \"people_number\": 8, \"local_constraint\": \"{'house rule': 'parties', 'cuisine': None, 'room type': None, 'transportation': 'no flight', 'event': None, 'attraction': None}\", \"budget\": 7200, \"query\": \"Plan a 3-day trip for 8 people from Washington to Savannah from November 12th to November 14th, 2024, with a budget of $7,200. The trip should avoid flights and adhere to house rules prohibiting parties.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-12\", \"2024-11-13\", \"2024-11-14\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": \"parties\", \"cuisine\": null, \"room type\": null, \"transportation\": \"no flight\", \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F3060560\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-12\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Savannah\", \"DepTime\": \"08:20\", \"ArrTime\": \"10:05\", \"Price\": 148}}, {\"node_key\": \"Flight::F0107683\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-12\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Savannah\", \"DepTime\": \"08:32\", \"ArrTime\": \"10:14\", \"Price\": 159}}, {\"node_key\": \"Flight::F1702144\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-12\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Savannah\", \"DepTime\": \"08:22\", \"ArrTime\": \"10:27\", \"Price\": 176}}, {\"node_key\": \"Flight::F0947466\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-12\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Savannah\", \"DepTime\": \"08:27\", \"ArrTime\": \"10:21\", \"Price\": 210}}, {\"node_key\": \"Flight::F1864207\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-12\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Savannah\", \"DepTime\": \"08:23\", \"ArrTime\": \"10:49\", \"Price\": 254}}, {\"node_key\": \"Flight::F1703928\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-14\", \"OriginCityName\": \"Savannah\", \"DestCityName\": \"Washington\", \"DepTime\": \"20:18\", \"ArrTime\": \"22:15\", \"Price\": 105}}, {\"node_key\": \"Flight::F2757266\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-14\", \"OriginCityName\": \"Savannah\", \"DestCityName\": \"Washington\", \"DepTime\": \"20:22\", \"ArrTime\": \"21:58\", \"Price\": 130}}, {\"node_key\": \"Flight::F3783124\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-14\", \"OriginCityName\": \"Savannah\", \"DestCityName\": \"Washington\", \"DepTime\": \"20:09\", \"ArrTime\": \"22:16\", \"Price\": 182}}, {\"node_key\": \"Flight::F0431946\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-14\", \"OriginCityName\": \"Savannah\", \"DestCityName\": \"Washington\", \"DepTime\": \"20:20\", \"ArrTime\": \"22:18\", \"Price\": 212}}, {\"node_key\": \"Flight::F0949602\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-14\", \"OriginCityName\": \"Savannah\", \"DestCityName\": \"Washington\", \"DepTime\": \"19:46\", \"ArrTime\": \"21:43\", \"Price\": 237}}, {\"node_key\": \"Accommodation::9.51e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.51e+17\", \"name\": \"Timeless, Reimagined Cottage | Midnight Garden Inn\", \"City\": \"Savannah\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No children under 10 & No parties\", \"pricing\": {\"label\": \"$314 per night\", \"originalPrice\": null, \"price\": \"$314\", \"qualifier\": \"night\", \"total\": \"$1,570 total\"}, \"rating\": {\"label\": \"4.9 out of 5 average rating,  105 reviews\", \"localizedLabel\": \"4.9 (105)\", \"average\": 4.9, \"reviewsCount\": 105}, \"coordinates\": {\"latitude\": 32.07063, \"longitude\": -81.09535}}}, {\"node_key\": \"Accommodation::52610724.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"52610724.0\", \"name\": \"King Bed, Very Walkable Location!  By FREE Shuttle\", \"City\": \"Savannah\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$71 per night, originally $76\", \"originalPrice\": \"$76\", \"price\": \"$71\", \"qualifier\": \"night\", \"total\": \"$352 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  119 reviews\", \"localizedLabel\": \"4.94 (119)\", \"average\": 4.94, \"reviewsCount\": 119}, \"coordinates\": {\"latitude\": 32.05977, \"longitude\": -81.09634}}}, {\"node_key\": \"Accommodation::21715417.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21715417.0\", \"name\": \"Starlander Ltd.: The Coffee Suite, w/ private bath\", \"City\": \"Savannah\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$94 per night, originally $112\", \"originalPrice\": \"$112\", \"price\": \"$94\", \"qualifier\": \"night\", \"total\": \"$467 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  505 reviews\", \"localizedLabel\": \"4.95 (505)\", \"average\": 4.95, \"reviewsCount\": 505}, \"coordinates\": {\"latitude\": 32.053958892822266, \"longitude\": -81.0968246459961}}}, {\"node_key\": \"Attraction::181706\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"181706\", \"name\": \"Savannah Historic District\", \"City\": \"Savannah\", \"subtype\": [\"Historic Walking Areas\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 240 things to do in Savannah\", \"address\": \"301 Martin Luther King Jr Blvd, Savannah, GA 31401-4217\", \"description\": \"Savannah's picturesque historic district brings the traditional southern atmosphere to life.\"}}, {\"node_key\": \"Attraction::103143\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103143\", \"name\": \"Cathedral of St. John the Baptist\", \"City\": \"Savannah\", \"subtype\": [\"Sacred & Religious Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#5 of 240 things to do in Savannah\", \"address\": \"222 E Harris St, Savannah, GA 31401-4616\", \"description\": \"The oldest Roman Catholic church in Georgia.\"}}, {\"node_key\": \"Attraction::1144712\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1144712\", \"name\": \"Historic Savannah Theatre\", \"City\": \"Savannah\", \"subtype\": [\"Theaters\"], \"subcategories\": [\"Concerts & Shows\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#6 of 240 things to do in Savannah\", \"address\": \"222 Bull St Chippewa Square, Savannah, GA 31401-3927\", \"description\": \"America’s oldest theatre, originally built in 1818. Nightly high-energy performances with a live band and singers! Also, late-night paranormal investigations with skilled paranormal investigators just like you see on TV.\"}}, {\"node_key\": \"Attraction::1117705\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1117705\", \"name\": \"Congregation Mickve Israel\", \"City\": \"Savannah\", \"subtype\": [\"Sacred & Religious Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#8 of 240 things to do in Savannah\", \"address\": \"20 E Gordon St, Savannah, GA 31401\", \"description\": \"The third oldest Jewish congregation and the only neo-gothic Jewish sanctuary in the U. S. We host services every Friday & Saturday Shabbat and Jewish holidays. See our website for calendar of events. We offer tours Mon - Fri at 10am, 11am, 1:30pm & 2:30pm (except holidays) that include our historic sanctuary and museum with many historic artifacts including two Torahs written in the 1400's (probably the oldest in the U.S.).\"}}, {\"node_key\": \"Attraction::19048979\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"19048979\", \"name\": \"SCADstory\", \"City\": \"Savannah\", \"subtype\": [\"Specialty Museums\", \"Educational sites\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#7 of 240 things to do in Savannah\", \"address\": \"342 Bull St, Savannah, GA 31401-4518\", \"description\": \"Haven't you ever dreamed an impossible dream? Step into SCADstory - an immersive 4D experience that tells a universal tale of the dreamer in us all. SCADstory carries guests on an unexpected journey through SCAD history, across four decades of beauty, design, and invention. With the magic of 25 SCAD disciplines - from animation to themed entertainment design - this is a journey like no other.\"}}, {\"node_key\": \"Attraction::4776939\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"4776939\", \"name\": \"Pin Point Heritage Museum\", \"City\": \"Savannah\", \"subtype\": [\"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#4 of 240 things to do in Savannah\", \"address\": \"9924 Pin Point Avenue, Savannah, GA 31406-8565\", \"description\": \"Located in the former A.S. Varn & Son Oyster and Crab Factory, guests can discover the Gullah/Geechee culture and unique lifeways, from daily life to religion, language, and food directly from residents who grew up in the small, close-knit community. Open Thursday-Saturday from 9am to 4pm.\"}}, {\"node_key\": \"Attraction::8723962\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8723962\", \"name\": \"Webb Military Museum\", \"City\": \"Savannah\", \"subtype\": [\"Military Museums\", \"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#3 of 240 things to do in Savannah\", \"address\": \"411 E York St, Savannah, GA 31401-3816\"}}, {\"node_key\": \"Attraction::259614\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"259614\", \"name\": \"Forsyth Park\", \"City\": \"Savannah\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 240 things to do in Savannah\", \"address\": \"Savannah, GA 31401\"}}, {\"node_key\": \"Attraction::1090246\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1090246\", \"name\": \"Historic River Street\", \"City\": \"Savannah\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#34 of 240 things to do in Savannah\", \"address\": \"River St., Savannah, GA 31401\"}}, {\"node_key\": \"Attraction::103148\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103148\", \"name\": \"Bonaventure Cemetery\", \"City\": \"Savannah\", \"subtype\": [\"Cemeteries\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#14 of 240 things to do in Savannah\", \"address\": \"330 Bonaventure Rd, Savannah, GA 31404-3295\", \"description\": \"Bonaventure Cemetery was developed on the historically-significant site of Bonaventure Plantation. The peaceful setting rests on a scenic bluff of the Wilmington River, east of Savannah. The site was purchased for a private cemetery in 1846 and became a public cemetery in 1907. Citizens and others can still purchase interment rights in Bonaventure. This charming site has been a world famous tourist destination for more than 150 years due to the old tree-lined roadways, the many notable person...\"}}, {\"node_key\": \"Restaurant::509715.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"509715.0\", \"name\": \"Olde Pink House Restaurant\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"52.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"23 Abercorn Street, Savannah, GA 31401-2713\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::606511.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"606511.0\", \"name\": \"Vic's On the River\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"26 E Bay St, Savannah, GA 31401-1218\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::436974.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"436974.0\", \"name\": \"Mrs. Wilkes Dining Room\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"107 West Jones St, Savannah, GA 31401-4507\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}], []], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1580303.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1580303.0\", \"name\": \"Crystal Beer Parlor\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Bar\", \"Pub\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"301 W Jones St, Savannah, GA 31401-4252\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::646783.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"646783.0\", \"name\": \"Goose Feathers Cafe & Bakery\", \"City\": \"Savannah\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\", \"Healthy\"], \"avg_cost\": \"15.5\", \"rating\": \"4.5\", \"priceLevel\": \"$\", \"address\": \"39 Barnard St Between Broughton & Congress, Downtown, Savannah, GA 31401-2519\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::436981.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"436981.0\", \"name\": \"Vinnie Van Go-Go's\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Pizza\"], \"avg_cost\": \"15.5\", \"rating\": \"4.5\", \"priceLevel\": \"$\", \"address\": \"317 W Bryan St, Savannah, GA 31401-2426\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::519328.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"519328.0\", \"name\": \"The Cotton Exchange Tavern & Restaurant\", \"City\": \"Savannah\", \"mealTypes\": [], \"cuisines\": [], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"201 E River St, Savannah, GA 31401-1220\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4366680.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4366680.0\", \"name\": \"Chive Sea Bar & Lounge\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Seafood\", \"Fusion\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"4 W Broughton St, Savannah, GA 31401-3310\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::613718.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"613718.0\", \"name\": \"B. Matthew's Eatery\", \"City\": \"Savannah\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"325 E Bay St, Savannah, GA 31401-1205\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1194158.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1194158.0\", \"name\": \"Wiley's Championship BBQ\", \"City\": \"Savannah\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Barbecue\"], \"avg_cost\": \"32.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"4700 US Highway 80 E, Savannah, GA 31410-2900\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7ub-A\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7ub-A\", \"name\": \"03 Greedo\", \"city\": \"Savannah\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7ub-A\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7CfjN\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7CfjN\", \"name\": \"42 Dugg\", \"city\": \"Savannah\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7CfjN\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK0v_N\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK0v_N\", \"name\": \"Avery Anna, Trissity Jane\", \"city\": \"Savannah\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Folk\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/avery-anna-trissity-jane-tuffys-music-box-tickets/13901663\", \"availabilityStarts\": \"2024-09-04T15:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7GK0w\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7GK0w\", \"name\": \"Bob The Drag Queen\", \"city\": \"Savannah\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Performance Art\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7GK0w\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A71dCK\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A71dCK\", \"name\": \"Candy Dulfer\", \"city\": \"Savannah\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A71dCK\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uVkZ\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uVkZ\", \"name\": \"Chase Matthew\", \"city\": \"Savannah\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uVkZ\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7168y\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7168y\", \"name\": \"Cirque du Soleil: Drawn to Life\", \"city\": \"Savannah\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7168y\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A716u0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A716u0\", \"name\": \"Cirque du Soleil: Drawn to Life\", \"city\": \"Savannah\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A716u0\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7163d\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7163d\", \"name\": \"Cirque du Soleil: Drawn to Life\", \"city\": \"Savannah\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7163d\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A716uw\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A716uw\", \"name\": \"Cirque du Soleil: Drawn to Life\", \"city\": \"Savannah\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Miscellaneous\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A716uw\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 58.87}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 58.87}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 128.33}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 174.11}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 174.11}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 192.44}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 192.44}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 238.03}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 240.32}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 240.32}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 257.13}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 257.13}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 284.57}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 341.85}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 341.85}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 350.33}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 350.33}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 354.98}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 369.66}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 369.66}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 375.57}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 375.57}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 378.67}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 378.67}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 380.7}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 380.7}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 399.36}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 416.52}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 416.52}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 420.53}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 420.53}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 456.83}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 456.83}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 468.4}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 468.4}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 471.59}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 471.59}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 495.28}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 495.28}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 495.97}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 495.97}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 504.11}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 504.11}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 507.75}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 507.75}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 514.71}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 534.52}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 534.52}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 536.6}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 536.6}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 575.12}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 575.12}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 579.68}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 579.68}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 601.82}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 601.82}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 633.31}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 637.05}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 637.05}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 654.58}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 654.58}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 658.79}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 658.79}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 663.78}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 663.78}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 671.07}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 671.07}, {\"source\": \"Attraction::1144712\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 672.28}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 672.28}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 673.65}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 673.65}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 673.77}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 673.77}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 683.78}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 683.78}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 704.79}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 704.79}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 710.44}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 710.44}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 741.39}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 741.39}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 748.17}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 781.78}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 781.78}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 783.76}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 783.76}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 796.9}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 796.9}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 796.9}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 796.9}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 844.06}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 844.06}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 859.96}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 859.96}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 861.45}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 875.49}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 875.49}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 877.97}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 877.97}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 919.9}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 919.9}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 921.32}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 921.32}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 921.91}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 921.91}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 967.27}, {\"source\": \"Attraction::103143\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 967.5}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 967.5}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 983.8}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 983.8}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 991.02}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 997.47}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 997.47}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1001.88}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1001.88}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1015.16}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1015.16}, {\"source\": \"Attraction::19048979\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1017.89}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1017.89}, {\"source\": \"Attraction::8723962\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1023.5}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1023.5}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1039.16}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1039.16}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1044.49}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1049.27}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1049.27}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1128.34}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1132.85}, {\"source\": \"Restaurant::436974.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1132.85}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1133.37}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1133.37}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1165.73}, {\"source\": \"Attraction::1090246\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1166.47}, {\"source\": \"Restaurant::1580303.0\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1166.47}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1173.21}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1173.21}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1176.06}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1176.06}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1188.13}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1188.13}, {\"source\": \"Attraction::1117705\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1208.87}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1208.87}, {\"source\": \"Attraction::181706\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1262.15}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1262.15}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1267.07}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1267.65}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1278.08}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1301.56}, {\"source\": \"Accommodation::9.51e+17\", \"target\": \"Attraction::1090246\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1324.24}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1345.14}, {\"source\": \"Restaurant::4366680.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1345.14}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1397.71}, {\"source\": \"Restaurant::646783.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1397.71}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1440.96}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1474.11}, {\"source\": \"Restaurant::509715.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1474.11}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1480.25}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1508.71}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1512.9}, {\"source\": \"Restaurant::436981.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1512.9}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1532.4}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1593.76}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::613718.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1606.68}, {\"source\": \"Restaurant::613718.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1606.68}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::606511.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1619.08}, {\"source\": \"Restaurant::606511.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1619.08}, {\"source\": \"Attraction::259614\", \"target\": \"Restaurant::519328.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1644.59}, {\"source\": \"Restaurant::519328.0\", \"target\": \"Attraction::259614\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1644.59}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::1144712\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1816.02}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::181706\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1857.0}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Attraction::1117705\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1912.71}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Attraction::8723962\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2016.73}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Restaurant::436974.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2088.37}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Attraction::19048979\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2126.74}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Restaurant::1580303.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2173.77}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::4366680.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2188.28}, {\"source\": \"Accommodation::21715417.0\", \"target\": \"Attraction::103143\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2226.59}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::646783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2255.43}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::509715.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2291.39}, {\"source\": \"Accommodation::52610724.0\", \"target\": \"Restaurant::436981.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2374.23}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-12\", \"2024-11-13\", \"2024-11-14\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3060560\", \"dep_time\": \"08:20\", \"arr_time\": \"10:05\", \"local_activity_start_after_arrival_buffer\": \"10:35\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0107683\", \"dep_time\": \"08:32\", \"arr_time\": \"10:14\", \"local_activity_start_after_arrival_buffer\": \"10:44\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1702144\", \"dep_time\": \"08:22\", \"arr_time\": \"10:27\", \"local_activity_start_after_arrival_buffer\": \"10:57\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0947466\", \"dep_time\": \"08:27\", \"arr_time\": \"10:21\", \"local_activity_start_after_arrival_buffer\": \"10:51\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1864207\", \"dep_time\": \"08:23\", \"arr_time\": \"10:49\", \"local_activity_start_after_arrival_buffer\": \"11:19\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F1703928\", \"dep_time\": \"20:18\", \"arr_time\": \"22:15\", \"latest_local_activity_finish_before_airport_buffer\": \"18:18\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2757266\", \"dep_time\": \"20:22\", \"arr_time\": \"21:58\", \"latest_local_activity_finish_before_airport_buffer\": \"18:22\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F3783124\", \"dep_time\": \"20:09\", \"arr_time\": \"22:16\", \"latest_local_activity_finish_before_airport_buffer\": \"18:09\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0431946\", \"dep_time\": \"20:20\", \"arr_time\": \"22:18\", \"latest_local_activity_finish_before_airport_buffer\": \"18:20\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0949602\", \"dep_time\": \"19:46\", \"arr_time\": \"21:43\", \"latest_local_activity_finish_before_airport_buffer\": \"17:46\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::646783.0\", \"Restaurant::519328.0\", \"Restaurant::613718.0\"], \"lunch\": [\"Restaurant::509715.0\", \"Restaurant::606511.0\", \"Restaurant::436974.0\", \"Restaurant::1580303.0\", \"Restaurant::646783.0\", \"Restaurant::436981.0\", \"Restaurant::519328.0\", \"Restaurant::4366680.0\", \"Restaurant::613718.0\", \"Restaurant::1194158.0\"], \"dinner\": [\"Restaurant::509715.0\", \"Restaurant::606511.0\", \"Restaurant::1580303.0\", \"Restaurant::436981.0\", \"Restaurant::519328.0\", \"Restaurant::4366680.0\", \"Restaurant::613718.0\", \"Restaurant::1194158.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::181706\", \"Attraction::103143\", \"Attraction::1144712\", \"Attraction::1117705\", \"Attraction::19048979\", \"Attraction::4776939\", \"Attraction::8723962\", \"Attraction::259614\", \"Attraction::1090246\", \"Attraction::103148\"], \"afternoon_attraction\": [\"Attraction::181706\", \"Attraction::103143\", \"Attraction::1144712\", \"Attraction::1117705\", \"Attraction::19048979\", \"Attraction::4776939\", \"Attraction::8723962\", \"Attraction::259614\", \"Attraction::1090246\", \"Attraction::103148\"]}, \"event_slots_by_date\": {\"2024-11-12\": [], \"2024-11-13\": [], \"2024-11-14\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::646783.0\", \"name\": \"Goose Feathers Cafe & Bakery\"}, {\"node_key\": \"Restaurant::519328.0\", \"name\": \"The Cotton Exchange Tavern & Restaurant\"}, {\"node_key\": \"Restaurant::613718.0\", \"name\": \"B. Matthew's Eatery\"}], \"lunch\": [{\"node_key\": \"Restaurant::509715.0\", \"name\": \"Olde Pink House Restaurant\"}, {\"node_key\": \"Restaurant::606511.0\", \"name\": \"Vic's On the River\"}, {\"node_key\": \"Restaurant::436974.0\", \"name\": \"Mrs. Wilkes Dining Room\"}, {\"node_key\": \"Restaurant::1580303.0\", \"name\": \"Crystal Beer Parlor\"}, {\"node_key\": \"Restaurant::646783.0\", \"name\": \"Goose Feathers Cafe & Bakery\"}, {\"node_key\": \"Restaurant::436981.0\", \"name\": \"Vinnie Van Go-Go's\"}, {\"node_key\": \"Restaurant::519328.0\", \"name\": \"The Cotton Exchange Tavern & Restaurant\"}, {\"node_key\": \"Restaurant::4366680.0\", \"name\": \"Chive Sea Bar & Lounge\"}, {\"node_key\": \"Restaurant::613718.0\", \"name\": \"B. Matthew's Eatery\"}, {\"node_key\": \"Restaurant::1194158.0\", \"name\": \"Wiley's Championship BBQ\"}], \"dinner\": [{\"node_key\": \"Restaurant::509715.0\", \"name\": \"Olde Pink House Restaurant\"}, {\"node_key\": \"Restaurant::606511.0\", \"name\": \"Vic's On the River\"}, {\"node_key\": \"Restaurant::1580303.0\", \"name\": \"Crystal Beer Parlor\"}, {\"node_key\": \"Restaurant::436981.0\", \"name\": \"Vinnie Van Go-Go's\"}, {\"node_key\": \"Restaurant::519328.0\", \"name\": \"The Cotton Exchange Tavern & Restaurant\"}, {\"node_key\": \"Restaurant::4366680.0\", \"name\": \"Chive Sea Bar & Lounge\"}, {\"node_key\": \"Restaurant::613718.0\", \"name\": \"B. Matthew's Eatery\"}, {\"node_key\": \"Restaurant::1194158.0\", \"name\": \"Wiley's Championship BBQ\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-12\": [], \"2024-11-13\": [], \"2024-11-14\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-12\", \"required_slots\": {\"Flight::F3060560\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0107683\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1702144\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0947466\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1864207\": [\"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-13\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-14\", \"required_slots\": {\"Flight::F1703928\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2757266\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F3783124\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0431946\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0949602\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-12\": [], \"2024-11-13\": [], \"2024-11-14\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_43",
+    "query_text": "Plan a 3-day trip for 8 people from Washington to Savannah from November 12th to November 14th, 2024, with a budget of $7,200. The trip should avoid flights and adhere to house rules prohibiting parties.",
+    "request": {
+      "org": "Washington",
+      "dest": "Savannah",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-12', '2024-11-13', '2024-11-14']",
+      "people_number": 8,
+      "local_constraint": "{'house rule': 'parties', 'cuisine': None, 'room type': None, 'transportation': 'no flight', 'event': None, 'attraction': None}",
+      "budget": 7200,
+      "query": "Plan a 3-day trip for 8 people from Washington to Savannah from November 12th to November 14th, 2024, with a budget of $7,200. The trip should avoid flights and adhere to house rules prohibiting parties.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-12",
+      "2024-11-13",
+      "2024-11-14"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": "parties",
+      "cuisine": null,
+      "room type": null,
+      "transportation": "no flight",
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3060560",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-12",
+          "OriginCityName": "Washington",
+          "DestCityName": "Savannah",
+          "DepTime": "08:20",
+          "ArrTime": "10:05",
+          "Price": 148
+        }
+      },
+      {
+        "node_key": "Flight::F0107683",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-12",
+          "OriginCityName": "Washington",
+          "DestCityName": "Savannah",
+          "DepTime": "08:32",
+          "ArrTime": "10:14",
+          "Price": 159
+        }
+      },
+      {
+        "node_key": "Flight::F1702144",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-12",
+          "OriginCityName": "Washington",
+          "DestCityName": "Savannah",
+          "DepTime": "08:22",
+          "ArrTime": "10:27",
+          "Price": 176
+        }
+      },
+      {
+        "node_key": "Flight::F0947466",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-12",
+          "OriginCityName": "Washington",
+          "DestCityName": "Savannah",
+          "DepTime": "08:27",
+          "ArrTime": "10:21",
+          "Price": 210
+        }
+      },
+      {
+        "node_key": "Flight::F1864207",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-12",
+          "OriginCityName": "Washington",
+          "DestCityName": "Savannah",
+          "DepTime": "08:23",
+          "ArrTime": "10:49",
+          "Price": 254
+        }
+      },
+      {
+        "node_key": "Flight::F1703928",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-14",
+          "OriginCityName": "Savannah",
+          "DestCityName": "Washington",
+          "DepTime": "20:18",
+          "ArrTime": "22:15",
+          "Price": 105
+        }
+      },
+      {
+        "node_key": "Flight::F2757266",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-14",
+          "OriginCityName": "Savannah",
+          "DestCityName": "Washington",
+          "DepTime": "20:22",
+          "ArrTime": "21:58",
+          "Price": 130
+        }
+      },
+      {
+        "node_key": "Flight::F3783124",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-14",
+          "OriginCityName": "Savannah",
+          "DestCityName": "Washington",
+          "DepTime": "20:09",
+          "ArrTime": "22:16",
+          "Price": 182
+        }
+      },
+      {
+        "node_key": "Flight::F0431946",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-14",
+          "OriginCityName": "Savannah",
+          "DestCityName": "Washington",
+          "DepTime": "20:20",
+          "ArrTime": "22:18",
+          "Price": 212
+        }
+      },
+      {
+        "node_key": "Flight::F0949602",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-14",
+          "OriginCityName": "Savannah",
+          "DestCityName": "Washington",
+          "DepTime": "19:46",
+          "ArrTime": "21:43",
+          "Price": 237
+        }
+      },
+      {
+        "node_key": "Accommodation::9.51e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.51e+17",
+          "name": "Timeless, Reimagined Cottage | Midnight Garden Inn",
+          "City": "Savannah",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No children under 10 & No parties",
+          "pricing": {
+            "label": "$314 per night",
+            "originalPrice": null,
+            "price": "$314",
+            "qualifier": "night",
+            "total": "$1,570 total"
+          },
+          "rating": {
+            "label": "4.9 out of 5 average rating,  105 reviews",
+            "localizedLabel": "4.9 (105)",
+            "average": 4.9,
+            "reviewsCount": 105
+          },
+          "coordinates": {
+            "latitude": 32.07063,
+            "longitude": -81.09535
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::52610724.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "52610724.0",
+          "name": "King Bed, Very Walkable Location!  By FREE Shuttle",
+          "City": "Savannah",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$71 per night, originally $76",
+            "originalPrice": "$76",
+            "price": "$71",
+            "qualifier": "night",
+            "total": "$352 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  119 reviews",
+            "localizedLabel": "4.94 (119)",
+            "average": 4.94,
+            "reviewsCount": 119
+          },
+          "coordinates": {
+            "latitude": 32.05977,
+            "longitude": -81.09634
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::21715417.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21715417.0",
+          "name": "Starlander Ltd.: The Coffee Suite, w/ private bath",
+          "City": "Savannah",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$94 per night, originally $112",
+            "originalPrice": "$112",
+            "price": "$94",
+            "qualifier": "night",
+            "total": "$467 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  505 reviews",
+            "localizedLabel": "4.95 (505)",
+            "average": 4.95,
+            "reviewsCount": 505
+          },
+          "coordinates": {
+            "latitude": 32.053958892822266,
+            "longitude": -81.0968246459961
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::181706",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "181706",
+          "name": "Savannah Historic District",
+          "City": "Savannah",
+          "subtype": [
+            "Historic Walking Areas",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 240 things to do in Savannah",
+          "address": "301 Martin Luther King Jr Blvd, Savannah, GA 31401-4217",
+          "description": "Savannah's picturesque historic district brings the traditional southern atmosphere to life."
+        }
+      },
+      {
+        "node_key": "Attraction::103143",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103143",
+          "name": "Cathedral of St. John the Baptist",
+          "City": "Savannah",
+          "subtype": [
+            "Sacred & Religious Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#5 of 240 things to do in Savannah",
+          "address": "222 E Harris St, Savannah, GA 31401-4616",
+          "description": "The oldest Roman Catholic church in Georgia."
+        }
+      },
+      {
+        "node_key": "Attraction::1144712",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1144712",
+          "name": "Historic Savannah Theatre",
+          "City": "Savannah",
+          "subtype": [
+            "Theaters"
+          ],
+          "subcategories": [
+            "Concerts & Shows"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#6 of 240 things to do in Savannah",
+          "address": "222 Bull St Chippewa Square, Savannah, GA 31401-3927",
+          "description": "America’s oldest theatre, originally built in 1818. Nightly high-energy performances with a live band and singers! Also, late-night paranormal investigations with skilled paranormal investigators just like you see on TV."
+        }
+      },
+      {
+        "node_key": "Attraction::1117705",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1117705",
+          "name": "Congregation Mickve Israel",
+          "City": "Savannah",
+          "subtype": [
+            "Sacred & Religious Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#8 of 240 things to do in Savannah",
+          "address": "20 E Gordon St, Savannah, GA 31401",
+          "description": "The third oldest Jewish congregation and the only neo-gothic Jewish sanctuary in the U. S. We host services every Friday & Saturday Shabbat and Jewish holidays. See our website for calendar of events. We offer tours Mon - Fri at 10am, 11am, 1:30pm & 2:30pm (except holidays) that include our historic sanctuary and museum with many historic artifacts including two Torahs written in the 1400's (probably the oldest in the U.S.)."
+        }
+      },
+      {
+        "node_key": "Attraction::19048979",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "19048979",
+          "name": "SCADstory",
+          "City": "Savannah",
+          "subtype": [
+            "Specialty Museums",
+            "Educational sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#7 of 240 things to do in Savannah",
+          "address": "342 Bull St, Savannah, GA 31401-4518",
+          "description": "Haven't you ever dreamed an impossible dream? Step into SCADstory - an immersive 4D experience that tells a universal tale of the dreamer in us all. SCADstory carries guests on an unexpected journey through SCAD history, across four decades of beauty, design, and invention. With the magic of 25 SCAD disciplines - from animation to themed entertainment design - this is a journey like no other."
+        }
+      },
+      {
+        "node_key": "Attraction::4776939",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "4776939",
+          "name": "Pin Point Heritage Museum",
+          "City": "Savannah",
+          "subtype": [
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#4 of 240 things to do in Savannah",
+          "address": "9924 Pin Point Avenue, Savannah, GA 31406-8565",
+          "description": "Located in the former A.S. Varn & Son Oyster and Crab Factory, guests can discover the Gullah/Geechee culture and unique lifeways, from daily life to religion, language, and food directly from residents who grew up in the small, close-knit community. Open Thursday-Saturday from 9am to 4pm."
+        }
+      },
+      {
+        "node_key": "Attraction::8723962",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8723962",
+          "name": "Webb Military Museum",
+          "City": "Savannah",
+          "subtype": [
+            "Military Museums",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#3 of 240 things to do in Savannah",
+          "address": "411 E York St, Savannah, GA 31401-3816"
+        }
+      },
+      {
+        "node_key": "Attraction::259614",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "259614",
+          "name": "Forsyth Park",
+          "City": "Savannah",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#13 of 240 things to do in Savannah",
+          "address": "Savannah, GA 31401"
+        }
+      },
+      {
+        "node_key": "Attraction::1090246",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1090246",
+          "name": "Historic River Street",
+          "City": "Savannah",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#34 of 240 things to do in Savannah",
+          "address": "River St., Savannah, GA 31401"
+        }
+      },
+      {
+        "node_key": "Attraction::103148",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103148",
+          "name": "Bonaventure Cemetery",
+          "City": "Savannah",
+          "subtype": [
+            "Cemeteries"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#14 of 240 things to do in Savannah",
+          "address": "330 Bonaventure Rd, Savannah, GA 31404-3295",
+          "description": "Bonaventure Cemetery was developed on the historically-significant site of Bonaventure Plantation. The peaceful setting rests on a scenic bluff of the Wilmington River, east of Savannah. The site was purchased for a private cemetery in 1846 and became a public cemetery in 1907. Citizens and others can still purchase interment rights in Bonaventure. This charming site has been a world famous tourist destination for more than 150 years due to the old tree-lined roadways, the many notable person..."
+        }
+      },
+      {
+        "node_key": "Restaurant::509715.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "509715.0",
+          "name": "Olde Pink House Restaurant",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "52.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "23 Abercorn Street, Savannah, GA 31401-2713",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::606511.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "606511.0",
+          "name": "Vic's On the River",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "26 E Bay St, Savannah, GA 31401-1218",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::436974.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "436974.0",
+          "name": "Mrs. Wilkes Dining Room",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "107 West Jones St, Savannah, GA 31401-4507",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              []
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1580303.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1580303.0",
+          "name": "Crystal Beer Parlor",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Pub"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "301 W Jones St, Savannah, GA 31401-4252",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::646783.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "646783.0",
+          "name": "Goose Feathers Cafe & Bakery",
+          "City": "Savannah",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe",
+            "Healthy"
+          ],
+          "avg_cost": "15.5",
+          "rating": "4.5",
+          "priceLevel": "$",
+          "address": "39 Barnard St Between Broughton & Congress, Downtown, Savannah, GA 31401-2519",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::436981.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "436981.0",
+          "name": "Vinnie Van Go-Go's",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza"
+          ],
+          "avg_cost": "15.5",
+          "rating": "4.5",
+          "priceLevel": "$",
+          "address": "317 W Bryan St, Savannah, GA 31401-2426",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::519328.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "519328.0",
+          "name": "The Cotton Exchange Tavern & Restaurant",
+          "City": "Savannah",
+          "mealTypes": [],
+          "cuisines": [],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "201 E River St, Savannah, GA 31401-1220",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4366680.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4366680.0",
+          "name": "Chive Sea Bar & Lounge",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "Fusion"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "4 W Broughton St, Savannah, GA 31401-3310",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::613718.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "613718.0",
+          "name": "B. Matthew's Eatery",
+          "City": "Savannah",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "325 E Bay St, Savannah, GA 31401-1205",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1194158.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1194158.0",
+          "name": "Wiley's Championship BBQ",
+          "City": "Savannah",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Barbecue"
+          ],
+          "avg_cost": "32.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "4700 US Highway 80 E, Savannah, GA 31410-2900",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7ub-A",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7ub-A",
+          "name": "03 Greedo",
+          "city": "Savannah",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7ub-A",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7CfjN",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7CfjN",
+          "name": "42 Dugg",
+          "city": "Savannah",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7CfjN",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK0v_N",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK0v_N",
+          "name": "Avery Anna, Trissity Jane",
+          "city": "Savannah",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Folk",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/avery-anna-trissity-jane-tuffys-music-box-tickets/13901663",
+            "availabilityStarts": "2024-09-04T15:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7GK0w",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7GK0w",
+          "name": "Bob The Drag Queen",
+          "city": "Savannah",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Performance Art",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7GK0w",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A71dCK",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A71dCK",
+          "name": "Candy Dulfer",
+          "city": "Savannah",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A71dCK",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uVkZ",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uVkZ",
+          "name": "Chase Matthew",
+          "city": "Savannah",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uVkZ",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7168y",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7168y",
+          "name": "Cirque du Soleil: Drawn to Life",
+          "city": "Savannah",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7168y",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A716u0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A716u0",
+          "name": "Cirque du Soleil: Drawn to Life",
+          "city": "Savannah",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A716u0",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7163d",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7163d",
+          "name": "Cirque du Soleil: Drawn to Life",
+          "city": "Savannah",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7163d",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A716uw",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A716uw",
+          "name": "Cirque du Soleil: Drawn to Life",
+          "city": "Savannah",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Miscellaneous",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A716uw",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 58.87
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 58.87
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 128.33
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 174.11
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 174.11
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 192.44
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 192.44
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 238.03
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 240.32
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 240.32
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 257.13
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 257.13
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 284.57
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 341.85
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 341.85
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 350.33
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 350.33
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 354.98
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 369.66
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 369.66
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 375.57
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 375.57
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 378.67
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 378.67
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 380.7
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 380.7
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 399.36
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 416.52
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 416.52
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 420.53
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 420.53
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 456.83
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 456.83
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 468.4
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 468.4
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 471.59
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 471.59
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 495.28
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 495.28
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 495.97
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 495.97
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 504.11
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 504.11
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 507.75
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 507.75
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 514.71
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 534.52
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 534.52
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 536.6
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 536.6
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 575.12
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 575.12
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 579.68
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 579.68
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 601.82
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 601.82
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 633.31
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 637.05
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 637.05
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 654.58
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 654.58
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 658.79
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 658.79
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 663.78
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 663.78
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 671.07
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 671.07
+      },
+      {
+        "source": "Attraction::1144712",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 672.28
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 672.28
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 673.65
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 673.65
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 673.77
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 673.77
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 683.78
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 683.78
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 704.79
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 704.79
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 710.44
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 710.44
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 741.39
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 741.39
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 748.17
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 781.78
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 781.78
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 783.76
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 783.76
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 796.9
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 796.9
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 796.9
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 796.9
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 844.06
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 844.06
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 859.96
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 859.96
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 861.45
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 875.49
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 875.49
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 877.97
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 877.97
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 919.9
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 919.9
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 921.32
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 921.32
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 921.91
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 921.91
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 967.27
+      },
+      {
+        "source": "Attraction::103143",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 967.5
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 967.5
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 983.8
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 983.8
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 991.02
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 997.47
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 997.47
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1001.88
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1001.88
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1015.16
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1015.16
+      },
+      {
+        "source": "Attraction::19048979",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1017.89
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1017.89
+      },
+      {
+        "source": "Attraction::8723962",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1023.5
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1023.5
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1039.16
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1039.16
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1044.49
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1049.27
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1049.27
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1128.34
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1132.85
+      },
+      {
+        "source": "Restaurant::436974.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1132.85
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1133.37
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1133.37
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1165.73
+      },
+      {
+        "source": "Attraction::1090246",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1166.47
+      },
+      {
+        "source": "Restaurant::1580303.0",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1166.47
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1173.21
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1173.21
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1176.06
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1176.06
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1188.13
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1188.13
+      },
+      {
+        "source": "Attraction::1117705",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1208.87
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1208.87
+      },
+      {
+        "source": "Attraction::181706",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1262.15
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1262.15
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1267.07
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1267.65
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1278.08
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1301.56
+      },
+      {
+        "source": "Accommodation::9.51e+17",
+        "target": "Attraction::1090246",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1324.24
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1345.14
+      },
+      {
+        "source": "Restaurant::4366680.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1345.14
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1397.71
+      },
+      {
+        "source": "Restaurant::646783.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1397.71
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1440.96
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1474.11
+      },
+      {
+        "source": "Restaurant::509715.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1474.11
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1480.25
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1508.71
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1512.9
+      },
+      {
+        "source": "Restaurant::436981.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1512.9
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1532.4
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1593.76
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::613718.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1606.68
+      },
+      {
+        "source": "Restaurant::613718.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1606.68
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::606511.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1619.08
+      },
+      {
+        "source": "Restaurant::606511.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1619.08
+      },
+      {
+        "source": "Attraction::259614",
+        "target": "Restaurant::519328.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1644.59
+      },
+      {
+        "source": "Restaurant::519328.0",
+        "target": "Attraction::259614",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1644.59
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::1144712",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1816.02
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::181706",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1857.0
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Attraction::1117705",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1912.71
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Attraction::8723962",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2016.73
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Restaurant::436974.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2088.37
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Attraction::19048979",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2126.74
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Restaurant::1580303.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2173.77
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::4366680.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2188.28
+      },
+      {
+        "source": "Accommodation::21715417.0",
+        "target": "Attraction::103143",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2226.59
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::646783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2255.43
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::509715.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2291.39
+      },
+      {
+        "source": "Accommodation::52610724.0",
+        "target": "Restaurant::436981.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2374.23
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-12",
+        "2024-11-13",
+        "2024-11-14"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3060560",
+          "dep_time": "08:20",
+          "arr_time": "10:05",
+          "local_activity_start_after_arrival_buffer": "10:35",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0107683",
+          "dep_time": "08:32",
+          "arr_time": "10:14",
+          "local_activity_start_after_arrival_buffer": "10:44",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1702144",
+          "dep_time": "08:22",
+          "arr_time": "10:27",
+          "local_activity_start_after_arrival_buffer": "10:57",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0947466",
+          "dep_time": "08:27",
+          "arr_time": "10:21",
+          "local_activity_start_after_arrival_buffer": "10:51",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1864207",
+          "dep_time": "08:23",
+          "arr_time": "10:49",
+          "local_activity_start_after_arrival_buffer": "11:19",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F1703928",
+          "dep_time": "20:18",
+          "arr_time": "22:15",
+          "latest_local_activity_finish_before_airport_buffer": "18:18",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2757266",
+          "dep_time": "20:22",
+          "arr_time": "21:58",
+          "latest_local_activity_finish_before_airport_buffer": "18:22",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F3783124",
+          "dep_time": "20:09",
+          "arr_time": "22:16",
+          "latest_local_activity_finish_before_airport_buffer": "18:09",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0431946",
+          "dep_time": "20:20",
+          "arr_time": "22:18",
+          "latest_local_activity_finish_before_airport_buffer": "18:20",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0949602",
+          "dep_time": "19:46",
+          "arr_time": "21:43",
+          "latest_local_activity_finish_before_airport_buffer": "17:46",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::646783.0",
+          "Restaurant::519328.0",
+          "Restaurant::613718.0"
+        ],
+        "lunch": [
+          "Restaurant::509715.0",
+          "Restaurant::606511.0",
+          "Restaurant::436974.0",
+          "Restaurant::1580303.0",
+          "Restaurant::646783.0",
+          "Restaurant::436981.0",
+          "Restaurant::519328.0",
+          "Restaurant::4366680.0",
+          "Restaurant::613718.0",
+          "Restaurant::1194158.0"
+        ],
+        "dinner": [
+          "Restaurant::509715.0",
+          "Restaurant::606511.0",
+          "Restaurant::1580303.0",
+          "Restaurant::436981.0",
+          "Restaurant::519328.0",
+          "Restaurant::4366680.0",
+          "Restaurant::613718.0",
+          "Restaurant::1194158.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::181706",
+          "Attraction::103143",
+          "Attraction::1144712",
+          "Attraction::1117705",
+          "Attraction::19048979",
+          "Attraction::4776939",
+          "Attraction::8723962",
+          "Attraction::259614",
+          "Attraction::1090246",
+          "Attraction::103148"
+        ],
+        "afternoon_attraction": [
+          "Attraction::181706",
+          "Attraction::103143",
+          "Attraction::1144712",
+          "Attraction::1117705",
+          "Attraction::19048979",
+          "Attraction::4776939",
+          "Attraction::8723962",
+          "Attraction::259614",
+          "Attraction::1090246",
+          "Attraction::103148"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-12": [],
+        "2024-11-13": [],
+        "2024-11-14": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::646783.0",
+            "name": "Goose Feathers Cafe & Bakery"
+          },
+          {
+            "node_key": "Restaurant::519328.0",
+            "name": "The Cotton Exchange Tavern & Restaurant"
+          },
+          {
+            "node_key": "Restaurant::613718.0",
+            "name": "B. Matthew's Eatery"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::509715.0",
+            "name": "Olde Pink House Restaurant"
+          },
+          {
+            "node_key": "Restaurant::606511.0",
+            "name": "Vic's On the River"
+          },
+          {
+            "node_key": "Restaurant::436974.0",
+            "name": "Mrs. Wilkes Dining Room"
+          },
+          {
+            "node_key": "Restaurant::1580303.0",
+            "name": "Crystal Beer Parlor"
+          },
+          {
+            "node_key": "Restaurant::646783.0",
+            "name": "Goose Feathers Cafe & Bakery"
+          },
+          {
+            "node_key": "Restaurant::436981.0",
+            "name": "Vinnie Van Go-Go's"
+          },
+          {
+            "node_key": "Restaurant::519328.0",
+            "name": "The Cotton Exchange Tavern & Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4366680.0",
+            "name": "Chive Sea Bar & Lounge"
+          },
+          {
+            "node_key": "Restaurant::613718.0",
+            "name": "B. Matthew's Eatery"
+          },
+          {
+            "node_key": "Restaurant::1194158.0",
+            "name": "Wiley's Championship BBQ"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::509715.0",
+            "name": "Olde Pink House Restaurant"
+          },
+          {
+            "node_key": "Restaurant::606511.0",
+            "name": "Vic's On the River"
+          },
+          {
+            "node_key": "Restaurant::1580303.0",
+            "name": "Crystal Beer Parlor"
+          },
+          {
+            "node_key": "Restaurant::436981.0",
+            "name": "Vinnie Van Go-Go's"
+          },
+          {
+            "node_key": "Restaurant::519328.0",
+            "name": "The Cotton Exchange Tavern & Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4366680.0",
+            "name": "Chive Sea Bar & Lounge"
+          },
+          {
+            "node_key": "Restaurant::613718.0",
+            "name": "B. Matthew's Eatery"
+          },
+          {
+            "node_key": "Restaurant::1194158.0",
+            "name": "Wiley's Championship BBQ"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-12": [],
+        "2024-11-13": [],
+        "2024-11-14": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-12",
+          "required_slots": {
+            "Flight::F3060560": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0107683": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1702144": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0947466": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1864207": [
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-13",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-14",
+          "required_slots": {
+            "Flight::F1703928": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2757266": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F3783124": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0431946": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0949602": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-12": [],
+      "2024-11-13": [],
+      "2024-11-14": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}
