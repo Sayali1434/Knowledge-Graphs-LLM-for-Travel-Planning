@@ -1,0 +1,113 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"Selected the most feasible and budget-friendly path, ensuring all constraints are met and maximizing local activity coverage.\",\n  \"stay_node_key\": \"Accommodation::37679833.0\",\n  \"outbound_flight_node_key\": \"Flight::F2871905\",\n  \"return_flight_node_key\": \"Flight::F3735091\",\n  \"estimated_total_cost\": 1192.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-22\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::405800.0\",\n        \"morning_attraction\": \"Attraction::103526\",\n        \"lunch\": \"Restaurant::405800.0\",\n        \"afternoon_attraction\": \"Attraction::104565\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::405800.0\"\n      },\n      \"notes\": \"First day includes early arrival, check-in, and local activities. Breakfast, lunch, and dinner are scheduled at Ramsey's Diner Zandale. Attractions are chosen based on proximity and visit duration.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-23\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::405800.0\",\n        \"morning_attraction\": \"Attraction::103543\",\n        \"lunch\": \"Restaurant::489905.0\",\n        \"afternoon_attraction\": \"Attraction::104835\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::405800.0\"\n      },\n      \"notes\": \"Full day in the city with breakfast, morning attraction, lunch, afternoon attraction, and dinner at Bella Notte. Attractions are chosen based on proximity and visit duration.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-24\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::405800.0\",\n        \"morning_attraction\": \"Attraction::104836\",\n        \"lunch\": \"Restaurant::405800.0\",\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Return day focuses on early departure. Breakfast and morning attraction are scheduled at Ramsey's Diner Zandale. No additional activities due to early return flight.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "Selected the most feasible and budget-friendly path, ensuring all constraints are met and maximizing local activity coverage.",
+    "stay_node_key": "Accommodation::37679833.0",
+    "outbound_flight_node_key": "Flight::F2871905",
+    "return_flight_node_key": "Flight::F3735091",
+    "estimated_total_cost": 1192.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-22",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::405800.0",
+          "morning_attraction": "Attraction::103526",
+          "lunch": "Restaurant::405800.0",
+          "afternoon_attraction": "Attraction::104565",
+          "event": null,
+          "dinner": "Restaurant::405800.0"
+        },
+        "notes": "First day includes early arrival, check-in, and local activities. Breakfast, lunch, and dinner are scheduled at Ramsey's Diner Zandale. Attractions are chosen based on proximity and visit duration."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-23",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::405800.0",
+          "morning_attraction": "Attraction::103543",
+          "lunch": "Restaurant::489905.0",
+          "afternoon_attraction": "Attraction::104835",
+          "event": null,
+          "dinner": "Restaurant::405800.0"
+        },
+        "notes": "Full day in the city with breakfast, morning attraction, lunch, afternoon attraction, and dinner at Bella Notte. Attractions are chosen based on proximity and visit duration."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-24",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::405800.0",
+          "morning_attraction": "Attraction::104836",
+          "lunch": "Restaurant::405800.0",
+          "afternoon_attraction": "Attraction::4406496",
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Return day focuses on early departure. Breakfast and morning attraction are scheduled at Ramsey's Diner Zandale. No additional activities due to early return flight."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 708.0,
+      "selected_node_keys": [
+        "Accommodation::37679833.0",
+        "Flight::F2871905",
+        "Flight::F3735091",
+        "Restaurant::405800.0",
+        "Attraction::103526",
+        "Restaurant::405800.0",
+        "Attraction::104565",
+        "Restaurant::405800.0",
+        "Restaurant::405800.0",
+        "Attraction::103543",
+        "Restaurant::489905.0",
+        "Attraction::104835",
+        "Restaurant::405800.0",
+        "Restaurant::405800.0",
+        "Attraction::104836",
+        "Restaurant::405800.0",
+        "Attraction::4406496"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 2,
+        "lunch": 9,
+        "dinner": 9
+      },
+      "day_1_local_activity_start": "10:36",
+      "last_day_latest_local_activity_finish": "18:03",
+      "day_1_expected_slots": [
+        "lunch",
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ],
+      "auto_repairs": [
+        "day_3.afternoon_attraction: filled missing required slot with Attraction::4406496"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_26.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_26_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_26_graph.cypher"
+  }
+}

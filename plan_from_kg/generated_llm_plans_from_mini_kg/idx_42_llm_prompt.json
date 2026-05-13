@@ -1,0 +1,3217 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_42\", \"query_text\": \"Plan a 3-day trip for 2 people from Washington to Chattanooga from November 5th to November 7th, 2024, with a budget of $1,650. Accommodations should include a non-shared room.\", \"request\": {\"org\": \"Washington\", \"dest\": \"Chattanooga\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-05', '2024-11-06', '2024-11-07']\", \"people_number\": 2, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': 'not shared room', 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 1650, \"query\": \"Plan a 3-day trip for 2 people from Washington to Chattanooga from November 5th to November 7th, 2024, with a budget of $1,650. Accommodations should include a non-shared room.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": \"not shared room\", \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F3632122\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Chattanooga\", \"DepTime\": \"13:38\", \"ArrTime\": \"15:15\", \"Price\": 165}}, {\"node_key\": \"Flight::F3070086\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Chattanooga\", \"DepTime\": \"13:35\", \"ArrTime\": \"15:19\", \"Price\": 182}}, {\"node_key\": \"Flight::F2611052\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Chattanooga\", \"DepTime\": \"20:16\", \"ArrTime\": \"22:30\", \"Price\": 247}}, {\"node_key\": \"Flight::F0444278\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Chattanooga\", \"DepTime\": \"20:02\", \"ArrTime\": \"21:58\", \"Price\": 251}}, {\"node_key\": \"Flight::F2159372\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"Washington\", \"DestCityName\": \"Chattanooga\", \"DepTime\": \"20:34\", \"ArrTime\": \"22:22\", \"Price\": 260}}, {\"node_key\": \"Flight::F0956154\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Chattanooga\", \"DestCityName\": \"Washington\", \"DepTime\": \"17:37\", \"ArrTime\": \"19:15\", \"Price\": 112}}, {\"node_key\": \"Flight::F3792750\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Chattanooga\", \"DestCityName\": \"Washington\", \"DepTime\": \"16:59\", \"ArrTime\": \"18:33\", \"Price\": 135}}, {\"node_key\": \"Flight::F1405933\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Chattanooga\", \"DestCityName\": \"Washington\", \"DepTime\": \"07:00\", \"ArrTime\": \"09:02\", \"Price\": 212}}, {\"node_key\": \"Flight::F2616561\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Chattanooga\", \"DestCityName\": \"Washington\", \"DepTime\": \"07:00\", \"ArrTime\": \"08:42\", \"Price\": 220}}, {\"node_key\": \"Flight::F3070061\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Chattanooga\", \"DestCityName\": \"Washington\", \"DepTime\": \"16:23\", \"ArrTime\": \"18:07\", \"Price\": 229}}, {\"node_key\": \"Accommodation::5.6e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.6e+17\", \"name\": \"Tadpole Cabin at Creek Road Farm\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$201 per night\", \"originalPrice\": null, \"price\": \"$201\", \"qualifier\": \"night\", \"total\": \"$1,002 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  209 reviews\", \"localizedLabel\": \"5.0 (209)\", \"average\": 5, \"reviewsCount\": 209}, \"coordinates\": {\"latitude\": 34.95476, \"longitude\": -85.40712}}}, {\"node_key\": \"Accommodation::9.69e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.69e+17\", \"name\": \"The Artistree House A Treehouse in Rising Fawn\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No visitors & No pets\", \"pricing\": {\"label\": \"$299 per night\", \"originalPrice\": null, \"price\": \"$299\", \"qualifier\": \"night\", \"total\": \"$1,494 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  80 reviews\", \"localizedLabel\": \"4.96 (80)\", \"average\": 4.96, \"reviewsCount\": 80}, \"coordinates\": {\"latitude\": 34.78666, \"longitude\": -85.46162}}}, {\"node_key\": \"Accommodation::7.59e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7.59e+17\", \"name\": \"The Overlook Cabin: Breath-taking Views & King Bed\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$214 per night\", \"originalPrice\": null, \"price\": \"$214\", \"qualifier\": \"night\", \"total\": \"$1,066 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  229 reviews\", \"localizedLabel\": \"4.99 (229)\", \"average\": 4.99, \"reviewsCount\": 229}, \"coordinates\": {\"latitude\": 35.28065, \"longitude\": -85.38485}}}, {\"node_key\": \"Accommodation::54157493.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"54157493.0\", \"name\": \"The Lookout Mountain Birdhouse\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$422 per night\", \"originalPrice\": null, \"price\": \"$422\", \"qualifier\": \"night\", \"total\": \"$2,106 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  194 reviews\", \"localizedLabel\": \"4.98 (194)\", \"average\": 4.98, \"reviewsCount\": 194}, \"coordinates\": {\"latitude\": 34.91858, \"longitude\": -85.4208}}}, {\"node_key\": \"Accommodation::43971538.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43971538.0\", \"name\": \"New Town House in Historic District of Chattanooga\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$121 per night\", \"originalPrice\": null, \"price\": \"$121\", \"qualifier\": \"night\", \"total\": \"$604 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  278 reviews\", \"localizedLabel\": \"4.98 (278)\", \"average\": 4.98, \"reviewsCount\": 278}, \"coordinates\": {\"latitude\": 35.03391, \"longitude\": -85.30815}}}, {\"node_key\": \"Accommodation::46851968.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"46851968.0\", \"name\": \"Chattanooga - The Isbill House\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No smoking & No children under 10\", \"pricing\": {\"label\": \"$152 per night\", \"originalPrice\": null, \"price\": \"$152\", \"qualifier\": \"night\", \"total\": \"$760 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  230 reviews\", \"localizedLabel\": \"4.97 (230)\", \"average\": 4.97, \"reviewsCount\": 230}, \"coordinates\": {\"latitude\": 35.02723, \"longitude\": -85.37408}}}, {\"node_key\": \"Accommodation::43914115.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43914115.0\", \"name\": \"Glenn Falls Tiny Cabin\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$107 per night\", \"originalPrice\": null, \"price\": \"$107\", \"qualifier\": \"night\", \"total\": \"$535 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  610 reviews\", \"localizedLabel\": \"4.97 (610)\", \"average\": 4.97, \"reviewsCount\": 610}, \"coordinates\": {\"latitude\": 34.98803, \"longitude\": -85.33778}}}, {\"node_key\": \"Accommodation::5.12e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.12e+17\", \"name\": \"The Sassafras Treehouse\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$496 per night\", \"originalPrice\": null, \"price\": \"$496\", \"qualifier\": \"night\", \"total\": \"$2,476 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  202 reviews\", \"localizedLabel\": \"4.98 (202)\", \"average\": 4.98, \"reviewsCount\": 202}, \"coordinates\": {\"latitude\": 34.78963, \"longitude\": -85.43933}}}, {\"node_key\": \"Accommodation::42437001.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42437001.0\", \"name\": \"Apollonie Cabin Private Spa at Lookout Mountain\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$172 per night\", \"originalPrice\": null, \"price\": \"$172\", \"qualifier\": \"night\", \"total\": \"$856 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  282 reviews\", \"localizedLabel\": \"4.92 (282)\", \"average\": 4.92, \"reviewsCount\": 282}, \"coordinates\": {\"latitude\": 35.02283, \"longitude\": -85.34668}}}, {\"node_key\": \"Accommodation::48070217.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"48070217.0\", \"name\": \"Cozy Valley Suite: Downtown, Rock City, Ruby Falls\", \"City\": \"Chattanooga\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$110 per night\", \"originalPrice\": null, \"price\": \"$110\", \"qualifier\": \"night\", \"total\": \"$548 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  266 reviews\", \"localizedLabel\": \"4.94 (266)\", \"average\": 4.94, \"reviewsCount\": 266}, \"coordinates\": {\"latitude\": 35.05271, \"longitude\": -85.354}}}, {\"node_key\": \"Attraction::1532554\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1532554\", \"name\": \"Chattanooga Ducks\", \"City\": \"Chattanooga\", \"subtype\": [\"Duck Tours\"], \"subcategories\": [\"Tours\", \"Boat Tours & Water Sports\", \"Outdoor Activities\"], \"visit_duration\": \"3.5\", \"rating\": \"5.0\", \"rankingString\": \"#3 of 24 Boat Tours & Water Sports in Chattanooga\", \"address\": \"151 Riverfront Pkwy, Chattanooga, TN 37402-1206\", \"description\": \"Did you know The designation of DUKW is not a military pun - the name comes from the terminology used for military vehicles in World War II; the D indicates a vehicle designed in 1942, the U meant \\\"utility (amphibious)\\\", the K indicated all-wheel drive and the W indicated two powered rear axles. Although technically a misnomer, DUKWs are often referred to as duck boats. Another popular nickname was old magoo or simply magoo. Though the origin of this term is unknown, it probably refers to the...\"}}, {\"node_key\": \"Attraction::7274608\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"7274608\", \"name\": \"Escape Experience - Chattanooga Escape Room Games\", \"City\": \"Chattanooga\", \"subtype\": [\"Room Escape Games\", \"Scavenger Hunts\", \"Game & Entertainment Centers\"], \"subcategories\": [\"Fun & Games\"], \"visit_duration\": \"1.5\", \"rating\": \"5.0\", \"rankingString\": \"#4 of 56 Fun & Games in Chattanooga\", \"address\": \"1800 Rossville Ave Suite 1, Chattanooga, TN 37408-1928\", \"description\": \"Escape Experience is a fun entertainment activity located in Downtown Chattanooga’s Southside Historic District; just a few blocks from the Chattanooga Choo Choo. Each escape room game is a real-life interactive adventure designed for team building groups, friends, family or co-workers. With just one hour, come find out if you have what it takes to break out of prison, rob a bank, discover your inheritance, or find the cure that will save the world, or jump off a runaway train? Book your next...\"}}, {\"node_key\": \"Attraction::8028038\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8028038\", \"name\": \"Chattanooga Whiskey Experimental Distillery\", \"City\": \"Chattanooga\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 177 things to do in Chattanooga\", \"address\": \"1439 Market St, Chattanooga, TN 37402-4430\", \"description\": \"The first distillery to craft whiskey in Chattanooga in over 100 years. With over 100 different barrels maturing in the aging cellar, every visit to the Experimental Distillery is an exploration of the past, present and future of hand-crafted bourbon. Reserve a tour & tasting to check out our latest releases. (21+ with physical, valid, ID)\"}}, {\"node_key\": \"Attraction::11990557\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"11990557\", \"name\": \"Historic Downtown Chattanooga Segway Tour\", \"City\": \"Chattanooga\", \"subtype\": [], \"subcategories\": [], \"rating\": \"5.0\", \"address\": \"Chattanooga, TN\", \"description\": \"A Chattanooga Segway tour is an easy way to get to know the city’s highlights in just a short amount of time. Glide through the city to top Chattanooga sights such as Miller Plaza, Tivoli Theater, and the Tennessee Aquarium. As you tour, your guide shares fascinating trivia and fun facts about Chattanooga history and culture.\"}}, {\"node_key\": \"Attraction::11990556\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"11990556\", \"name\": \"Chattanooga's North Shore & Coolidge Park Guided Segway Tour\", \"City\": \"Chattanooga\", \"subtype\": [], \"subcategories\": [], \"rating\": \"5.0\", \"address\": \"Chattanooga, TN\", \"description\": \"Avoid hours of walking and navigating when you book a Segway tour of Chattanooga's highlights, including parks, bridges, and riverside vistas you may not have found if exploring on your own. In addition to pointing out landmarks that visitors often miss, your guide provides trivia and background on the city’s rich history.\"}}, {\"node_key\": \"Attraction::104477\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104477\", \"name\": \"Tennessee Aquarium\", \"City\": \"Chattanooga\", \"subtype\": [\"Aquariums\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 177 things to do in Chattanooga\", \"address\": \"1 Broad St, Chattanooga, TN 37402-1023\", \"description\": \"This aquarium has two buildings: River Journey, which showcases freshwater habitats from around the globe, and Ocean Journey, where travelers can view magnificent sea creatures. We recommend spending at least three hours at the aquarium as there are over 10,000 animals here. The little ones will especially love the cute macaroni penguins and mesmerizing sea jellies. Weekends are the busiest, so consider visiting on a weekday for a quieter and more intimate experience. There’s timed entry to t...\"}}, {\"node_key\": \"Attraction::105134\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105134\", \"name\": \"Lookout Mountain\", \"City\": \"Chattanooga\", \"subtype\": [\"Mountains\", \"Lookouts\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 177 things to do in Chattanooga\", \"address\": \"Chattanooga, TN 37350\", \"description\": \"This mountain ridge is home to three scenic attractions: Ruby Falls, Rock City, and the Incline Railway. Ruby Falls is the country’s tallest and deepest underground waterfall at 260 feet, while Rock City is where you can supposedly see seven states at the iconic Lover’s Leap. Then, brace yourself as you hop on the Incline Railway—the steepest passenger railway in the world. We recommend you spend at least 4 hours at Lookout Mountain to experience the highlights. Each attraction is priced sepa...\"}}, {\"node_key\": \"Attraction::269207\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"269207\", \"name\": \"Walnut Street Bridge\", \"City\": \"Chattanooga\", \"subtype\": [\"Bridges\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 177 things to do in Chattanooga\", \"address\": \"200 Frazier Ave, Chattanooga, TN 37405\", \"description\": \"One of the finest examples of the Phoenix wrought-iron truss bridges that were build between 1884 and 1923.\"}}, {\"node_key\": \"Attraction::261414\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"261414\", \"name\": \"Tennessee Valley Railroad Museum\", \"City\": \"Chattanooga\", \"subtype\": [\"Specialty Museums\", \"Children's Museums\", \"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 177 things to do in Chattanooga\", \"address\": \"4119 Cromwell Rd, Chattanooga, TN 37421-2119\", \"description\": \"As you embark on this nostalgic train ride, you'll discover beautifully restored vintage locomotives and passenger cars that showcase the craftsmanship of a bygone era. The journey takes you through the picturesque Tennessee countryside, offering breathtaking views and a chance to reflect on simpler times. Within the museum's exhibit building, you'll find an impressive collection of artifacts, photographs, and memorabilia that bring the history of railroading to life. The knowledgeable staff,...\"}}, {\"node_key\": \"Attraction::1739067\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"1739067\", \"name\": \"Chattanooga Ghost Tours\", \"City\": \"Chattanooga\", \"subtype\": [\"Ghost & Vampire Tours\"], \"subcategories\": [\"Tours\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 68 Tours in Chattanooga\", \"address\": \"57 E 5th St, Chattanooga, TN 37402-1029\", \"description\": \"Ready to get chilled while hearing some of the city's most fascinating history? Join us nightly (or weekends winter) at our haunted steampunk shop at 57 E 5th St (back side of the Taziki's building). Or for the truly adventurous, come on the ghost hunt to use some of our cutting edge equipment in some of the city's most haunted locations.\"}}, {\"node_key\": \"Restaurant::2345342.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2345342.0\", \"name\": \"Urban Stack\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"12 W 13th St, Chattanooga, TN 37402-5005\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::7214140.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"7214140.0\", \"name\": \"Maple Street Biscuit Company - City Center\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"407 Broad St, Chattanooga, TN 37402-1238\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1545914.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1545914.0\", \"name\": \"Public House\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1110 Market St, Chattanooga, TN 37402-2863\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::798111.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"798111.0\", \"name\": \"Hennen's\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Steakhouse\", \"Seafood\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"193 Chestnut St, Chattanooga, TN 37402-1012\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4451210.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4451210.0\", \"name\": \"1885 Grill\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Bar\", \"Seafood\", \"Grill\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3914 Saint Elmo Ave, Chattanooga, TN 37409-1268\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::394176.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"394176.0\", \"name\": \"Mellow Mushroom Chattanooga\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Pizza\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"205 Broad St, Chattanooga, TN 37402\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1807407.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1807407.0\", \"name\": \"Champy's\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"35.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"526 E ML King Blvd, Chattanooga, TN 37403-4111\", \"hours\": {\"weekRanges\": [[{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1440, \"closeHours\": \"00:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1440, \"closeHours\": \"00:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4461684.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4461684.0\", \"name\": \"Uncle Larry's Restaurant\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"15.0\", \"rating\": \"4.5\", \"priceLevel\": \"$\", \"address\": \"736 East Mlk Blvd, Chattanooga, TN 37403\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1140, \"closeHours\": \"19:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::467356.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"467356.0\", \"name\": \"St. John's Restaurant\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Dinner\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"1278 Market St, Chattanooga, TN 37402-2713\", \"hours\": {\"weekRanges\": [[], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::4470676.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4470676.0\", \"name\": \"Ruth's Chris Steak House\", \"City\": \"Chattanooga\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Steakhouse\", \"Seafood\"], \"avg_cost\": \"56.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2321 Lifestyle Way Embassy Suites Hotel, Chattanooga, TN 37421\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::LvZ18_L-Au-CewOZvoCgF\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-Au-CewOZvoCgF\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-Au-CewOZvoCga\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-Au-CewOZvoCga\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7g\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7g\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7U\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7U\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7M\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7M\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"06-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7z\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7z\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"07-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7y\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7y\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"08-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7B\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_L-AxKxAGOZvU-7B\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\", \"city\": \"Chattanooga\", \"dateTitle\": \"09-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Wrestling\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...\", \"availabilityStarts\": \"2022-01-24T19:11:43Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7uYAF\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uYAF\", \"name\": \"Angry Chair\", \"city\": \"Chattanooga\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uYAF\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uYA7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uYA7\", \"name\": \"Apes of the State\", \"city\": \"Chattanooga\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uYA7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::104477\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 138.51}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 138.51}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 179.82}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 179.82}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 181.48}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 181.48}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 227.8}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 227.8}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 270.69}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 270.69}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 317.33}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 317.33}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 382.92}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 382.92}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 391.5}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 423.38}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 423.38}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 437.23}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 437.23}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 460.51}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 491.43}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 491.43}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 554.34}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 554.34}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 571.63}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 571.63}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 572.26}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 572.26}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 597.67}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 598.26}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 598.26}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 661.27}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 781.35}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 781.35}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 818.69}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 818.69}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 905.83}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 905.83}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 916.19}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 916.19}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 935.31}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 966.63}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 966.63}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 990.49}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 990.49}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1082.14}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1082.14}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1174.53}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1178.85}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1178.85}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1209.38}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1209.38}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226.42}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226.42}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1256.11}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1263.84}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1272.37}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1272.37}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1328.48}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1328.48}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1379.29}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1379.29}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1521.36}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1521.36}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1612.61}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1612.61}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1626.03}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1626.03}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1641.94}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1641.94}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1737.14}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1737.14}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1785.8}, {\"source\": \"Restaurant::1545914.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1785.8}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1809.05}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1809.05}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1841.11}, {\"source\": \"Restaurant::1807407.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1841.11}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1857.19}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1857.19}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1889.87}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1889.87}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1897.86}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1897.86}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1919.54}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1919.54}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1925.73}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1945.46}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1945.46}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1960.74}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1960.74}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1988.89}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1988.89}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2018.69}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2056.46}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2056.46}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2122.88}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2122.88}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2146.64}, {\"source\": \"Restaurant::4461684.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2146.64}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2190.56}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2275.39}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2283.12}, {\"source\": \"Restaurant::7214140.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2283.12}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2362.84}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2454.48}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2529.86}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2535.01}, {\"source\": \"Restaurant::394176.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2535.01}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2611.76}, {\"source\": \"Attraction::105134\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2618.42}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2618.42}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2632.37}, {\"source\": \"Restaurant::798111.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2632.37}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2716.48}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3188.7}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3210.8}, {\"source\": \"Attraction::7274608\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3336.06}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3336.06}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3542.29}, {\"source\": \"Attraction::8028038\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3562.59}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3562.59}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3830.63}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3908.67}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3909.09}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3916.39}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3929.33}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3929.72}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4033.11}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4071.2}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4081.6}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4092.9}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4284.17}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4296.5}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4302.18}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4391.43}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4463.72}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4553.22}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4584.76}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4595.12}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4645.26}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4656.44}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4657.7}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4762.75}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4764.67}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::1807407.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4831.58}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4866.86}, {\"source\": \"Attraction::1739067\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4884.9}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::1739067\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4884.9}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4903.18}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5127.9}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::4461684.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5167.32}, {\"source\": \"Attraction::1532554\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5218.98}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5218.98}, {\"source\": \"Accommodation::48070217.0\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5278.8}, {\"source\": \"Attraction::104477\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5316.39}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::104477\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5316.39}, {\"source\": \"Accommodation::42437001.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5332.5}, {\"source\": \"Attraction::269207\", \"target\": \"Restaurant::4451210.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5683.36}, {\"source\": \"Restaurant::4451210.0\", \"target\": \"Attraction::269207\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5683.36}, {\"source\": \"Attraction::261414\", \"target\": \"Restaurant::4470676.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5761.53}, {\"source\": \"Restaurant::4470676.0\", \"target\": \"Attraction::261414\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5761.53}, {\"source\": \"Accommodation::43971538.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5793.97}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5829.64}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6106.77}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6139.2}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Attraction::8028038\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6156.87}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::1545914.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6185.62}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6217.0}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Attraction::1532554\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6230.48}, {\"source\": \"Attraction::105134\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6232.91}, {\"source\": \"Restaurant::2345342.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6232.91}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Restaurant::2345342.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6285.35}, {\"source\": \"Attraction::105134\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6342.48}, {\"source\": \"Restaurant::467356.0\", \"target\": \"Attraction::105134\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6342.48}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::7214140.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6378.68}, {\"source\": \"Accommodation::43914115.0\", \"target\": \"Restaurant::467356.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6384.48}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::798111.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6435.92}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Attraction::7274608\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6452.07}, {\"source\": \"Accommodation::46851968.0\", \"target\": \"Restaurant::394176.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6472.17}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3632122\", \"dep_time\": \"13:38\", \"arr_time\": \"15:15\", \"local_activity_start_after_arrival_buffer\": \"15:45\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F3070086\", \"dep_time\": \"13:35\", \"arr_time\": \"15:19\", \"local_activity_start_after_arrival_buffer\": \"15:49\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F2611052\", \"dep_time\": \"20:16\", \"arr_time\": \"22:30\", \"local_activity_start_after_arrival_buffer\": \"23:00\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F0444278\", \"dep_time\": \"20:02\", \"arr_time\": \"21:58\", \"local_activity_start_after_arrival_buffer\": \"22:28\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2159372\", \"dep_time\": \"20:34\", \"arr_time\": \"22:22\", \"local_activity_start_after_arrival_buffer\": \"22:52\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F0956154\", \"dep_time\": \"17:37\", \"arr_time\": \"19:15\", \"latest_local_activity_finish_before_airport_buffer\": \"15:37\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F3792750\", \"dep_time\": \"16:59\", \"arr_time\": \"18:33\", \"latest_local_activity_finish_before_airport_buffer\": \"14:59\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1405933\", \"dep_time\": \"07:00\", \"arr_time\": \"09:02\", \"latest_local_activity_finish_before_airport_buffer\": \"05:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F2616561\", \"dep_time\": \"07:00\", \"arr_time\": \"08:42\", \"latest_local_activity_finish_before_airport_buffer\": \"05:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F3070061\", \"dep_time\": \"16:23\", \"arr_time\": \"18:07\", \"latest_local_activity_finish_before_airport_buffer\": \"14:23\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::7214140.0\"], \"lunch\": [\"Restaurant::2345342.0\", \"Restaurant::7214140.0\", \"Restaurant::1545914.0\", \"Restaurant::4451210.0\", \"Restaurant::394176.0\", \"Restaurant::1807407.0\", \"Restaurant::4461684.0\", \"Restaurant::4470676.0\"], \"dinner\": [\"Restaurant::2345342.0\", \"Restaurant::1545914.0\", \"Restaurant::798111.0\", \"Restaurant::4451210.0\", \"Restaurant::394176.0\", \"Restaurant::1807407.0\", \"Restaurant::4461684.0\", \"Restaurant::467356.0\", \"Restaurant::4470676.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::1532554\", \"Attraction::7274608\", \"Attraction::8028038\", \"Attraction::11990557\", \"Attraction::11990556\", \"Attraction::104477\", \"Attraction::105134\", \"Attraction::269207\", \"Attraction::261414\", \"Attraction::1739067\"], \"afternoon_attraction\": [\"Attraction::1532554\", \"Attraction::7274608\", \"Attraction::8028038\", \"Attraction::11990557\", \"Attraction::11990556\", \"Attraction::104477\", \"Attraction::105134\", \"Attraction::269207\", \"Attraction::261414\", \"Attraction::1739067\"]}, \"event_slots_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [\"Event::LvZ18_L-AxKxAGOZvU-7M\"], \"2024-11-07\": [\"Event::LvZ18_L-AxKxAGOZvU-7z\"]}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::7214140.0\", \"name\": \"Maple Street Biscuit Company - City Center\"}], \"lunch\": [{\"node_key\": \"Restaurant::2345342.0\", \"name\": \"Urban Stack\"}, {\"node_key\": \"Restaurant::7214140.0\", \"name\": \"Maple Street Biscuit Company - City Center\"}, {\"node_key\": \"Restaurant::1545914.0\", \"name\": \"Public House\"}, {\"node_key\": \"Restaurant::4451210.0\", \"name\": \"1885 Grill\"}, {\"node_key\": \"Restaurant::394176.0\", \"name\": \"Mellow Mushroom Chattanooga\"}, {\"node_key\": \"Restaurant::1807407.0\", \"name\": \"Champy's\"}, {\"node_key\": \"Restaurant::4461684.0\", \"name\": \"Uncle Larry's Restaurant\"}, {\"node_key\": \"Restaurant::4470676.0\", \"name\": \"Ruth's Chris Steak House\"}], \"dinner\": [{\"node_key\": \"Restaurant::2345342.0\", \"name\": \"Urban Stack\"}, {\"node_key\": \"Restaurant::1545914.0\", \"name\": \"Public House\"}, {\"node_key\": \"Restaurant::798111.0\", \"name\": \"Hennen's\"}, {\"node_key\": \"Restaurant::4451210.0\", \"name\": \"1885 Grill\"}, {\"node_key\": \"Restaurant::394176.0\", \"name\": \"Mellow Mushroom Chattanooga\"}, {\"node_key\": \"Restaurant::1807407.0\", \"name\": \"Champy's\"}, {\"node_key\": \"Restaurant::4461684.0\", \"name\": \"Uncle Larry's Restaurant\"}, {\"node_key\": \"Restaurant::467356.0\", \"name\": \"St. John's Restaurant\"}, {\"node_key\": \"Restaurant::4470676.0\", \"name\": \"Ruth's Chris Steak House\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [{\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7M\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\"}], \"2024-11-07\": [{\"node_key\": \"Event::LvZ18_L-AxKxAGOZvU-7z\", \"name\": \"All-Ages Micro Wrestling at the Microtorium of Pigeon Forge\"}]}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-05\", \"required_slots\": {\"Flight::F3632122\": [\"dinner\"], \"Flight::F3070086\": [\"dinner\"], \"Flight::F2611052\": [], \"Flight::F0444278\": [], \"Flight::F2159372\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-06\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [\"Event::LvZ18_L-AxKxAGOZvU-7M\"], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-07\", \"required_slots\": {\"Flight::F0956154\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F3792750\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1405933\": [], \"Flight::F2616561\": [], \"Flight::F3070061\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [\"Event::LvZ18_L-AxKxAGOZvU-7z\"], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-05\": [], \"2024-11-06\": [\"Event::LvZ18_L-AxKxAGOZvU-7M\"], \"2024-11-07\": [\"Event::LvZ18_L-AxKxAGOZvU-7z\"]}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_42",
+    "query_text": "Plan a 3-day trip for 2 people from Washington to Chattanooga from November 5th to November 7th, 2024, with a budget of $1,650. Accommodations should include a non-shared room.",
+    "request": {
+      "org": "Washington",
+      "dest": "Chattanooga",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-05', '2024-11-06', '2024-11-07']",
+      "people_number": 2,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': 'not shared room', 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 1650,
+      "query": "Plan a 3-day trip for 2 people from Washington to Chattanooga from November 5th to November 7th, 2024, with a budget of $1,650. Accommodations should include a non-shared room.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-05",
+      "2024-11-06",
+      "2024-11-07"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": "not shared room",
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3632122",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Washington",
+          "DestCityName": "Chattanooga",
+          "DepTime": "13:38",
+          "ArrTime": "15:15",
+          "Price": 165
+        }
+      },
+      {
+        "node_key": "Flight::F3070086",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Washington",
+          "DestCityName": "Chattanooga",
+          "DepTime": "13:35",
+          "ArrTime": "15:19",
+          "Price": 182
+        }
+      },
+      {
+        "node_key": "Flight::F2611052",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Washington",
+          "DestCityName": "Chattanooga",
+          "DepTime": "20:16",
+          "ArrTime": "22:30",
+          "Price": 247
+        }
+      },
+      {
+        "node_key": "Flight::F0444278",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Washington",
+          "DestCityName": "Chattanooga",
+          "DepTime": "20:02",
+          "ArrTime": "21:58",
+          "Price": 251
+        }
+      },
+      {
+        "node_key": "Flight::F2159372",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "Washington",
+          "DestCityName": "Chattanooga",
+          "DepTime": "20:34",
+          "ArrTime": "22:22",
+          "Price": 260
+        }
+      },
+      {
+        "node_key": "Flight::F0956154",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Chattanooga",
+          "DestCityName": "Washington",
+          "DepTime": "17:37",
+          "ArrTime": "19:15",
+          "Price": 112
+        }
+      },
+      {
+        "node_key": "Flight::F3792750",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Chattanooga",
+          "DestCityName": "Washington",
+          "DepTime": "16:59",
+          "ArrTime": "18:33",
+          "Price": 135
+        }
+      },
+      {
+        "node_key": "Flight::F1405933",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Chattanooga",
+          "DestCityName": "Washington",
+          "DepTime": "07:00",
+          "ArrTime": "09:02",
+          "Price": 212
+        }
+      },
+      {
+        "node_key": "Flight::F2616561",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Chattanooga",
+          "DestCityName": "Washington",
+          "DepTime": "07:00",
+          "ArrTime": "08:42",
+          "Price": 220
+        }
+      },
+      {
+        "node_key": "Flight::F3070061",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Chattanooga",
+          "DestCityName": "Washington",
+          "DepTime": "16:23",
+          "ArrTime": "18:07",
+          "Price": 229
+        }
+      },
+      {
+        "node_key": "Accommodation::5.6e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.6e+17",
+          "name": "Tadpole Cabin at Creek Road Farm",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$201 per night",
+            "originalPrice": null,
+            "price": "$201",
+            "qualifier": "night",
+            "total": "$1,002 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  209 reviews",
+            "localizedLabel": "5.0 (209)",
+            "average": 5,
+            "reviewsCount": 209
+          },
+          "coordinates": {
+            "latitude": 34.95476,
+            "longitude": -85.40712
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.69e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.69e+17",
+          "name": "The Artistree House A Treehouse in Rising Fawn",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No visitors & No pets",
+          "pricing": {
+            "label": "$299 per night",
+            "originalPrice": null,
+            "price": "$299",
+            "qualifier": "night",
+            "total": "$1,494 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  80 reviews",
+            "localizedLabel": "4.96 (80)",
+            "average": 4.96,
+            "reviewsCount": 80
+          },
+          "coordinates": {
+            "latitude": 34.78666,
+            "longitude": -85.46162
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7.59e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7.59e+17",
+          "name": "The Overlook Cabin: Breath-taking Views & King Bed",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$214 per night",
+            "originalPrice": null,
+            "price": "$214",
+            "qualifier": "night",
+            "total": "$1,066 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  229 reviews",
+            "localizedLabel": "4.99 (229)",
+            "average": 4.99,
+            "reviewsCount": 229
+          },
+          "coordinates": {
+            "latitude": 35.28065,
+            "longitude": -85.38485
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::54157493.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "54157493.0",
+          "name": "The Lookout Mountain Birdhouse",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$422 per night",
+            "originalPrice": null,
+            "price": "$422",
+            "qualifier": "night",
+            "total": "$2,106 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  194 reviews",
+            "localizedLabel": "4.98 (194)",
+            "average": 4.98,
+            "reviewsCount": 194
+          },
+          "coordinates": {
+            "latitude": 34.91858,
+            "longitude": -85.4208
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43971538.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43971538.0",
+          "name": "New Town House in Historic District of Chattanooga",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$121 per night",
+            "originalPrice": null,
+            "price": "$121",
+            "qualifier": "night",
+            "total": "$604 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  278 reviews",
+            "localizedLabel": "4.98 (278)",
+            "average": 4.98,
+            "reviewsCount": 278
+          },
+          "coordinates": {
+            "latitude": 35.03391,
+            "longitude": -85.30815
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::46851968.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "46851968.0",
+          "name": "Chattanooga - The Isbill House",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No smoking & No children under 10",
+          "pricing": {
+            "label": "$152 per night",
+            "originalPrice": null,
+            "price": "$152",
+            "qualifier": "night",
+            "total": "$760 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  230 reviews",
+            "localizedLabel": "4.97 (230)",
+            "average": 4.97,
+            "reviewsCount": 230
+          },
+          "coordinates": {
+            "latitude": 35.02723,
+            "longitude": -85.37408
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43914115.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43914115.0",
+          "name": "Glenn Falls Tiny Cabin",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$107 per night",
+            "originalPrice": null,
+            "price": "$107",
+            "qualifier": "night",
+            "total": "$535 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  610 reviews",
+            "localizedLabel": "4.97 (610)",
+            "average": 4.97,
+            "reviewsCount": 610
+          },
+          "coordinates": {
+            "latitude": 34.98803,
+            "longitude": -85.33778
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5.12e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.12e+17",
+          "name": "The Sassafras Treehouse",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$496 per night",
+            "originalPrice": null,
+            "price": "$496",
+            "qualifier": "night",
+            "total": "$2,476 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  202 reviews",
+            "localizedLabel": "4.98 (202)",
+            "average": 4.98,
+            "reviewsCount": 202
+          },
+          "coordinates": {
+            "latitude": 34.78963,
+            "longitude": -85.43933
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::42437001.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42437001.0",
+          "name": "Apollonie Cabin Private Spa at Lookout Mountain",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$172 per night",
+            "originalPrice": null,
+            "price": "$172",
+            "qualifier": "night",
+            "total": "$856 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  282 reviews",
+            "localizedLabel": "4.92 (282)",
+            "average": 4.92,
+            "reviewsCount": 282
+          },
+          "coordinates": {
+            "latitude": 35.02283,
+            "longitude": -85.34668
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::48070217.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "48070217.0",
+          "name": "Cozy Valley Suite: Downtown, Rock City, Ruby Falls",
+          "City": "Chattanooga",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$110 per night",
+            "originalPrice": null,
+            "price": "$110",
+            "qualifier": "night",
+            "total": "$548 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  266 reviews",
+            "localizedLabel": "4.94 (266)",
+            "average": 4.94,
+            "reviewsCount": 266
+          },
+          "coordinates": {
+            "latitude": 35.05271,
+            "longitude": -85.354
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::1532554",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1532554",
+          "name": "Chattanooga Ducks",
+          "City": "Chattanooga",
+          "subtype": [
+            "Duck Tours"
+          ],
+          "subcategories": [
+            "Tours",
+            "Boat Tours & Water Sports",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.5",
+          "rating": "5.0",
+          "rankingString": "#3 of 24 Boat Tours & Water Sports in Chattanooga",
+          "address": "151 Riverfront Pkwy, Chattanooga, TN 37402-1206",
+          "description": "Did you know The designation of DUKW is not a military pun - the name comes from the terminology used for military vehicles in World War II; the D indicates a vehicle designed in 1942, the U meant \"utility (amphibious)\", the K indicated all-wheel drive and the W indicated two powered rear axles. Although technically a misnomer, DUKWs are often referred to as duck boats. Another popular nickname was old magoo or simply magoo. Though the origin of this term is unknown, it probably refers to the..."
+        }
+      },
+      {
+        "node_key": "Attraction::7274608",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "7274608",
+          "name": "Escape Experience - Chattanooga Escape Room Games",
+          "City": "Chattanooga",
+          "subtype": [
+            "Room Escape Games",
+            "Scavenger Hunts",
+            "Game & Entertainment Centers"
+          ],
+          "subcategories": [
+            "Fun & Games"
+          ],
+          "visit_duration": "1.5",
+          "rating": "5.0",
+          "rankingString": "#4 of 56 Fun & Games in Chattanooga",
+          "address": "1800 Rossville Ave Suite 1, Chattanooga, TN 37408-1928",
+          "description": "Escape Experience is a fun entertainment activity located in Downtown Chattanooga’s Southside Historic District; just a few blocks from the Chattanooga Choo Choo. Each escape room game is a real-life interactive adventure designed for team building groups, friends, family or co-workers. With just one hour, come find out if you have what it takes to break out of prison, rob a bank, discover your inheritance, or find the cure that will save the world, or jump off a runaway train? Book your next..."
+        }
+      },
+      {
+        "node_key": "Attraction::8028038",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8028038",
+          "name": "Chattanooga Whiskey Experimental Distillery",
+          "City": "Chattanooga",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#1 of 177 things to do in Chattanooga",
+          "address": "1439 Market St, Chattanooga, TN 37402-4430",
+          "description": "The first distillery to craft whiskey in Chattanooga in over 100 years. With over 100 different barrels maturing in the aging cellar, every visit to the Experimental Distillery is an exploration of the past, present and future of hand-crafted bourbon. Reserve a tour & tasting to check out our latest releases. (21+ with physical, valid, ID)"
+        }
+      },
+      {
+        "node_key": "Attraction::11990557",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "11990557",
+          "name": "Historic Downtown Chattanooga Segway Tour",
+          "City": "Chattanooga",
+          "subtype": [],
+          "subcategories": [],
+          "rating": "5.0",
+          "address": "Chattanooga, TN",
+          "description": "A Chattanooga Segway tour is an easy way to get to know the city’s highlights in just a short amount of time. Glide through the city to top Chattanooga sights such as Miller Plaza, Tivoli Theater, and the Tennessee Aquarium. As you tour, your guide shares fascinating trivia and fun facts about Chattanooga history and culture."
+        }
+      },
+      {
+        "node_key": "Attraction::11990556",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "11990556",
+          "name": "Chattanooga's North Shore & Coolidge Park Guided Segway Tour",
+          "City": "Chattanooga",
+          "subtype": [],
+          "subcategories": [],
+          "rating": "5.0",
+          "address": "Chattanooga, TN",
+          "description": "Avoid hours of walking and navigating when you book a Segway tour of Chattanooga's highlights, including parks, bridges, and riverside vistas you may not have found if exploring on your own. In addition to pointing out landmarks that visitors often miss, your guide provides trivia and background on the city’s rich history."
+        }
+      },
+      {
+        "node_key": "Attraction::104477",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104477",
+          "name": "Tennessee Aquarium",
+          "City": "Chattanooga",
+          "subtype": [
+            "Aquariums"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#8 of 177 things to do in Chattanooga",
+          "address": "1 Broad St, Chattanooga, TN 37402-1023",
+          "description": "This aquarium has two buildings: River Journey, which showcases freshwater habitats from around the globe, and Ocean Journey, where travelers can view magnificent sea creatures. We recommend spending at least three hours at the aquarium as there are over 10,000 animals here. The little ones will especially love the cute macaroni penguins and mesmerizing sea jellies. Weekends are the busiest, so consider visiting on a weekday for a quieter and more intimate experience. There’s timed entry to t..."
+        }
+      },
+      {
+        "node_key": "Attraction::105134",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105134",
+          "name": "Lookout Mountain",
+          "City": "Chattanooga",
+          "subtype": [
+            "Mountains",
+            "Lookouts"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#9 of 177 things to do in Chattanooga",
+          "address": "Chattanooga, TN 37350",
+          "description": "This mountain ridge is home to three scenic attractions: Ruby Falls, Rock City, and the Incline Railway. Ruby Falls is the country’s tallest and deepest underground waterfall at 260 feet, while Rock City is where you can supposedly see seven states at the iconic Lover’s Leap. Then, brace yourself as you hop on the Incline Railway—the steepest passenger railway in the world. We recommend you spend at least 4 hours at Lookout Mountain to experience the highlights. Each attraction is priced sepa..."
+        }
+      },
+      {
+        "node_key": "Attraction::269207",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "269207",
+          "name": "Walnut Street Bridge",
+          "City": "Chattanooga",
+          "subtype": [
+            "Bridges"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#5 of 177 things to do in Chattanooga",
+          "address": "200 Frazier Ave, Chattanooga, TN 37405",
+          "description": "One of the finest examples of the Phoenix wrought-iron truss bridges that were build between 1884 and 1923."
+        }
+      },
+      {
+        "node_key": "Attraction::261414",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "261414",
+          "name": "Tennessee Valley Railroad Museum",
+          "City": "Chattanooga",
+          "subtype": [
+            "Specialty Museums",
+            "Children's Museums",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#6 of 177 things to do in Chattanooga",
+          "address": "4119 Cromwell Rd, Chattanooga, TN 37421-2119",
+          "description": "As you embark on this nostalgic train ride, you'll discover beautifully restored vintage locomotives and passenger cars that showcase the craftsmanship of a bygone era. The journey takes you through the picturesque Tennessee countryside, offering breathtaking views and a chance to reflect on simpler times. Within the museum's exhibit building, you'll find an impressive collection of artifacts, photographs, and memorabilia that bring the history of railroading to life. The knowledgeable staff,..."
+        }
+      },
+      {
+        "node_key": "Attraction::1739067",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "1739067",
+          "name": "Chattanooga Ghost Tours",
+          "City": "Chattanooga",
+          "subtype": [
+            "Ghost & Vampire Tours"
+          ],
+          "subcategories": [
+            "Tours"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 68 Tours in Chattanooga",
+          "address": "57 E 5th St, Chattanooga, TN 37402-1029",
+          "description": "Ready to get chilled while hearing some of the city's most fascinating history? Join us nightly (or weekends winter) at our haunted steampunk shop at 57 E 5th St (back side of the Taziki's building). Or for the truly adventurous, come on the ghost hunt to use some of our cutting edge equipment in some of the city's most haunted locations."
+        }
+      },
+      {
+        "node_key": "Restaurant::2345342.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2345342.0",
+          "name": "Urban Stack",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "12 W 13th St, Chattanooga, TN 37402-5005",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::7214140.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "7214140.0",
+          "name": "Maple Street Biscuit Company - City Center",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "407 Broad St, Chattanooga, TN 37402-1238",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1545914.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1545914.0",
+          "name": "Public House",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1110 Market St, Chattanooga, TN 37402-2863",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::798111.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "798111.0",
+          "name": "Hennen's",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "193 Chestnut St, Chattanooga, TN 37402-1012",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4451210.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4451210.0",
+          "name": "1885 Grill",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Seafood",
+            "Grill"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3914 Saint Elmo Ave, Chattanooga, TN 37409-1268",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::394176.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "394176.0",
+          "name": "Mellow Mushroom Chattanooga",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Pizza"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "205 Broad St, Chattanooga, TN 37402",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1807407.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1807407.0",
+          "name": "Champy's",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "35.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "526 E ML King Blvd, Chattanooga, TN 37403-4111",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1440,
+                  "closeHours": "00:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4461684.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4461684.0",
+          "name": "Uncle Larry's Restaurant",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "15.0",
+          "rating": "4.5",
+          "priceLevel": "$",
+          "address": "736 East Mlk Blvd, Chattanooga, TN 37403",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1140,
+                  "closeHours": "19:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::467356.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "467356.0",
+          "name": "St. John's Restaurant",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "1278 Market St, Chattanooga, TN 37402-2713",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4470676.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4470676.0",
+          "name": "Ruth's Chris Steak House",
+          "City": "Chattanooga",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "56.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2321 Lifestyle Way Embassy Suites Hotel, Chattanooga, TN 37421",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-Au-CewOZvoCgF",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-Au-CewOZvoCgF",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-Au-CewOZvoCga",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-Au-CewOZvoCga",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7g",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7g",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7U",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7U",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7M",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7M",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "06-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7z",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7z",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "07-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7y",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7y",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "08-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_L-AxKxAGOZvU-7B",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_L-AxKxAGOZvU-7B",
+          "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge",
+          "city": "Chattanooga",
+          "dateTitle": "09-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Wrestling",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/all-ages-micro-wrestling-at-the-microtorium-of-pigeon-forge-tickets-GSZX9J?ref=ticket...",
+            "availabilityStarts": "2022-01-24T19:11:43Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uYAF",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uYAF",
+          "name": "Angry Chair",
+          "city": "Chattanooga",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uYAF",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uYA7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uYA7",
+          "name": "Apes of the State",
+          "city": "Chattanooga",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uYA7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 138.51
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 138.51
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 179.82
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 179.82
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 181.48
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 181.48
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 227.8
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 227.8
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 270.69
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 270.69
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 317.33
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 317.33
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 382.92
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 382.92
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 391.5
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 423.38
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 423.38
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 437.23
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 437.23
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 460.51
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 491.43
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 491.43
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 554.34
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 554.34
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 571.63
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 571.63
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 572.26
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 572.26
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 597.67
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 598.26
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 598.26
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 661.27
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 781.35
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 781.35
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 818.69
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 818.69
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 905.83
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 905.83
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 916.19
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 916.19
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 935.31
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 966.63
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 966.63
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 990.49
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 990.49
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1082.14
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1082.14
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1174.53
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1178.85
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1178.85
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1209.38
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1209.38
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226.42
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226.42
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1256.11
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1263.84
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1272.37
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1272.37
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1328.48
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1328.48
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1379.29
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1379.29
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1521.36
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1521.36
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1612.61
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1612.61
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1626.03
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1626.03
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1641.94
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1641.94
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1737.14
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1737.14
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1785.8
+      },
+      {
+        "source": "Restaurant::1545914.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1785.8
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1809.05
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1809.05
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1841.11
+      },
+      {
+        "source": "Restaurant::1807407.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1841.11
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1857.19
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1857.19
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1889.87
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1889.87
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1897.86
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1897.86
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1919.54
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1919.54
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1925.73
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1945.46
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1945.46
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1960.74
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1960.74
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1988.89
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1988.89
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2018.69
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2056.46
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2056.46
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2122.88
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2122.88
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2146.64
+      },
+      {
+        "source": "Restaurant::4461684.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2146.64
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2190.56
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2275.39
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2283.12
+      },
+      {
+        "source": "Restaurant::7214140.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2283.12
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2362.84
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2454.48
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2529.86
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2535.01
+      },
+      {
+        "source": "Restaurant::394176.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2535.01
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2611.76
+      },
+      {
+        "source": "Attraction::105134",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2618.42
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2618.42
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2632.37
+      },
+      {
+        "source": "Restaurant::798111.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2632.37
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2716.48
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3188.7
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3210.8
+      },
+      {
+        "source": "Attraction::7274608",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3336.06
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3336.06
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3542.29
+      },
+      {
+        "source": "Attraction::8028038",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3562.59
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3562.59
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3830.63
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3908.67
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3909.09
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3916.39
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3929.33
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3929.72
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4033.11
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4071.2
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4081.6
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4092.9
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4284.17
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4296.5
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4302.18
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4391.43
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4463.72
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4553.22
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4584.76
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4595.12
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4645.26
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4656.44
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4657.7
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4762.75
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4764.67
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::1807407.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4831.58
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4866.86
+      },
+      {
+        "source": "Attraction::1739067",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4884.9
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::1739067",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4884.9
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4903.18
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5127.9
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::4461684.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5167.32
+      },
+      {
+        "source": "Attraction::1532554",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5218.98
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5218.98
+      },
+      {
+        "source": "Accommodation::48070217.0",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5278.8
+      },
+      {
+        "source": "Attraction::104477",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5316.39
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::104477",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5316.39
+      },
+      {
+        "source": "Accommodation::42437001.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5332.5
+      },
+      {
+        "source": "Attraction::269207",
+        "target": "Restaurant::4451210.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5683.36
+      },
+      {
+        "source": "Restaurant::4451210.0",
+        "target": "Attraction::269207",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5683.36
+      },
+      {
+        "source": "Attraction::261414",
+        "target": "Restaurant::4470676.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5761.53
+      },
+      {
+        "source": "Restaurant::4470676.0",
+        "target": "Attraction::261414",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5761.53
+      },
+      {
+        "source": "Accommodation::43971538.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5793.97
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5829.64
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6106.77
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6139.2
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Attraction::8028038",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6156.87
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::1545914.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6185.62
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6217.0
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Attraction::1532554",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6230.48
+      },
+      {
+        "source": "Attraction::105134",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6232.91
+      },
+      {
+        "source": "Restaurant::2345342.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6232.91
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Restaurant::2345342.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6285.35
+      },
+      {
+        "source": "Attraction::105134",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6342.48
+      },
+      {
+        "source": "Restaurant::467356.0",
+        "target": "Attraction::105134",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6342.48
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::7214140.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6378.68
+      },
+      {
+        "source": "Accommodation::43914115.0",
+        "target": "Restaurant::467356.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6384.48
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::798111.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6435.92
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Attraction::7274608",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6452.07
+      },
+      {
+        "source": "Accommodation::46851968.0",
+        "target": "Restaurant::394176.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6472.17
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-05",
+        "2024-11-06",
+        "2024-11-07"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3632122",
+          "dep_time": "13:38",
+          "arr_time": "15:15",
+          "local_activity_start_after_arrival_buffer": "15:45",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F3070086",
+          "dep_time": "13:35",
+          "arr_time": "15:19",
+          "local_activity_start_after_arrival_buffer": "15:49",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F2611052",
+          "dep_time": "20:16",
+          "arr_time": "22:30",
+          "local_activity_start_after_arrival_buffer": "23:00",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F0444278",
+          "dep_time": "20:02",
+          "arr_time": "21:58",
+          "local_activity_start_after_arrival_buffer": "22:28",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2159372",
+          "dep_time": "20:34",
+          "arr_time": "22:22",
+          "local_activity_start_after_arrival_buffer": "22:52",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F0956154",
+          "dep_time": "17:37",
+          "arr_time": "19:15",
+          "latest_local_activity_finish_before_airport_buffer": "15:37",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F3792750",
+          "dep_time": "16:59",
+          "arr_time": "18:33",
+          "latest_local_activity_finish_before_airport_buffer": "14:59",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1405933",
+          "dep_time": "07:00",
+          "arr_time": "09:02",
+          "latest_local_activity_finish_before_airport_buffer": "05:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F2616561",
+          "dep_time": "07:00",
+          "arr_time": "08:42",
+          "latest_local_activity_finish_before_airport_buffer": "05:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F3070061",
+          "dep_time": "16:23",
+          "arr_time": "18:07",
+          "latest_local_activity_finish_before_airport_buffer": "14:23",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::7214140.0"
+        ],
+        "lunch": [
+          "Restaurant::2345342.0",
+          "Restaurant::7214140.0",
+          "Restaurant::1545914.0",
+          "Restaurant::4451210.0",
+          "Restaurant::394176.0",
+          "Restaurant::1807407.0",
+          "Restaurant::4461684.0",
+          "Restaurant::4470676.0"
+        ],
+        "dinner": [
+          "Restaurant::2345342.0",
+          "Restaurant::1545914.0",
+          "Restaurant::798111.0",
+          "Restaurant::4451210.0",
+          "Restaurant::394176.0",
+          "Restaurant::1807407.0",
+          "Restaurant::4461684.0",
+          "Restaurant::467356.0",
+          "Restaurant::4470676.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::1532554",
+          "Attraction::7274608",
+          "Attraction::8028038",
+          "Attraction::11990557",
+          "Attraction::11990556",
+          "Attraction::104477",
+          "Attraction::105134",
+          "Attraction::269207",
+          "Attraction::261414",
+          "Attraction::1739067"
+        ],
+        "afternoon_attraction": [
+          "Attraction::1532554",
+          "Attraction::7274608",
+          "Attraction::8028038",
+          "Attraction::11990557",
+          "Attraction::11990556",
+          "Attraction::104477",
+          "Attraction::105134",
+          "Attraction::269207",
+          "Attraction::261414",
+          "Attraction::1739067"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [
+          "Event::LvZ18_L-AxKxAGOZvU-7M"
+        ],
+        "2024-11-07": [
+          "Event::LvZ18_L-AxKxAGOZvU-7z"
+        ]
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::7214140.0",
+            "name": "Maple Street Biscuit Company - City Center"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::2345342.0",
+            "name": "Urban Stack"
+          },
+          {
+            "node_key": "Restaurant::7214140.0",
+            "name": "Maple Street Biscuit Company - City Center"
+          },
+          {
+            "node_key": "Restaurant::1545914.0",
+            "name": "Public House"
+          },
+          {
+            "node_key": "Restaurant::4451210.0",
+            "name": "1885 Grill"
+          },
+          {
+            "node_key": "Restaurant::394176.0",
+            "name": "Mellow Mushroom Chattanooga"
+          },
+          {
+            "node_key": "Restaurant::1807407.0",
+            "name": "Champy's"
+          },
+          {
+            "node_key": "Restaurant::4461684.0",
+            "name": "Uncle Larry's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4470676.0",
+            "name": "Ruth's Chris Steak House"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::2345342.0",
+            "name": "Urban Stack"
+          },
+          {
+            "node_key": "Restaurant::1545914.0",
+            "name": "Public House"
+          },
+          {
+            "node_key": "Restaurant::798111.0",
+            "name": "Hennen's"
+          },
+          {
+            "node_key": "Restaurant::4451210.0",
+            "name": "1885 Grill"
+          },
+          {
+            "node_key": "Restaurant::394176.0",
+            "name": "Mellow Mushroom Chattanooga"
+          },
+          {
+            "node_key": "Restaurant::1807407.0",
+            "name": "Champy's"
+          },
+          {
+            "node_key": "Restaurant::4461684.0",
+            "name": "Uncle Larry's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::467356.0",
+            "name": "St. John's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4470676.0",
+            "name": "Ruth's Chris Steak House"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [
+          {
+            "node_key": "Event::LvZ18_L-AxKxAGOZvU-7M",
+            "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge"
+          }
+        ],
+        "2024-11-07": [
+          {
+            "node_key": "Event::LvZ18_L-AxKxAGOZvU-7z",
+            "name": "All-Ages Micro Wrestling at the Microtorium of Pigeon Forge"
+          }
+        ]
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-05",
+          "required_slots": {
+            "Flight::F3632122": [
+              "dinner"
+            ],
+            "Flight::F3070086": [
+              "dinner"
+            ],
+            "Flight::F2611052": [],
+            "Flight::F0444278": [],
+            "Flight::F2159372": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-06",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [
+            "Event::LvZ18_L-AxKxAGOZvU-7M"
+          ],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-07",
+          "required_slots": {
+            "Flight::F0956154": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F3792750": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1405933": [],
+            "Flight::F2616561": [],
+            "Flight::F3070061": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [
+            "Event::LvZ18_L-AxKxAGOZvU-7z"
+          ],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-05": [],
+      "2024-11-06": [
+        "Event::LvZ18_L-AxKxAGOZvU-7M"
+      ],
+      "2024-11-07": [
+        "Event::LvZ18_L-AxKxAGOZvU-7z"
+      ]
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

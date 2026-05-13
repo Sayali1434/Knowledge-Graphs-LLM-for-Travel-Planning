@@ -1,0 +1,3345 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_32\", \"query_text\": \"Plan a 3-day trip for 1 person from Denver to San Diego from November 26th to November 28th, 2024, with a budget of $1,800.\", \"request\": {\"org\": \"Denver\", \"dest\": \"San Diego\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-26', '2024-11-27', '2024-11-28']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 1800, \"query\": \"Plan a 3-day trip for 1 person from Denver to San Diego from November 26th to November 28th, 2024, with a budget of $1,800.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Luxury Traveler; Location Preference: Cities\"}, \"dates\": [\"2024-11-26\", \"2024-11-27\", \"2024-11-28\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Adventure\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Cities\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F2277049\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"San Diego\", \"DepTime\": \"05:48\", \"ArrTime\": \"06:53\", \"Price\": 177}}, {\"node_key\": \"Flight::F0100517\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"San Diego\", \"DepTime\": \"05:48\", \"ArrTime\": \"07:02\", \"Price\": 200}}, {\"node_key\": \"Flight::F4031493\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"San Diego\", \"DepTime\": \"05:19\", \"ArrTime\": \"06:51\", \"Price\": 258}}, {\"node_key\": \"Flight::F3154039\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"San Diego\", \"DepTime\": \"05:57\", \"ArrTime\": \"07:15\", \"Price\": 258}}, {\"node_key\": \"Flight::F2649155\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Denver\", \"DestCityName\": \"San Diego\", \"DepTime\": \"06:10\", \"ArrTime\": \"07:14\", \"Price\": 265}}, {\"node_key\": \"Flight::F3959235\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Denver\", \"DepTime\": \"22:44\", \"ArrTime\": \"01:53\", \"Price\": 182}}, {\"node_key\": \"Flight::F0984000\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Denver\", \"DepTime\": \"21:28\", \"ArrTime\": \"00:33\", \"Price\": 241}}, {\"node_key\": \"Flight::F0029390\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Denver\", \"DepTime\": \"22:18\", \"ArrTime\": \"01:23\", \"Price\": 244}}, {\"node_key\": \"Flight::F1594717\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Denver\", \"DepTime\": \"22:01\", \"ArrTime\": \"01:08\", \"Price\": 246}}, {\"node_key\": \"Flight::F2681502\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Denver\", \"DepTime\": \"22:01\", \"ArrTime\": \"01:10\", \"Price\": 389}}, {\"node_key\": \"Accommodation::11278334.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"11278334.0\", \"name\": \"Private Hideaway, Shelter Island, Beach  & Bay\", \"City\": \"San Diego\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$135 per night\", \"originalPrice\": null, \"price\": \"$135\", \"qualifier\": \"night\", \"total\": \"$675 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  599 reviews\", \"localizedLabel\": \"4.94 (599)\", \"average\": 4.94, \"reviewsCount\": 599}, \"coordinates\": {\"latitude\": 32.72673, \"longitude\": -117.23444}}}, {\"node_key\": \"Accommodation::37837445.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"37837445.0\", \"name\": \"Hilltop cabin retreat with lake & mountain views\", \"City\": \"San Diego\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$201 per night\", \"originalPrice\": null, \"price\": \"$201\", \"qualifier\": \"night\", \"total\": \"$1,001 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  697 reviews\", \"localizedLabel\": \"4.92 (697)\", \"average\": 4.92, \"reviewsCount\": 697}, \"coordinates\": {\"latitude\": 33.07953, \"longitude\": -117.11758}}}, {\"node_key\": \"Accommodation::14126657.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"14126657.0\", \"name\": \"Place to Stay with Private Entrance near Beach\", \"City\": \"San Diego\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No visitors & No pets\", \"pricing\": {\"label\": \"$91 per night\", \"originalPrice\": null, \"price\": \"$91\", \"qualifier\": \"night\", \"total\": \"$453 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  625 reviews\", \"localizedLabel\": \"4.94 (625)\", \"average\": 4.94, \"reviewsCount\": 625}, \"coordinates\": {\"latitude\": 32.74193, \"longitude\": -117.2442}}}, {\"node_key\": \"Accommodation::24325377.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"24325377.0\", \"name\": \"Central & Serene Secret Garden Guesthouse\", \"City\": \"San Diego\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$142 per night\", \"originalPrice\": null, \"price\": \"$142\", \"qualifier\": \"night\", \"total\": \"$710 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  543 reviews\", \"localizedLabel\": \"4.97 (543)\", \"average\": 4.97, \"reviewsCount\": 543}, \"coordinates\": {\"latitude\": 32.76257, \"longitude\": -117.10514}}}, {\"node_key\": \"Accommodation::50766152.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"50766152.0\", \"name\": \"Great Beach Fun and Rest in Pacific Beach!\", \"City\": \"San Diego\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$139 per night\", \"originalPrice\": null, \"price\": \"$139\", \"qualifier\": \"night\", \"total\": \"$692 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  149 reviews\", \"localizedLabel\": \"4.97 (149)\", \"average\": 4.97, \"reviewsCount\": 149}, \"coordinates\": {\"latitude\": 32.7921, \"longitude\": -117.25231}}}, {\"node_key\": \"Accommodation::62274.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"62274.0\", \"name\": \"charming, colorful, close to beach\", \"City\": \"San Diego\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$107 per night\", \"originalPrice\": null, \"price\": \"$107\", \"qualifier\": \"night\", \"total\": \"$533 total\"}, \"rating\": {\"label\": \"4.78 out of 5 average rating,  921 reviews\", \"localizedLabel\": \"4.78 (921)\", \"average\": 4.78, \"reviewsCount\": 921}, \"coordinates\": {\"latitude\": 32.80583, \"longitude\": -117.24244}}}, {\"node_key\": \"Accommodation::15928389.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"15928389.0\", \"name\": \"No contact with host, separate, and close to town!\", \"City\": \"San Diego\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$89 per night\", \"originalPrice\": null, \"price\": \"$89\", \"qualifier\": \"night\", \"total\": \"$444 total\"}, \"rating\": {\"label\": \"4.86 out of 5 average rating,  978 reviews\", \"localizedLabel\": \"4.86 (978)\", \"average\": 4.86, \"reviewsCount\": 978}, \"coordinates\": {\"latitude\": 32.7815, \"longitude\": -117.16637}}}, {\"node_key\": \"Accommodation::45254952.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45254952.0\", \"name\": \"Bed in 4-Bed room in Stylish Hostel\", \"City\": \"San Diego\", \"roomType\": \"shared_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$47 per night, originally $56\", \"originalPrice\": \"$56\", \"price\": \"$47\", \"qualifier\": \"night\", \"total\": \"$235 total\"}, \"rating\": {\"label\": \"4.83 out of 5 average rating,  723 reviews\", \"localizedLabel\": \"4.83 (723)\", \"average\": 4.83, \"reviewsCount\": 723}, \"coordinates\": {\"latitude\": 32.74626, \"longitude\": -117.25057}}}, {\"node_key\": \"Accommodation::39693438.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39693438.0\", \"name\": \"Twin Bed, Hot Tub, 15 min to Downtown&Beaches\", \"City\": \"San Diego\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10 & No parties\", \"pricing\": {\"label\": \"$78 per night, originally $96\", \"originalPrice\": \"$96\", \"price\": \"$78\", \"qualifier\": \"night\", \"total\": \"$389 total\"}, \"rating\": {\"label\": \"4.89 out of 5 average rating,  289 reviews\", \"localizedLabel\": \"4.89 (289)\", \"average\": 4.89, \"reviewsCount\": 289}, \"coordinates\": {\"latitude\": 32.837, \"longitude\": -117.17919}}}, {\"node_key\": \"Accommodation::43286543.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"43286543.0\", \"name\": \"Private Room & Bath! Steps to Restaurants & Shops\", \"City\": \"San Diego\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$81 per night, originally $95\", \"originalPrice\": \"$95\", \"price\": \"$81\", \"qualifier\": \"night\", \"total\": \"$402 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  91 reviews\", \"localizedLabel\": \"4.97 (91)\", \"average\": 4.97, \"reviewsCount\": 91}, \"coordinates\": {\"latitude\": 32.76602, \"longitude\": -117.11988}}}, {\"node_key\": \"Attraction::531819\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"531819\", \"name\": \"USS Midway Museum\", \"City\": \"San Diego\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 815 things to do in San Diego\", \"address\": \"910 N Harbor Drive, San Diego, CA 92101-5811\", \"description\": \"Located in downtown San Diego, the USS Midway (Museum) was America’s longest-serving aircraft carrier of the 20th century. Today, the interactive museum is an unforgettable adventure for the entire family as guests walk in the footsteps of the 225,000 young men who served on Midway. Visitors explore a floating city at sea, the amazing flight deck and its 29 restored aircraft, flight simulators, and are inspired in the Battle of Midway Theater, included with admission. Admission also includes ...\"}}, {\"node_key\": \"Attraction::104122\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104122\", \"name\": \"San Diego Zoo\", \"City\": \"San Diego\", \"subtype\": [\"Zoos\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 815 things to do in San Diego\", \"address\": \"2929 Zoo Drive Balboa Park, San Diego, CA 92101\", \"description\": \"The San Diego Zoo pioneered cageless exhibits and offers travelers a fun and informative experience. Featuring over 4000 animals, the park gives you a peek into the wildlife of several ecosystems, from deserts to rainforests. Ride the tour bus, which crosses three quarters of the zoo’s area, and learn more about the animals from the guide as you view them in their natural habitats. You can also hop on the Skyfari gondola lift to see the entire park from above. Tickets to the San Diego Zoo tha...\"}}, {\"node_key\": \"Attraction::255307\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"255307\", \"name\": \"La Jolla Cove\", \"City\": \"San Diego\", \"subtype\": [\"Beaches\", \"Parks\"], \"subcategories\": [\"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"4.25\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 355 things to do in La Jolla\", \"address\": \"1100 Coast Blvd, La Jolla, San Diego, CA 92037-3600\", \"description\": \"At this beach surronded by sandstone cliffs on the San Diego coast, the water is calm enough for travelers to enjoy diving and snorkeling. Walk along the rocky shore to spot large colonies of sea lions lounging in their natural habitat and looking after their pups, and have a picnic while soaking up the views of the ocean from the cliffs at sunset. If you visit at low tide, you’ll get to swim in the crystal clear tidal pools as well. You can also visit Sunny Jim's Sea Cave which is accessible...\"}}, {\"node_key\": \"Attraction::102782\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"102782\", \"name\": \"Balboa Park\", \"City\": \"San Diego\", \"subtype\": [\"Parks\", \"Gardens\", \"Playgrounds\"], \"subcategories\": [\"Fun & Games\", \"Nature & Parks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 815 things to do in San Diego\", \"address\": \"1549 El Prado, San Diego, CA 92101-1660\", \"description\": \"This 1,200-acre nature park comprises 17 museums, gardens, musical theaters, a sports complex, and the world-famous San Diego Zoo. The park’s Spanish-Moorish architecture and 19 distinct gardens (some require admission fees) attract both tourists and locals. Don’t miss the San Diego Air and Space Museum, the Spanish Village Art Center for unique handicrafts, and the Spreckels Organ Pavilion, where free concerts are hosted in the evenings. Travelers recommend putting aside the whole day to exp...\"}}, {\"node_key\": \"Attraction::127014\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"127014\", \"name\": \"Coronado Bridge\", \"City\": \"San Diego\", \"subtype\": [\"Bridges\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#25 of 815 things to do in San Diego\", \"address\": \"State Route 75, San Diego, CA 92118\", \"description\": \"A beautiful bridge connecting San Diego to Coronado.\"}}, {\"node_key\": \"Attraction::104586\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104586\", \"name\": \"Old Town San Diego State Historic Park\", \"City\": \"San Diego\", \"subtype\": [\"State Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#44 of 815 things to do in San Diego\", \"address\": \"4002 Wallace St, San Diego, CA 92110\", \"description\": \"Historic site in downtown San Diego that recreates life in the Mexican and early American periods of 1821 to 1872.\"}}, {\"node_key\": \"Attraction::116565\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"116565\", \"name\": \"Cabrillo National Monument\", \"City\": \"San Diego\", \"subtype\": [\"Historic Sites\", \"National Parks\", \"Monuments & Statues\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 815 things to do in San Diego\", \"address\": \"1800 Cabrillo Memorial Dr Point Loma Ecological Reserve, San Diego, CA 92106-3601\", \"description\": \"Stately monument honoring Cabrillo, discoverer of San Diego Bay, is located in Point Loma that overlooks the city and the Bay.\"}}, {\"node_key\": \"Attraction::482152\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"482152\", \"name\": \"Petco Park\", \"City\": \"San Diego\", \"subtype\": [\"Sports Complexes\", \"Arenas & Stadiums\"], \"subcategories\": [\"Sights & Landmarks\", \"Fun & Games\"], \"visit_duration\": \"2.25\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 815 things to do in San Diego\", \"address\": \"100 Park Blvd, San Diego, CA 92101-7405\", \"description\": \"Named the #1 Ballpark in America by USA Today in 2016! Petco Park is spectacular in every way, combining the best sight lines in baseball with breathtaking views of San Diego. Architecturally magnificent, it celebrates the sea, the sky, the natural beauty, cultural diversity and unique spirit of our region. We’ve made a concerted effort to not only make this the best ballpark in America, but also one of the best entertainment destinations. Located in downtown San Diego, its surrounded by a pl...\"}}, {\"node_key\": \"Attraction::208324\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"208324\", \"name\": \"Torrey Pines State Natural Reserve\", \"City\": \"San Diego\", \"subtype\": [\"Hiking Trails\", \"Nature & Wildlife Areas\", \"State Parks\"], \"subcategories\": [\"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"4.25\", \"rating\": \"4.5\", \"rankingString\": \"#7 of 815 things to do in San Diego\", \"address\": \"12600 N Torrey Pines Rd, San Diego, CA 92037\", \"description\": \"Although this park is located within San Diego's city limits, it remains one of the wildest landscapes along the Southern California coast, with miles of unspoiled beaches, chaparral, elegant Torrey Pine trees and a lagoon vital to many species of migrating birds.\"}}, {\"node_key\": \"Attraction::263430\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"263430\", \"name\": \"La Jolla Shores Park\", \"City\": \"San Diego\", \"subtype\": [\"Beaches\", \"Parks\"], \"subcategories\": [\"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"4.25\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 355 things to do in La Jolla\", \"address\": \"8300 Camino Del Oro Kellogg Park, La Jolla, San Diego, CA 92037\", \"description\": \"Mile-long beach features gentle waves during the summer months, making this spot a prime spot for novice scuba divers.\"}}, {\"node_key\": \"Restaurant::21042803.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"21042803.0\", \"name\": \"Covewood Restaurant\", \"City\": \"San Diego\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Healthy\"], \"avg_cost\": \"45.5\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1775 E Mission Bay Dr, San Diego, CA 92109-6801\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::481910.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"481910.0\", \"name\": \"The Fish Market - San Diego\", \"City\": \"San Diego\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Seafood\", \"Soups\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"750 N Harbor Dr, San Diego, CA 92101-5806\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::492018.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"492018.0\", \"name\": \"Filippi's Pizza Grotto Little Italy\", \"City\": \"San Diego\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Pizza\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1747 India St, San Diego, CA 92101-2517\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::532538.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"532538.0\", \"name\": \"Buon Appetito\", \"City\": \"San Diego\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1609 India St, San Diego, CA 92101-2515\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [], [], [], [], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1350, \"closeHours\": \"22:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::4725725.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"4725725.0\", \"name\": \"Dockside 1953\", \"City\": \"San Diego\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Steakhouse\", \"Seafood\", \"Barbecue\", \"Diner\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"998 W Mission Bay Dr At The Bahia Resort Hotel, San Diego, CA 92109-7803\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 690, \"closeHours\": \"11:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 690, \"closeHours\": \"11:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 690, \"closeHours\": \"11:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 690, \"closeHours\": \"11:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 690, \"closeHours\": \"11:30\"}, {\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::7379443.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"7379443.0\", \"name\": \"Oceana Coastal Kitchen\", \"City\": \"San Diego\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Seafood\", \"Contemporary\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3999 Mission Blvd Waterfront at the Catamaran Resort Hotel and Spa, San Diego, CA 92109-6959\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::1508162.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1508162.0\", \"name\": \"La Puerta\", \"City\": \"San Diego\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"Mexican\", \"Southwestern\", \"Latin\", \"Bar\", \"Central American\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"560 Fourth Ave, San Diego, CA 92101\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1500, \"closeHours\": \"01:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1560, \"closeHours\": \"02:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::6664394.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6664394.0\", \"name\": \"Ironside Fish & Oyster\", \"City\": \"San Diego\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Seafood\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1654 India St, San Diego, CA 92101-2516\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::8297962.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"8297962.0\", \"name\": \"Civico 1845\", \"City\": \"San Diego\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"45.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1845 India St, San Diego, CA 92101-2519\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Restaurant::6413289.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"6413289.0\", \"name\": \"Juniper and Ivy\", \"City\": \"San Diego\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Contemporary\"], \"avg_cost\": \"72.8\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"2228 Kettner Blvd, San Diego, CA 92101\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::vvG1IZbCAVgv5z\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1IZbCAVgv5z\", \"name\": \"Blackberry Smoke - Be Right Here Tour\", \"city\": \"San Diego\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/blackberry-smoke-be-right-here-tour-san-diego-california-10-31-2024/event/0A0060E174D412F8\", \"availabilityStarts\": \"2024-07-19T17:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A77OfF\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A77OfF\", \"name\": \"Breeders Cup - Friday\", \"city\": \"San Diego\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Equestrian\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A77OfF\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7u9us\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7u9us\", \"name\": \"Del Mar Thoroughbred Racing\", \"city\": \"San Diego\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Equestrian\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7u9us\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::LvZ18_l2AHSIQBZZvy2f3\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_l2AHSIQBZZvy2f3\", \"name\": \"Drag Show: \\\"Wild Wednesdays\\\" at Mary's Long Beach Location\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Performance Art\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/drag-show-wild-wednesdays-at-marys-long-beach-location-tickets-MFHJ3W?ref=ticketmaster\", \"availabilityStarts\": \"2024-04-17T03:55:44Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_IuV7QZQ58ZvFljW\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_IuV7QZQ58ZvFljW\", \"name\": \"Drag Show: “Dee-licious Thursday” at Mary’s Long Beach Location\", \"city\": \"San Diego\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Performance Art\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/drag-show-dee-licious-thursday-at-mary-s-long-beach-location-tickets-BPYR07?ref=ticke...\", \"availabilityStarts\": \"2024-03-19T15:32:51Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7a7--\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7a7--\", \"name\": \"Joe Bonamassa\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Blues\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7a7--\", \"availabilityStarts\": \"2024-04-12T17:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK0yAN\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK0yAN\", \"name\": \"Noche de Rock Halloween Party\", \"city\": \"San Diego\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/noche-de-rock-halloween-party-la-santa-tickets/13939163\", \"availabilityStarts\": \"2024-10-27T01:05:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_x51Zn4nyZZv_FD6\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_x51Zn4nyZZv_FD6\", \"name\": \"OC's Original Oktoberfest 2024\", \"city\": \"San Diego\", \"dateTitle\": \"31-10-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Fairs & Festivals\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/ocs-original-oktoberfest-2024-tickets-G6JPTY?ref=ticketmaster\", \"availabilityStarts\": \"2024-04-17T23:44:22Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::LvZ18_x51Zn4nyZZv_FDh\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"LvZ18_x51Zn4nyZZv_FDh\", \"name\": \"OC's Original Oktoberfest 2024\", \"city\": \"San Diego\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Fairs & Festivals\", \"offer\": {\"offerUrl\": \"https://www.universe.com/events/ocs-original-oktoberfest-2024-tickets-G6JPTY?ref=ticketmaster\", \"availabilityStarts\": \"2024-04-17T23:44:22Z\", \"price\": null, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::531819\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 159.36}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 159.36}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 282.09}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 561.55}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 561.55}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1150.87}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1150.87}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1153.0}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1153.0}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1269.03}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1269.03}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1319.19}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1319.19}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1328.62}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1328.62}, {\"source\": \"Attraction::531819\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1554.66}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1554.66}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1817.09}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1817.09}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1880.96}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1880.96}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1902.06}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1902.06}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1945.32}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1945.32}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1961.46}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1961.46}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1983.08}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1983.08}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1994.23}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1994.23}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2017.46}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2017.46}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2042.65}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2080.45}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2080.45}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2136.68}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2136.68}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2175.08}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2175.08}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2204.68}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2204.68}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2225.2}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2240.92}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2240.92}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2282.91}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2282.91}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2297.81}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2297.81}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2482.5}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2482.5}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2531.31}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2531.31}, {\"source\": \"Attraction::482152\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2574.61}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2574.61}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2904.8}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2904.8}, {\"source\": \"Accommodation::45254952.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2956.21}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3016.8}, {\"source\": \"Restaurant::21042803.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3016.8}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3181.62}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3181.62}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3300.31}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3300.31}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3423.8}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3542.01}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3542.01}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3711.3}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3916.88}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3916.88}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3929.0}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3929.0}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3960.78}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3960.78}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4061.76}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4061.76}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4068.46}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4121.46}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4121.46}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4123.12}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4158.47}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4224.54}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4369.72}, {\"source\": \"Restaurant::8297962.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4369.72}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4377.18}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4421.6}, {\"source\": \"Restaurant::492018.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4421.6}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4498.01}, {\"source\": \"Restaurant::6664394.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4498.01}, {\"source\": \"Attraction::127014\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4544.7}, {\"source\": \"Restaurant::6413289.0\", \"target\": \"Attraction::127014\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4544.7}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4548.4}, {\"source\": \"Restaurant::532538.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4548.4}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4587.17}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4654.28}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4768.93}, {\"source\": \"Accommodation::45254952.0\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4820.46}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4995.29}, {\"source\": \"Restaurant::4725725.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4995.29}, {\"source\": \"Accommodation::45254952.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5042.44}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5110.86}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5148.43}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5148.43}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5169.54}, {\"source\": \"Accommodation::45254952.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5190.44}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5233.41}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5356.35}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5387.43}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5445.84}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5730.46}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5735.49}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Attraction::255307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5741.83}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5760.51}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5917.16}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5933.12}, {\"source\": \"Restaurant::1508162.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5933.12}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Attraction::263430\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5958.24}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6026.41}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Attraction::116565\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6093.39}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6177.41}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6188.34}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6197.88}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6222.62}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6238.54}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6364.16}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6425.1}, {\"source\": \"Attraction::104586\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6425.84}, {\"source\": \"Restaurant::7379443.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6425.84}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6435.52}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6486.94}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6526.29}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6544.31}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6573.66}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6575.0}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6624.25}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6631.37}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Attraction::255307\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6787.05}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7016.13}, {\"source\": \"Accommodation::62274.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7043.09}, {\"source\": \"Attraction::255307\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7048.28}, {\"source\": \"Restaurant::7379443.0\", \"target\": \"Attraction::255307\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7048.28}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7063.64}, {\"source\": \"Accommodation::39693438.0\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7079.56}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7180.46}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7192.19}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7206.32}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7216.71}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7284.74}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7307.87}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7315.37}, {\"source\": \"Accommodation::50766152.0\", \"target\": \"Attraction::263430\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7355.18}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::8297962.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7360.93}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7367.79}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Attraction::104586\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7375.48}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::492018.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7383.78}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7390.27}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7392.4}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::6664394.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7408.36}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Restaurant::532538.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7440.34}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7547.16}, {\"source\": \"Accommodation::39693438.0\", \"target\": \"Attraction::263430\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7560.48}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7565.11}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::4725725.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7576.2}, {\"source\": \"Attraction::104122\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7623.07}, {\"source\": \"Restaurant::21042803.0\", \"target\": \"Attraction::104122\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7623.07}, {\"source\": \"Attraction::116565\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7628.86}, {\"source\": \"Restaurant::481910.0\", \"target\": \"Attraction::116565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7628.86}, {\"source\": \"Attraction::263430\", \"target\": \"Restaurant::7379443.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7634.1}, {\"source\": \"Restaurant::7379443.0\", \"target\": \"Attraction::263430\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7634.1}, {\"source\": \"Accommodation::45254952.0\", \"target\": \"Restaurant::6413289.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7713.49}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7721.65}, {\"source\": \"Accommodation::14126657.0\", \"target\": \"Attraction::116565\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7750.3}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7753.45}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Attraction::531819\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7764.31}, {\"source\": \"Accommodation::24325377.0\", \"target\": \"Attraction::482152\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7805.93}, {\"source\": \"Attraction::102782\", \"target\": \"Restaurant::21042803.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7825.66}, {\"source\": \"Restaurant::21042803.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7825.66}, {\"source\": \"Accommodation::15928389.0\", \"target\": \"Restaurant::1508162.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7829.61}, {\"source\": \"Accommodation::11278334.0\", \"target\": \"Attraction::102782\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7900.67}, {\"source\": \"Accommodation::43286543.0\", \"target\": \"Restaurant::481910.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7909.5}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-26\", \"2024-11-27\", \"2024-11-28\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F2277049\", \"dep_time\": \"05:48\", \"arr_time\": \"06:53\", \"local_activity_start_after_arrival_buffer\": \"07:23\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0100517\", \"dep_time\": \"05:48\", \"arr_time\": \"07:02\", \"local_activity_start_after_arrival_buffer\": \"07:32\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F4031493\", \"dep_time\": \"05:19\", \"arr_time\": \"06:51\", \"local_activity_start_after_arrival_buffer\": \"07:21\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3154039\", \"dep_time\": \"05:57\", \"arr_time\": \"07:15\", \"local_activity_start_after_arrival_buffer\": \"07:45\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F2649155\", \"dep_time\": \"06:10\", \"arr_time\": \"07:14\", \"local_activity_start_after_arrival_buffer\": \"07:44\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F3959235\", \"dep_time\": \"22:44\", \"arr_time\": \"01:53\", \"latest_local_activity_finish_before_airport_buffer\": \"20:44\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0984000\", \"dep_time\": \"21:28\", \"arr_time\": \"00:33\", \"latest_local_activity_finish_before_airport_buffer\": \"19:28\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0029390\", \"dep_time\": \"22:18\", \"arr_time\": \"01:23\", \"latest_local_activity_finish_before_airport_buffer\": \"20:18\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1594717\", \"dep_time\": \"22:01\", \"arr_time\": \"01:08\", \"latest_local_activity_finish_before_airport_buffer\": \"20:01\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2681502\", \"dep_time\": \"22:01\", \"arr_time\": \"01:10\", \"latest_local_activity_finish_before_airport_buffer\": \"20:01\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::21042803.0\", \"Restaurant::4725725.0\", \"Restaurant::7379443.0\"], \"lunch\": [\"Restaurant::21042803.0\", \"Restaurant::481910.0\", \"Restaurant::492018.0\", \"Restaurant::532538.0\", \"Restaurant::4725725.0\", \"Restaurant::7379443.0\", \"Restaurant::6664394.0\", \"Restaurant::8297962.0\"], \"dinner\": [\"Restaurant::21042803.0\", \"Restaurant::481910.0\", \"Restaurant::492018.0\", \"Restaurant::532538.0\", \"Restaurant::4725725.0\", \"Restaurant::7379443.0\", \"Restaurant::1508162.0\", \"Restaurant::6664394.0\", \"Restaurant::8297962.0\", \"Restaurant::6413289.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::531819\", \"Attraction::104122\", \"Attraction::255307\", \"Attraction::102782\", \"Attraction::127014\", \"Attraction::104586\", \"Attraction::116565\", \"Attraction::482152\", \"Attraction::208324\", \"Attraction::263430\"], \"afternoon_attraction\": [\"Attraction::531819\", \"Attraction::104122\", \"Attraction::255307\", \"Attraction::102782\", \"Attraction::127014\", \"Attraction::104586\", \"Attraction::116565\", \"Attraction::482152\", \"Attraction::208324\", \"Attraction::263430\"]}, \"event_slots_by_date\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::21042803.0\", \"name\": \"Covewood Restaurant\"}, {\"node_key\": \"Restaurant::4725725.0\", \"name\": \"Dockside 1953\"}, {\"node_key\": \"Restaurant::7379443.0\", \"name\": \"Oceana Coastal Kitchen\"}], \"lunch\": [{\"node_key\": \"Restaurant::21042803.0\", \"name\": \"Covewood Restaurant\"}, {\"node_key\": \"Restaurant::481910.0\", \"name\": \"The Fish Market - San Diego\"}, {\"node_key\": \"Restaurant::492018.0\", \"name\": \"Filippi's Pizza Grotto Little Italy\"}, {\"node_key\": \"Restaurant::532538.0\", \"name\": \"Buon Appetito\"}, {\"node_key\": \"Restaurant::4725725.0\", \"name\": \"Dockside 1953\"}, {\"node_key\": \"Restaurant::7379443.0\", \"name\": \"Oceana Coastal Kitchen\"}, {\"node_key\": \"Restaurant::6664394.0\", \"name\": \"Ironside Fish & Oyster\"}, {\"node_key\": \"Restaurant::8297962.0\", \"name\": \"Civico 1845\"}], \"dinner\": [{\"node_key\": \"Restaurant::21042803.0\", \"name\": \"Covewood Restaurant\"}, {\"node_key\": \"Restaurant::481910.0\", \"name\": \"The Fish Market - San Diego\"}, {\"node_key\": \"Restaurant::492018.0\", \"name\": \"Filippi's Pizza Grotto Little Italy\"}, {\"node_key\": \"Restaurant::532538.0\", \"name\": \"Buon Appetito\"}, {\"node_key\": \"Restaurant::4725725.0\", \"name\": \"Dockside 1953\"}, {\"node_key\": \"Restaurant::7379443.0\", \"name\": \"Oceana Coastal Kitchen\"}, {\"node_key\": \"Restaurant::1508162.0\", \"name\": \"La Puerta\"}, {\"node_key\": \"Restaurant::6664394.0\", \"name\": \"Ironside Fish & Oyster\"}, {\"node_key\": \"Restaurant::8297962.0\", \"name\": \"Civico 1845\"}, {\"node_key\": \"Restaurant::6413289.0\", \"name\": \"Juniper and Ivy\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-26\", \"required_slots\": {\"Flight::F2277049\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0100517\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F4031493\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3154039\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F2649155\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-27\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-28\", \"required_slots\": {\"Flight::F3959235\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0984000\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0029390\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1594717\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2681502\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_32",
+    "query_text": "Plan a 3-day trip for 1 person from Denver to San Diego from November 26th to November 28th, 2024, with a budget of $1,800.",
+    "request": {
+      "org": "Denver",
+      "dest": "San Diego",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-26', '2024-11-27', '2024-11-28']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 1800,
+      "query": "Plan a 3-day trip for 1 person from Denver to San Diego from November 26th to November 28th, 2024, with a budget of $1,800.",
+      "level": "easy",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Adventure; Spending Preference: Luxury Traveler; Location Preference: Cities"
+    },
+    "dates": [
+      "2024-11-26",
+      "2024-11-27",
+      "2024-11-28"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Adventure",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Cities"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F2277049",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Denver",
+          "DestCityName": "San Diego",
+          "DepTime": "05:48",
+          "ArrTime": "06:53",
+          "Price": 177
+        }
+      },
+      {
+        "node_key": "Flight::F0100517",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Denver",
+          "DestCityName": "San Diego",
+          "DepTime": "05:48",
+          "ArrTime": "07:02",
+          "Price": 200
+        }
+      },
+      {
+        "node_key": "Flight::F4031493",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Denver",
+          "DestCityName": "San Diego",
+          "DepTime": "05:19",
+          "ArrTime": "06:51",
+          "Price": 258
+        }
+      },
+      {
+        "node_key": "Flight::F3154039",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Denver",
+          "DestCityName": "San Diego",
+          "DepTime": "05:57",
+          "ArrTime": "07:15",
+          "Price": 258
+        }
+      },
+      {
+        "node_key": "Flight::F2649155",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Denver",
+          "DestCityName": "San Diego",
+          "DepTime": "06:10",
+          "ArrTime": "07:14",
+          "Price": 265
+        }
+      },
+      {
+        "node_key": "Flight::F3959235",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Denver",
+          "DepTime": "22:44",
+          "ArrTime": "01:53",
+          "Price": 182
+        }
+      },
+      {
+        "node_key": "Flight::F0984000",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Denver",
+          "DepTime": "21:28",
+          "ArrTime": "00:33",
+          "Price": 241
+        }
+      },
+      {
+        "node_key": "Flight::F0029390",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Denver",
+          "DepTime": "22:18",
+          "ArrTime": "01:23",
+          "Price": 244
+        }
+      },
+      {
+        "node_key": "Flight::F1594717",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Denver",
+          "DepTime": "22:01",
+          "ArrTime": "01:08",
+          "Price": 246
+        }
+      },
+      {
+        "node_key": "Flight::F2681502",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Denver",
+          "DepTime": "22:01",
+          "ArrTime": "01:10",
+          "Price": 389
+        }
+      },
+      {
+        "node_key": "Accommodation::11278334.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "11278334.0",
+          "name": "Private Hideaway, Shelter Island, Beach  & Bay",
+          "City": "San Diego",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$135 per night",
+            "originalPrice": null,
+            "price": "$135",
+            "qualifier": "night",
+            "total": "$675 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  599 reviews",
+            "localizedLabel": "4.94 (599)",
+            "average": 4.94,
+            "reviewsCount": 599
+          },
+          "coordinates": {
+            "latitude": 32.72673,
+            "longitude": -117.23444
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::37837445.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "37837445.0",
+          "name": "Hilltop cabin retreat with lake & mountain views",
+          "City": "San Diego",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$201 per night",
+            "originalPrice": null,
+            "price": "$201",
+            "qualifier": "night",
+            "total": "$1,001 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  697 reviews",
+            "localizedLabel": "4.92 (697)",
+            "average": 4.92,
+            "reviewsCount": 697
+          },
+          "coordinates": {
+            "latitude": 33.07953,
+            "longitude": -117.11758
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::14126657.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "14126657.0",
+          "name": "Place to Stay with Private Entrance near Beach",
+          "City": "San Diego",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No visitors & No pets",
+          "pricing": {
+            "label": "$91 per night",
+            "originalPrice": null,
+            "price": "$91",
+            "qualifier": "night",
+            "total": "$453 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  625 reviews",
+            "localizedLabel": "4.94 (625)",
+            "average": 4.94,
+            "reviewsCount": 625
+          },
+          "coordinates": {
+            "latitude": 32.74193,
+            "longitude": -117.2442
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::24325377.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "24325377.0",
+          "name": "Central & Serene Secret Garden Guesthouse",
+          "City": "San Diego",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$142 per night",
+            "originalPrice": null,
+            "price": "$142",
+            "qualifier": "night",
+            "total": "$710 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  543 reviews",
+            "localizedLabel": "4.97 (543)",
+            "average": 4.97,
+            "reviewsCount": 543
+          },
+          "coordinates": {
+            "latitude": 32.76257,
+            "longitude": -117.10514
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::50766152.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "50766152.0",
+          "name": "Great Beach Fun and Rest in Pacific Beach!",
+          "City": "San Diego",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$139 per night",
+            "originalPrice": null,
+            "price": "$139",
+            "qualifier": "night",
+            "total": "$692 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  149 reviews",
+            "localizedLabel": "4.97 (149)",
+            "average": 4.97,
+            "reviewsCount": 149
+          },
+          "coordinates": {
+            "latitude": 32.7921,
+            "longitude": -117.25231
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::62274.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "62274.0",
+          "name": "charming, colorful, close to beach",
+          "City": "San Diego",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$107 per night",
+            "originalPrice": null,
+            "price": "$107",
+            "qualifier": "night",
+            "total": "$533 total"
+          },
+          "rating": {
+            "label": "4.78 out of 5 average rating,  921 reviews",
+            "localizedLabel": "4.78 (921)",
+            "average": 4.78,
+            "reviewsCount": 921
+          },
+          "coordinates": {
+            "latitude": 32.80583,
+            "longitude": -117.24244
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::15928389.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "15928389.0",
+          "name": "No contact with host, separate, and close to town!",
+          "City": "San Diego",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$89 per night",
+            "originalPrice": null,
+            "price": "$89",
+            "qualifier": "night",
+            "total": "$444 total"
+          },
+          "rating": {
+            "label": "4.86 out of 5 average rating,  978 reviews",
+            "localizedLabel": "4.86 (978)",
+            "average": 4.86,
+            "reviewsCount": 978
+          },
+          "coordinates": {
+            "latitude": 32.7815,
+            "longitude": -117.16637
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45254952.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45254952.0",
+          "name": "Bed in 4-Bed room in Stylish Hostel",
+          "City": "San Diego",
+          "roomType": "shared_room",
+          "max_occupancy": "1",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$47 per night, originally $56",
+            "originalPrice": "$56",
+            "price": "$47",
+            "qualifier": "night",
+            "total": "$235 total"
+          },
+          "rating": {
+            "label": "4.83 out of 5 average rating,  723 reviews",
+            "localizedLabel": "4.83 (723)",
+            "average": 4.83,
+            "reviewsCount": 723
+          },
+          "coordinates": {
+            "latitude": 32.74626,
+            "longitude": -117.25057
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::39693438.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39693438.0",
+          "name": "Twin Bed, Hot Tub, 15 min to Downtown&Beaches",
+          "City": "San Diego",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10 & No parties",
+          "pricing": {
+            "label": "$78 per night, originally $96",
+            "originalPrice": "$96",
+            "price": "$78",
+            "qualifier": "night",
+            "total": "$389 total"
+          },
+          "rating": {
+            "label": "4.89 out of 5 average rating,  289 reviews",
+            "localizedLabel": "4.89 (289)",
+            "average": 4.89,
+            "reviewsCount": 289
+          },
+          "coordinates": {
+            "latitude": 32.837,
+            "longitude": -117.17919
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::43286543.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "43286543.0",
+          "name": "Private Room & Bath! Steps to Restaurants & Shops",
+          "City": "San Diego",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$81 per night, originally $95",
+            "originalPrice": "$95",
+            "price": "$81",
+            "qualifier": "night",
+            "total": "$402 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  91 reviews",
+            "localizedLabel": "4.97 (91)",
+            "average": 4.97,
+            "reviewsCount": 91
+          },
+          "coordinates": {
+            "latitude": 32.76602,
+            "longitude": -117.11988
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::531819",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "531819",
+          "name": "USS Midway Museum",
+          "City": "San Diego",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 815 things to do in San Diego",
+          "address": "910 N Harbor Drive, San Diego, CA 92101-5811",
+          "description": "Located in downtown San Diego, the USS Midway (Museum) was America’s longest-serving aircraft carrier of the 20th century. Today, the interactive museum is an unforgettable adventure for the entire family as guests walk in the footsteps of the 225,000 young men who served on Midway. Visitors explore a floating city at sea, the amazing flight deck and its 29 restored aircraft, flight simulators, and are inspired in the Battle of Midway Theater, included with admission. Admission also includes ..."
+        }
+      },
+      {
+        "node_key": "Attraction::104122",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104122",
+          "name": "San Diego Zoo",
+          "City": "San Diego",
+          "subtype": [
+            "Zoos"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#3 of 815 things to do in San Diego",
+          "address": "2929 Zoo Drive Balboa Park, San Diego, CA 92101",
+          "description": "The San Diego Zoo pioneered cageless exhibits and offers travelers a fun and informative experience. Featuring over 4000 animals, the park gives you a peek into the wildlife of several ecosystems, from deserts to rainforests. Ride the tour bus, which crosses three quarters of the zoo’s area, and learn more about the animals from the guide as you view them in their natural habitats. You can also hop on the Skyfari gondola lift to see the entire park from above. Tickets to the San Diego Zoo tha..."
+        }
+      },
+      {
+        "node_key": "Attraction::255307",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "255307",
+          "name": "La Jolla Cove",
+          "City": "San Diego",
+          "subtype": [
+            "Beaches",
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "4.25",
+          "rating": "4.5",
+          "rankingString": "#1 of 355 things to do in La Jolla",
+          "address": "1100 Coast Blvd, La Jolla, San Diego, CA 92037-3600",
+          "description": "At this beach surronded by sandstone cliffs on the San Diego coast, the water is calm enough for travelers to enjoy diving and snorkeling. Walk along the rocky shore to spot large colonies of sea lions lounging in their natural habitat and looking after their pups, and have a picnic while soaking up the views of the ocean from the cliffs at sunset. If you visit at low tide, you’ll get to swim in the crystal clear tidal pools as well. You can also visit Sunny Jim's Sea Cave which is accessible..."
+        }
+      },
+      {
+        "node_key": "Attraction::102782",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "102782",
+          "name": "Balboa Park",
+          "City": "San Diego",
+          "subtype": [
+            "Parks",
+            "Gardens",
+            "Playgrounds"
+          ],
+          "subcategories": [
+            "Fun & Games",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 815 things to do in San Diego",
+          "address": "1549 El Prado, San Diego, CA 92101-1660",
+          "description": "This 1,200-acre nature park comprises 17 museums, gardens, musical theaters, a sports complex, and the world-famous San Diego Zoo. The park’s Spanish-Moorish architecture and 19 distinct gardens (some require admission fees) attract both tourists and locals. Don’t miss the San Diego Air and Space Museum, the Spanish Village Art Center for unique handicrafts, and the Spreckels Organ Pavilion, where free concerts are hosted in the evenings. Travelers recommend putting aside the whole day to exp..."
+        }
+      },
+      {
+        "node_key": "Attraction::127014",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "127014",
+          "name": "Coronado Bridge",
+          "City": "San Diego",
+          "subtype": [
+            "Bridges"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#25 of 815 things to do in San Diego",
+          "address": "State Route 75, San Diego, CA 92118",
+          "description": "A beautiful bridge connecting San Diego to Coronado."
+        }
+      },
+      {
+        "node_key": "Attraction::104586",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104586",
+          "name": "Old Town San Diego State Historic Park",
+          "City": "San Diego",
+          "subtype": [
+            "State Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#44 of 815 things to do in San Diego",
+          "address": "4002 Wallace St, San Diego, CA 92110",
+          "description": "Historic site in downtown San Diego that recreates life in the Mexican and early American periods of 1821 to 1872."
+        }
+      },
+      {
+        "node_key": "Attraction::116565",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "116565",
+          "name": "Cabrillo National Monument",
+          "City": "San Diego",
+          "subtype": [
+            "Historic Sites",
+            "National Parks",
+            "Monuments & Statues"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#10 of 815 things to do in San Diego",
+          "address": "1800 Cabrillo Memorial Dr Point Loma Ecological Reserve, San Diego, CA 92106-3601",
+          "description": "Stately monument honoring Cabrillo, discoverer of San Diego Bay, is located in Point Loma that overlooks the city and the Bay."
+        }
+      },
+      {
+        "node_key": "Attraction::482152",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "482152",
+          "name": "Petco Park",
+          "City": "San Diego",
+          "subtype": [
+            "Sports Complexes",
+            "Arenas & Stadiums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Fun & Games"
+          ],
+          "visit_duration": "2.25",
+          "rating": "4.5",
+          "rankingString": "#15 of 815 things to do in San Diego",
+          "address": "100 Park Blvd, San Diego, CA 92101-7405",
+          "description": "Named the #1 Ballpark in America by USA Today in 2016! Petco Park is spectacular in every way, combining the best sight lines in baseball with breathtaking views of San Diego. Architecturally magnificent, it celebrates the sea, the sky, the natural beauty, cultural diversity and unique spirit of our region. We’ve made a concerted effort to not only make this the best ballpark in America, but also one of the best entertainment destinations. Located in downtown San Diego, its surrounded by a pl..."
+        }
+      },
+      {
+        "node_key": "Attraction::208324",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "208324",
+          "name": "Torrey Pines State Natural Reserve",
+          "City": "San Diego",
+          "subtype": [
+            "Hiking Trails",
+            "Nature & Wildlife Areas",
+            "State Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "4.25",
+          "rating": "4.5",
+          "rankingString": "#7 of 815 things to do in San Diego",
+          "address": "12600 N Torrey Pines Rd, San Diego, CA 92037",
+          "description": "Although this park is located within San Diego's city limits, it remains one of the wildest landscapes along the Southern California coast, with miles of unspoiled beaches, chaparral, elegant Torrey Pine trees and a lagoon vital to many species of migrating birds."
+        }
+      },
+      {
+        "node_key": "Attraction::263430",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "263430",
+          "name": "La Jolla Shores Park",
+          "City": "San Diego",
+          "subtype": [
+            "Beaches",
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "4.25",
+          "rating": "4.5",
+          "rankingString": "#4 of 355 things to do in La Jolla",
+          "address": "8300 Camino Del Oro Kellogg Park, La Jolla, San Diego, CA 92037",
+          "description": "Mile-long beach features gentle waves during the summer months, making this spot a prime spot for novice scuba divers."
+        }
+      },
+      {
+        "node_key": "Restaurant::21042803.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "21042803.0",
+          "name": "Covewood Restaurant",
+          "City": "San Diego",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Healthy"
+          ],
+          "avg_cost": "45.5",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "1775 E Mission Bay Dr, San Diego, CA 92109-6801",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::481910.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "481910.0",
+          "name": "The Fish Market - San Diego",
+          "City": "San Diego",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "Soups"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "750 N Harbor Dr, San Diego, CA 92101-5806",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1230,
+                  "closeHours": "20:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::492018.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "492018.0",
+          "name": "Filippi's Pizza Grotto Little Italy",
+          "City": "San Diego",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1747 India St, San Diego, CA 92101-2517",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::532538.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "532538.0",
+          "name": "Buon Appetito",
+          "City": "San Diego",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1609 India St, San Diego, CA 92101-2515",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [],
+              [],
+              [],
+              [],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::4725725.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "4725725.0",
+          "name": "Dockside 1953",
+          "City": "San Diego",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood",
+            "Barbecue",
+            "Diner"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "998 W Mission Bay Dr At The Bahia Resort Hotel, San Diego, CA 92109-7803",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 690,
+                  "closeHours": "11:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 690,
+                  "closeHours": "11:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 690,
+                  "closeHours": "11:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 690,
+                  "closeHours": "11:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 690,
+                  "closeHours": "11:30"
+                },
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::7379443.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "7379443.0",
+          "name": "Oceana Coastal Kitchen",
+          "City": "San Diego",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Seafood",
+            "Contemporary"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3999 Mission Blvd Waterfront at the Catamaran Resort Hotel and Spa, San Diego, CA 92109-6959",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1508162.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1508162.0",
+          "name": "La Puerta",
+          "City": "San Diego",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern",
+            "Latin",
+            "Bar",
+            "Central American"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "560 Fourth Ave, San Diego, CA 92101",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1500,
+                  "closeHours": "01:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1560,
+                  "closeHours": "02:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6664394.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6664394.0",
+          "name": "Ironside Fish & Oyster",
+          "City": "San Diego",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Seafood"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1654 India St, San Diego, CA 92101-2516",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::8297962.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "8297962.0",
+          "name": "Civico 1845",
+          "City": "San Diego",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "45.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1845 India St, San Diego, CA 92101-2519",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::6413289.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "6413289.0",
+          "name": "Juniper and Ivy",
+          "City": "San Diego",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Contemporary"
+          ],
+          "avg_cost": "72.8",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "2228 Kettner Blvd, San Diego, CA 92101",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Los_Angeles"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1IZbCAVgv5z",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1IZbCAVgv5z",
+          "name": "Blackberry Smoke - Be Right Here Tour",
+          "city": "San Diego",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/blackberry-smoke-be-right-here-tour-san-diego-california-10-31-2024/event/0A0060E174D412F8",
+            "availabilityStarts": "2024-07-19T17:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A77OfF",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A77OfF",
+          "name": "Breeders Cup - Friday",
+          "city": "San Diego",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Equestrian",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A77OfF",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7u9us",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7u9us",
+          "name": "Del Mar Thoroughbred Racing",
+          "city": "San Diego",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Sports",
+          "genreName": "Equestrian",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7u9us",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_l2AHSIQBZZvy2f3",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_l2AHSIQBZZvy2f3",
+          "name": "Drag Show: \"Wild Wednesdays\" at Mary's Long Beach Location",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Performance Art",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/drag-show-wild-wednesdays-at-marys-long-beach-location-tickets-MFHJ3W?ref=ticketmaster",
+            "availabilityStarts": "2024-04-17T03:55:44Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_IuV7QZQ58ZvFljW",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_IuV7QZQ58ZvFljW",
+          "name": "Drag Show: “Dee-licious Thursday” at Mary’s Long Beach Location",
+          "city": "San Diego",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Performance Art",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/drag-show-dee-licious-thursday-at-mary-s-long-beach-location-tickets-BPYR07?ref=ticke...",
+            "availabilityStarts": "2024-03-19T15:32:51Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7a7--",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7a7--",
+          "name": "Joe Bonamassa",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Blues",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7a7--",
+            "availabilityStarts": "2024-04-12T17:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK0yAN",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK0yAN",
+          "name": "Noche de Rock Halloween Party",
+          "city": "San Diego",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/noche-de-rock-halloween-party-la-santa-tickets/13939163",
+            "availabilityStarts": "2024-10-27T01:05:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_x51Zn4nyZZv_FD6",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_x51Zn4nyZZv_FD6",
+          "name": "OC's Original Oktoberfest 2024",
+          "city": "San Diego",
+          "dateTitle": "31-10-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Fairs & Festivals",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/ocs-original-oktoberfest-2024-tickets-G6JPTY?ref=ticketmaster",
+            "availabilityStarts": "2024-04-17T23:44:22Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::LvZ18_x51Zn4nyZZv_FDh",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "LvZ18_x51Zn4nyZZv_FDh",
+          "name": "OC's Original Oktoberfest 2024",
+          "city": "San Diego",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Fairs & Festivals",
+          "offer": {
+            "offerUrl": "https://www.universe.com/events/ocs-original-oktoberfest-2024-tickets-G6JPTY?ref=ticketmaster",
+            "availabilityStarts": "2024-04-17T23:44:22Z",
+            "price": null,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 159.36
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 159.36
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 282.09
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 561.55
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 561.55
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1150.87
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1150.87
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1153.0
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1153.0
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1269.03
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1269.03
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1319.19
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1319.19
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1328.62
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1328.62
+      },
+      {
+        "source": "Attraction::531819",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1554.66
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1554.66
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1817.09
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1817.09
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1880.96
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1880.96
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1902.06
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1902.06
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1945.32
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1945.32
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1961.46
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1961.46
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1983.08
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1983.08
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1994.23
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1994.23
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2017.46
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2017.46
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2042.65
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2080.45
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2080.45
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2136.68
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2136.68
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2175.08
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2175.08
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2204.68
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2204.68
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2225.2
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2240.92
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2240.92
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2282.91
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2282.91
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2297.81
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2297.81
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2482.5
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2482.5
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2531.31
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2531.31
+      },
+      {
+        "source": "Attraction::482152",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2574.61
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2574.61
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2904.8
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2904.8
+      },
+      {
+        "source": "Accommodation::45254952.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2956.21
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3016.8
+      },
+      {
+        "source": "Restaurant::21042803.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3016.8
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3181.62
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3181.62
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3300.31
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3300.31
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3423.8
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3542.01
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3542.01
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3711.3
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3916.88
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3916.88
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3929.0
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3929.0
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3960.78
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3960.78
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4061.76
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4061.76
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4068.46
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4121.46
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4121.46
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4123.12
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4158.47
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4224.54
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4369.72
+      },
+      {
+        "source": "Restaurant::8297962.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4369.72
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4377.18
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4421.6
+      },
+      {
+        "source": "Restaurant::492018.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4421.6
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4498.01
+      },
+      {
+        "source": "Restaurant::6664394.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4498.01
+      },
+      {
+        "source": "Attraction::127014",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4544.7
+      },
+      {
+        "source": "Restaurant::6413289.0",
+        "target": "Attraction::127014",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4544.7
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4548.4
+      },
+      {
+        "source": "Restaurant::532538.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4548.4
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4587.17
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4654.28
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4768.93
+      },
+      {
+        "source": "Accommodation::45254952.0",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4820.46
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4995.29
+      },
+      {
+        "source": "Restaurant::4725725.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4995.29
+      },
+      {
+        "source": "Accommodation::45254952.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5042.44
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5110.86
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5148.43
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5148.43
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5169.54
+      },
+      {
+        "source": "Accommodation::45254952.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5190.44
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5233.41
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5356.35
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5387.43
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5445.84
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5730.46
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5735.49
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Attraction::255307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5741.83
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5760.51
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5917.16
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5933.12
+      },
+      {
+        "source": "Restaurant::1508162.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5933.12
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Attraction::263430",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5958.24
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6026.41
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Attraction::116565",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6093.39
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6177.41
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6188.34
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6197.88
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6222.62
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6238.54
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6364.16
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6425.1
+      },
+      {
+        "source": "Attraction::104586",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6425.84
+      },
+      {
+        "source": "Restaurant::7379443.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6425.84
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6435.52
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6486.94
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6526.29
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6544.31
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6573.66
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6575.0
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6624.25
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6631.37
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Attraction::255307",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6787.05
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7016.13
+      },
+      {
+        "source": "Accommodation::62274.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7043.09
+      },
+      {
+        "source": "Attraction::255307",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7048.28
+      },
+      {
+        "source": "Restaurant::7379443.0",
+        "target": "Attraction::255307",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7048.28
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7063.64
+      },
+      {
+        "source": "Accommodation::39693438.0",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7079.56
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7180.46
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7192.19
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7206.32
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7216.71
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7284.74
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7307.87
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7315.37
+      },
+      {
+        "source": "Accommodation::50766152.0",
+        "target": "Attraction::263430",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7355.18
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::8297962.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7360.93
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7367.79
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Attraction::104586",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7375.48
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::492018.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7383.78
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7390.27
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7392.4
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::6664394.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7408.36
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Restaurant::532538.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7440.34
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7547.16
+      },
+      {
+        "source": "Accommodation::39693438.0",
+        "target": "Attraction::263430",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7560.48
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7565.11
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::4725725.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7576.2
+      },
+      {
+        "source": "Attraction::104122",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7623.07
+      },
+      {
+        "source": "Restaurant::21042803.0",
+        "target": "Attraction::104122",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7623.07
+      },
+      {
+        "source": "Attraction::116565",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7628.86
+      },
+      {
+        "source": "Restaurant::481910.0",
+        "target": "Attraction::116565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7628.86
+      },
+      {
+        "source": "Attraction::263430",
+        "target": "Restaurant::7379443.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7634.1
+      },
+      {
+        "source": "Restaurant::7379443.0",
+        "target": "Attraction::263430",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7634.1
+      },
+      {
+        "source": "Accommodation::45254952.0",
+        "target": "Restaurant::6413289.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7713.49
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7721.65
+      },
+      {
+        "source": "Accommodation::14126657.0",
+        "target": "Attraction::116565",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7750.3
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7753.45
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Attraction::531819",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7764.31
+      },
+      {
+        "source": "Accommodation::24325377.0",
+        "target": "Attraction::482152",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7805.93
+      },
+      {
+        "source": "Attraction::102782",
+        "target": "Restaurant::21042803.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7825.66
+      },
+      {
+        "source": "Restaurant::21042803.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7825.66
+      },
+      {
+        "source": "Accommodation::15928389.0",
+        "target": "Restaurant::1508162.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7829.61
+      },
+      {
+        "source": "Accommodation::11278334.0",
+        "target": "Attraction::102782",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7900.67
+      },
+      {
+        "source": "Accommodation::43286543.0",
+        "target": "Restaurant::481910.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7909.5
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-26",
+        "2024-11-27",
+        "2024-11-28"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F2277049",
+          "dep_time": "05:48",
+          "arr_time": "06:53",
+          "local_activity_start_after_arrival_buffer": "07:23",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0100517",
+          "dep_time": "05:48",
+          "arr_time": "07:02",
+          "local_activity_start_after_arrival_buffer": "07:32",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F4031493",
+          "dep_time": "05:19",
+          "arr_time": "06:51",
+          "local_activity_start_after_arrival_buffer": "07:21",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3154039",
+          "dep_time": "05:57",
+          "arr_time": "07:15",
+          "local_activity_start_after_arrival_buffer": "07:45",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F2649155",
+          "dep_time": "06:10",
+          "arr_time": "07:14",
+          "local_activity_start_after_arrival_buffer": "07:44",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F3959235",
+          "dep_time": "22:44",
+          "arr_time": "01:53",
+          "latest_local_activity_finish_before_airport_buffer": "20:44",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0984000",
+          "dep_time": "21:28",
+          "arr_time": "00:33",
+          "latest_local_activity_finish_before_airport_buffer": "19:28",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0029390",
+          "dep_time": "22:18",
+          "arr_time": "01:23",
+          "latest_local_activity_finish_before_airport_buffer": "20:18",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1594717",
+          "dep_time": "22:01",
+          "arr_time": "01:08",
+          "latest_local_activity_finish_before_airport_buffer": "20:01",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2681502",
+          "dep_time": "22:01",
+          "arr_time": "01:10",
+          "latest_local_activity_finish_before_airport_buffer": "20:01",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::21042803.0",
+          "Restaurant::4725725.0",
+          "Restaurant::7379443.0"
+        ],
+        "lunch": [
+          "Restaurant::21042803.0",
+          "Restaurant::481910.0",
+          "Restaurant::492018.0",
+          "Restaurant::532538.0",
+          "Restaurant::4725725.0",
+          "Restaurant::7379443.0",
+          "Restaurant::6664394.0",
+          "Restaurant::8297962.0"
+        ],
+        "dinner": [
+          "Restaurant::21042803.0",
+          "Restaurant::481910.0",
+          "Restaurant::492018.0",
+          "Restaurant::532538.0",
+          "Restaurant::4725725.0",
+          "Restaurant::7379443.0",
+          "Restaurant::1508162.0",
+          "Restaurant::6664394.0",
+          "Restaurant::8297962.0",
+          "Restaurant::6413289.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::531819",
+          "Attraction::104122",
+          "Attraction::255307",
+          "Attraction::102782",
+          "Attraction::127014",
+          "Attraction::104586",
+          "Attraction::116565",
+          "Attraction::482152",
+          "Attraction::208324",
+          "Attraction::263430"
+        ],
+        "afternoon_attraction": [
+          "Attraction::531819",
+          "Attraction::104122",
+          "Attraction::255307",
+          "Attraction::102782",
+          "Attraction::127014",
+          "Attraction::104586",
+          "Attraction::116565",
+          "Attraction::482152",
+          "Attraction::208324",
+          "Attraction::263430"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-26": [],
+        "2024-11-27": [],
+        "2024-11-28": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::21042803.0",
+            "name": "Covewood Restaurant"
+          },
+          {
+            "node_key": "Restaurant::4725725.0",
+            "name": "Dockside 1953"
+          },
+          {
+            "node_key": "Restaurant::7379443.0",
+            "name": "Oceana Coastal Kitchen"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::21042803.0",
+            "name": "Covewood Restaurant"
+          },
+          {
+            "node_key": "Restaurant::481910.0",
+            "name": "The Fish Market - San Diego"
+          },
+          {
+            "node_key": "Restaurant::492018.0",
+            "name": "Filippi's Pizza Grotto Little Italy"
+          },
+          {
+            "node_key": "Restaurant::532538.0",
+            "name": "Buon Appetito"
+          },
+          {
+            "node_key": "Restaurant::4725725.0",
+            "name": "Dockside 1953"
+          },
+          {
+            "node_key": "Restaurant::7379443.0",
+            "name": "Oceana Coastal Kitchen"
+          },
+          {
+            "node_key": "Restaurant::6664394.0",
+            "name": "Ironside Fish & Oyster"
+          },
+          {
+            "node_key": "Restaurant::8297962.0",
+            "name": "Civico 1845"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::21042803.0",
+            "name": "Covewood Restaurant"
+          },
+          {
+            "node_key": "Restaurant::481910.0",
+            "name": "The Fish Market - San Diego"
+          },
+          {
+            "node_key": "Restaurant::492018.0",
+            "name": "Filippi's Pizza Grotto Little Italy"
+          },
+          {
+            "node_key": "Restaurant::532538.0",
+            "name": "Buon Appetito"
+          },
+          {
+            "node_key": "Restaurant::4725725.0",
+            "name": "Dockside 1953"
+          },
+          {
+            "node_key": "Restaurant::7379443.0",
+            "name": "Oceana Coastal Kitchen"
+          },
+          {
+            "node_key": "Restaurant::1508162.0",
+            "name": "La Puerta"
+          },
+          {
+            "node_key": "Restaurant::6664394.0",
+            "name": "Ironside Fish & Oyster"
+          },
+          {
+            "node_key": "Restaurant::8297962.0",
+            "name": "Civico 1845"
+          },
+          {
+            "node_key": "Restaurant::6413289.0",
+            "name": "Juniper and Ivy"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-26": [],
+        "2024-11-27": [],
+        "2024-11-28": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-26",
+          "required_slots": {
+            "Flight::F2277049": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0100517": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F4031493": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3154039": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2649155": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-27",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-28",
+          "required_slots": {
+            "Flight::F3959235": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0984000": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0029390": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1594717": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2681502": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-26": [],
+      "2024-11-27": [],
+      "2024-11-28": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

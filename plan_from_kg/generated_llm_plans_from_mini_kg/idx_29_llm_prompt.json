@@ -1,0 +1,3211 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_29\", \"query_text\": \"Plan a 3-day trip for 2 people from San Diego to Albuquerque from November 5th to November 7th, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. Include visits to attractions such as Nature & Parks and Sights & Landmarks.\", \"request\": {\"org\": \"San Diego\", \"dest\": \"Albuquerque\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-05', '2024-11-06', '2024-11-07']\", \"people_number\": 2, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': 'not shared room', 'transportation': 'no self-driving', 'event': None, 'attraction': ['Nature & Parks', 'Sights & Landmarks']}\", \"budget\": 1500, \"query\": \"Plan a 3-day trip for 2 people from San Diego to Albuquerque from November 5th to November 7th, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. Include visits to attractions such as Nature & Parks and Sights & Landmarks.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": \"not shared room\", \"transportation\": \"no self-driving\", \"event\": null, \"attraction\": \"Nature & Parks, Sights & Landmarks\"}, \"nodes\": [{\"node_key\": \"Flight::F0664079\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Albuquerque\", \"DepTime\": \"06:35\", \"ArrTime\": \"09:13\", \"Price\": 168}}, {\"node_key\": \"Flight::F1628291\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Albuquerque\", \"DepTime\": \"10:01\", \"ArrTime\": \"12:47\", \"Price\": 191}}, {\"node_key\": \"Flight::F2234694\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Albuquerque\", \"DepTime\": \"10:22\", \"ArrTime\": \"13:00\", \"Price\": 210}}, {\"node_key\": \"Flight::F3993144\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Albuquerque\", \"DepTime\": \"06:41\", \"ArrTime\": \"09:10\", \"Price\": 251}}, {\"node_key\": \"Flight::F0060618\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-05\", \"OriginCityName\": \"San Diego\", \"DestCityName\": \"Albuquerque\", \"DepTime\": \"10:23\", \"ArrTime\": \"13:14\", \"Price\": 266}}, {\"node_key\": \"Flight::F0683108\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Albuquerque\", \"DestCityName\": \"San Diego\", \"DepTime\": \"11:58\", \"ArrTime\": \"12:46\", \"Price\": 151}}, {\"node_key\": \"Flight::F2691319\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Albuquerque\", \"DestCityName\": \"San Diego\", \"DepTime\": \"14:43\", \"ArrTime\": \"15:26\", \"Price\": 221}}, {\"node_key\": \"Flight::F0064861\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Albuquerque\", \"DestCityName\": \"San Diego\", \"DepTime\": \"13:47\", \"ArrTime\": \"14:29\", \"Price\": 232}}, {\"node_key\": \"Flight::F2238987\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Albuquerque\", \"DestCityName\": \"San Diego\", \"DepTime\": \"16:00\", \"ArrTime\": \"16:40\", \"Price\": 255}}, {\"node_key\": \"Flight::F1632963\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-07\", \"OriginCityName\": \"Albuquerque\", \"DestCityName\": \"San Diego\", \"DepTime\": \"14:19\", \"ArrTime\": \"14:58\", \"Price\": 275}}, {\"node_key\": \"Accommodation::8795686.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"8795686.0\", \"name\": \"Affordable Elegance - Mountain View for Six People\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$189 per night\", \"originalPrice\": null, \"price\": \"$189\", \"qualifier\": \"night\", \"total\": \"$941 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  179 reviews\", \"localizedLabel\": \"4.96 (179)\", \"average\": 4.96, \"reviewsCount\": 179}, \"coordinates\": {\"latitude\": 35.16892, \"longitude\": -106.54426}}}, {\"node_key\": \"Accommodation::19159018.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"19159018.0\", \"name\": \"Casita Canoncito--private suite with kitchenette\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$103 per night\", \"originalPrice\": null, \"price\": \"$103\", \"qualifier\": \"night\", \"total\": \"$515 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  628 reviews\", \"localizedLabel\": \"4.92 (628)\", \"average\": 4.92, \"reviewsCount\": 628}, \"coordinates\": {\"latitude\": 35.21832, \"longitude\": -106.48642}}}, {\"node_key\": \"Accommodation::33896784.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"33896784.0\", \"name\": \"Backyard Casita - Designer Reno!\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$90 per night\", \"originalPrice\": null, \"price\": \"$90\", \"qualifier\": \"night\", \"total\": \"$450 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  213 reviews\", \"localizedLabel\": \"4.95 (213)\", \"average\": 4.95, \"reviewsCount\": 213}, \"coordinates\": {\"latitude\": 35.08494, \"longitude\": -106.64191}}}, {\"node_key\": \"Accommodation::35581209.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"35581209.0\", \"name\": \"Casita Agave. Luxury, secure and central location\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$158 per night\", \"originalPrice\": null, \"price\": \"$158\", \"qualifier\": \"night\", \"total\": \"$790 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  249 reviews\", \"localizedLabel\": \"5.0 (249)\", \"average\": 5, \"reviewsCount\": 249}, \"coordinates\": {\"latitude\": 35.12084, \"longitude\": -106.68392}}}, {\"node_key\": \"Accommodation::52077742.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"52077742.0\", \"name\": \"Clean & Cozy 1-bed Casita with relaxing courtyard\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$93 per night\", \"originalPrice\": null, \"price\": \"$93\", \"qualifier\": \"night\", \"total\": \"$465 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  206 reviews\", \"localizedLabel\": \"4.94 (206)\", \"average\": 4.94, \"reviewsCount\": 206}, \"coordinates\": {\"latitude\": 35.18913, \"longitude\": -106.67025}}}, {\"node_key\": \"Accommodation::53202683.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"53202683.0\", \"name\": \"Artisan Casita, Near Old Town, Fully Stocked!\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No parties & No smoking\", \"pricing\": {\"label\": \"$166 per night\", \"originalPrice\": null, \"price\": \"$166\", \"qualifier\": \"night\", \"total\": \"$829 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  325 reviews\", \"localizedLabel\": \"4.98 (325)\", \"average\": 4.98, \"reviewsCount\": 325}, \"coordinates\": {\"latitude\": 35.09097, \"longitude\": -106.66092}}}, {\"node_key\": \"Accommodation::21069051.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21069051.0\", \"name\": \"In the Heart of Albuquerque!\", \"City\": \"Albuquerque\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$57 per night\", \"originalPrice\": null, \"price\": \"$57\", \"qualifier\": \"night\", \"total\": \"$285 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  129 reviews\", \"localizedLabel\": \"5.0 (129)\", \"average\": 5, \"reviewsCount\": 129}, \"coordinates\": {\"latitude\": 35.16795, \"longitude\": -106.69578}}}, {\"node_key\": \"Accommodation::40117400.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"40117400.0\", \"name\": \"Casita de Tierra - Slow, Intentional Living\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No pets & No smoking\", \"pricing\": {\"label\": \"$72 per night, originally $82\", \"originalPrice\": \"$82\", \"price\": \"$72\", \"qualifier\": \"night\", \"total\": \"$356 total\"}, \"rating\": {\"label\": \"4.88 out of 5 average rating,  424 reviews\", \"localizedLabel\": \"4.88 (424)\", \"average\": 4.88, \"reviewsCount\": 424}, \"coordinates\": {\"latitude\": 35.08106, \"longitude\": -106.59046}}}, {\"node_key\": \"Accommodation::15660482.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"15660482.0\", \"name\": \"$0Pet Fee-Right Behind Balloon Fiesta-Adobe Casita\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$132 per night, originally $183\", \"originalPrice\": \"$183\", \"price\": \"$132\", \"qualifier\": \"night\", \"total\": \"$655 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  423 reviews\", \"localizedLabel\": \"4.98 (423)\", \"average\": 4.98, \"reviewsCount\": 423}, \"coordinates\": {\"latitude\": 35.19868, \"longitude\": -106.601}}}, {\"node_key\": \"Accommodation::5383225.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5383225.0\", \"name\": \"The Cozy Corrales Cottage\", \"City\": \"Albuquerque\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$181 per night, originally $201\", \"originalPrice\": \"$201\", \"price\": \"$181\", \"qualifier\": \"night\", \"total\": \"$901 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  230 reviews\", \"localizedLabel\": \"5.0 (230)\", \"average\": 5, \"reviewsCount\": 230}, \"coordinates\": {\"latitude\": 35.22081, \"longitude\": -106.62797}}}, {\"node_key\": \"Attraction::2242229\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2242229\", \"name\": \"New Mexico Steam Locomotive and Railroad Historical Society\", \"City\": \"Albuquerque\", \"subtype\": [\"Specialty Museums\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 383 things to do in Albuquerque\", \"address\": \"1833 8th St NW Only a few blocks South of I-40 on 8th St at the railroad tracks, Albuquerque, NM 87102-1210\", \"description\": \"New Mexico Steam Locomotive & Railroad Historical Society, an all-volunteer, 501(c)3 non-profit, is preserving New Mexico's railway history. After over 20 years of effort, the society's volunteers have thoroughly restored the former Atchison Topeka & Santa Fe (AT&SF) No. 2926, a 4-8-4 “Northern,” built in 1944. The Santa Fe 2926 locomotive is the only operating 2900-class in the United States, and is listed on the National Register of Historic Places and recognized by the state's legislature ...\"}}, {\"node_key\": \"Attraction::102667\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"102667\", \"name\": \"Petroglyph National Monument\", \"City\": \"Albuquerque\", \"subtype\": [\"Historic Sites\", \"Geologic Formations\", \"Monuments & Statues\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 383 things to do in Albuquerque\", \"address\": \"Western Trail NW, Albuquerque, NM 87120-2069\", \"description\": \"Up to 15,000 petroglyphs or prehistoric rock art images have been found on the West Mesa volcanic escarpment, located along a 17-mile canyon outside of Albuquerque.\"}}, {\"node_key\": \"Attraction::526945\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"526945\", \"name\": \"ABQ BioPark Zoo\", \"City\": \"Albuquerque\", \"subtype\": [\"Zoos\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#19 of 383 things to do in Albuquerque\", \"address\": \"903 10th St SW, Albuquerque, NM 87102-4029\"}}, {\"node_key\": \"Attraction::137172\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"137172\", \"name\": \"Albuquerque Biological Park\", \"City\": \"Albuquerque\", \"subtype\": [\"Aquariums\", \"Zoos\", \"Gardens\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.6666666666666665\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 383 things to do in Albuquerque\", \"address\": \"2601 Central Ave NW, Albuquerque, NM 87104-1615\", \"description\": \"Park complex offering three main sections the whole family can enjoy: Albuquerque Aquarium, Rio Grande Botanic Garden and Rio Grande Zoo.\"}}, {\"node_key\": \"Attraction::559793\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"559793\", \"name\": \"ABQ BioPark Botanic Garden\", \"City\": \"Albuquerque\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 383 things to do in Albuquerque\", \"address\": \"2601 Central Ave NW, Albuquerque, NM 87104-1615\"}}, {\"node_key\": \"Attraction::126557\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126557\", \"name\": \"San Felipe de Neri Church\", \"City\": \"Albuquerque\", \"subtype\": [\"Sacred & Religious Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#16 of 383 things to do in Albuquerque\", \"address\": \"2005 North Plaza, Albuquerque, NM 87104\", \"description\": \"Built in 1706 and rebuilt in 1793, this historic church has been providing services ever since.\"}}, {\"node_key\": \"Attraction::559827\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"559827\", \"name\": \"La Luz Trail\", \"City\": \"Albuquerque\", \"subtype\": [\"Hiking Trails\"], \"subcategories\": [\"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"4.25\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 383 things to do in Albuquerque\", \"address\": \"Albuquerque, NM 87113-1001\"}}, {\"node_key\": \"Attraction::144329\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144329\", \"name\": \"Albuquerque Old Town\", \"City\": \"Albuquerque\", \"subtype\": [\"Neighborhoods\", \"Historic Walking Areas\"], \"subcategories\": [\"Sights & Landmarks\", \"Other\"], \"visit_duration\": \"2.5\", \"rating\": \"4.0\", \"rankingString\": \"#23 of 383 things to do in Albuquerque\", \"address\": \"N Plaza St NW, Albuquerque, NM 87104\", \"description\": \"Founded in 1706 by Spanish Settlers, Old Town Albuquerque is a historical site in the city of Albuquerque. Built in a traditional Spanish colonial way, its quaint Plaza is anchored by the San Felipe de Neri Church. Today, the historic homes and buildings have been renovated into shops, art galleries, and cafes. You can stroll the district’s streets to discover stunning hidden patios and visit both the impressive Rattlesnake Museum and the history-laden Albuquerque Museum. Don't miss the Porta...\"}}, {\"node_key\": \"Restaurant::386964.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"386964.0\", \"name\": \"Pappadeaux Seafood Kitchen\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"5011 Pan American Frwy. Ne, Albuquerque, NM 87109\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::498418.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"498418.0\", \"name\": \"High Noon Restaurant & Saloon\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Southwestern\", \"Contemporary\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"425 San Felipe St NW, Albuquerque, NM 87104-1428\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [], [], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::386993.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"386993.0\", \"name\": \"Monroe's Restaurant\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Mexican\", \"Southwestern\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1025 4th NW, Albuquerque, NM 87102\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::1630527.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1630527.0\", \"name\": \"D. H. LESCOMBES WINERY & BISTRO\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"International\", \"Wine Bar\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"901 Rio Grande Blvd Nw B-100 #b100, Albuquerque, NM 87104\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::444201.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"444201.0\", \"name\": \"Antiquity Restaurant\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Seafood\", \"International\"], \"avg_cost\": \"67.2\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"112 Romero NW, Albuquerque, NM 87104-1417\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::776514.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"776514.0\", \"name\": \"Golden Crown Bakery\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Brew Pub\", \"Pizza\", \"Wine Bar\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1103 Mountain Rd NW, Albuquerque, NM 87102-1865\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [], [], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::5813531.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"5813531.0\", \"name\": \"MAS Tapas y Vino\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Spanish\", \"Wine Bar\"], \"avg_cost\": \"67.2\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"125 2nd St. NW Hotel Andaluz Albuquerque, Curio Collection by Hilton, Albuquerque, NM 87102\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::386953.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"386953.0\", \"name\": \"The Artichoke Cafe\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"67.2\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"424 Central Ave SE, Albuquerque, NM 87102-3518\", \"hours\": {\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::3639753.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3639753.0\", \"name\": \"Vinaigrette\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Healthy\", \"Soups\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1828 Central Ave SW, Albuquerque, NM 87104-1160\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Restaurant::2180203.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2180203.0\", \"name\": \"The Original Cocina Azul\", \"City\": \"Albuquerque\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"Mexican\", \"Southwestern\"], \"avg_cost\": \"42.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1134 Mountain Rd NW, Albuquerque, NM 87102-1866\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/Denver\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::126557\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 110.74}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 110.74}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 111.72}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 111.72}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 192.61}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 195.4}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 195.4}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 234.35}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 234.35}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 482.9}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 482.9}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 534.11}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 539.29}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 539.29}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 586.06}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 633.05}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 673.84}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 697.02}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 697.02}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 746.57}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 746.57}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 872.76}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 872.76}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 907.74}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 907.74}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 958.68}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 958.68}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 970.44}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 970.44}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 978.09}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 990.57}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 990.57}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1020.63}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1020.63}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1026.34}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1026.34}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1027.28}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1028.21}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1028.21}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1040.39}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1077.03}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1077.03}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1097.88}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1097.88}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1101.46}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1110.43}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1110.43}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1139.49}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1189.58}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1189.58}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1208.79}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1208.79}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1237.39}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1268.41}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1362.18}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1362.18}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1406.32}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1406.32}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1411.63}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1411.63}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1455.7}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1455.7}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1476.51}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1476.51}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1492.51}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1538.08}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1611.14}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1649.04}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1666.91}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1666.91}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1715.57}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1715.57}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1788.1}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1788.1}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1796.24}, {\"source\": \"Restaurant::3639753.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1796.24}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1819.46}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1819.46}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1838.43}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1869.91}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1869.91}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1870.22}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1870.22}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1887.26}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1906.18}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1909.9}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1934.69}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1935.63}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1935.63}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2025.85}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2025.85}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2043.75}, {\"source\": \"Restaurant::2180203.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2043.75}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2080.01}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2080.01}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2085.12}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2085.12}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2089.73}, {\"source\": \"Restaurant::776514.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2089.73}, {\"source\": \"Accommodation::19159018.0\", \"target\": \"Attraction::559827\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2169.27}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2171.29}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2171.29}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2212.46}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2212.46}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2264.76}, {\"source\": \"Restaurant::444201.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2264.76}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2274.26}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2274.26}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2316.42}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2360.16}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2482.86}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2501.25}, {\"source\": \"Restaurant::498418.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2501.25}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2502.09}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2502.09}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2687.48}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2687.48}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2807.57}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2808.74}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2808.74}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2816.16}, {\"source\": \"Attraction::144329\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2854.74}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2854.74}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2855.64}, {\"source\": \"Restaurant::386993.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2855.64}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2867.62}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2871.3}, {\"source\": \"Attraction::126557\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2915.82}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2915.82}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2925.26}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2969.47}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3013.39}, {\"source\": \"Restaurant::5813531.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3013.39}, {\"source\": \"Attraction::526945\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3016.44}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3016.44}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3027.9}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3037.04}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3084.25}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3224.85}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3288.85}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3312.34}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3466.97}, {\"source\": \"Attraction::137172\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3468.37}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::137172\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3468.37}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3508.13}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3628.45}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3643.07}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3668.33}, {\"source\": \"Attraction::559793\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3673.48}, {\"source\": \"Restaurant::386953.0\", \"target\": \"Attraction::559793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3673.48}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4284.46}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4736.21}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5063.63}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5301.8}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::5813531.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5374.45}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::386993.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5582.62}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Restaurant::386953.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5630.11}, {\"source\": \"Accommodation::8795686.0\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5770.95}, {\"source\": \"Accommodation::35581209.0\", \"target\": \"Attraction::102667\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6250.66}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6352.26}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::776514.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6374.2}, {\"source\": \"Accommodation::15660482.0\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6385.04}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Attraction::526945\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6398.33}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::2180203.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6424.88}, {\"source\": \"Attraction::2242229\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 6661.42}, {\"source\": \"Restaurant::386964.0\", \"target\": \"Attraction::2242229\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 6661.42}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6734.6}, {\"source\": \"Accommodation::21069051.0\", \"target\": \"Attraction::102667\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7075.75}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::3639753.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7137.47}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Attraction::144329\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7385.34}, {\"source\": \"Accommodation::33896784.0\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7431.93}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Attraction::126557\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7439.55}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7447.82}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::444201.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7467.91}, {\"source\": \"Accommodation::21069051.0\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7575.92}, {\"source\": \"Accommodation::40117400.0\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7715.12}, {\"source\": \"Attraction::102667\", \"target\": \"Restaurant::1630527.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7794.24}, {\"source\": \"Restaurant::1630527.0\", \"target\": \"Attraction::102667\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7794.24}, {\"source\": \"Accommodation::53202683.0\", \"target\": \"Restaurant::386964.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8004.65}, {\"source\": \"Attraction::102667\", \"target\": \"Restaurant::498418.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8082.37}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-05\", \"2024-11-06\", \"2024-11-07\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F0664079\", \"dep_time\": \"06:35\", \"arr_time\": \"09:13\", \"local_activity_start_after_arrival_buffer\": \"09:43\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F1628291\", \"dep_time\": \"10:01\", \"arr_time\": \"12:47\", \"local_activity_start_after_arrival_buffer\": \"13:17\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2234694\", \"dep_time\": \"10:22\", \"arr_time\": \"13:00\", \"local_activity_start_after_arrival_buffer\": \"13:30\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F3993144\", \"dep_time\": \"06:41\", \"arr_time\": \"09:10\", \"local_activity_start_after_arrival_buffer\": \"09:40\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F0060618\", \"dep_time\": \"10:23\", \"arr_time\": \"13:14\", \"local_activity_start_after_arrival_buffer\": \"13:44\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F0683108\", \"dep_time\": \"11:58\", \"arr_time\": \"12:46\", \"latest_local_activity_finish_before_airport_buffer\": \"09:58\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F2691319\", \"dep_time\": \"14:43\", \"arr_time\": \"15:26\", \"latest_local_activity_finish_before_airport_buffer\": \"12:43\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F0064861\", \"dep_time\": \"13:47\", \"arr_time\": \"14:29\", \"latest_local_activity_finish_before_airport_buffer\": \"11:47\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F2238987\", \"dep_time\": \"16:00\", \"arr_time\": \"16:40\", \"latest_local_activity_finish_before_airport_buffer\": \"14:00\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1632963\", \"dep_time\": \"14:19\", \"arr_time\": \"14:58\", \"latest_local_activity_finish_before_airport_buffer\": \"12:19\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::776514.0\", \"Restaurant::5813531.0\", \"Restaurant::2180203.0\"], \"lunch\": [\"Restaurant::386964.0\", \"Restaurant::498418.0\", \"Restaurant::386993.0\", \"Restaurant::1630527.0\", \"Restaurant::776514.0\", \"Restaurant::5813531.0\", \"Restaurant::3639753.0\", \"Restaurant::2180203.0\"], \"dinner\": [\"Restaurant::386964.0\", \"Restaurant::498418.0\", \"Restaurant::386993.0\", \"Restaurant::1630527.0\", \"Restaurant::444201.0\", \"Restaurant::776514.0\", \"Restaurant::5813531.0\", \"Restaurant::386953.0\", \"Restaurant::3639753.0\", \"Restaurant::2180203.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::2242229\", \"Attraction::102667\", \"Attraction::526945\", \"Attraction::137172\", \"Attraction::559793\", \"Attraction::126557\", \"Attraction::559827\", \"Attraction::144329\"], \"afternoon_attraction\": [\"Attraction::2242229\", \"Attraction::102667\", \"Attraction::526945\", \"Attraction::137172\", \"Attraction::559793\", \"Attraction::126557\", \"Attraction::559827\", \"Attraction::144329\"]}, \"event_slots_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::776514.0\", \"name\": \"Golden Crown Bakery\"}, {\"node_key\": \"Restaurant::5813531.0\", \"name\": \"MAS Tapas y Vino\"}, {\"node_key\": \"Restaurant::2180203.0\", \"name\": \"The Original Cocina Azul\"}], \"lunch\": [{\"node_key\": \"Restaurant::386964.0\", \"name\": \"Pappadeaux Seafood Kitchen\"}, {\"node_key\": \"Restaurant::498418.0\", \"name\": \"High Noon Restaurant & Saloon\"}, {\"node_key\": \"Restaurant::386993.0\", \"name\": \"Monroe's Restaurant\"}, {\"node_key\": \"Restaurant::1630527.0\", \"name\": \"D. H. LESCOMBES WINERY & BISTRO\"}, {\"node_key\": \"Restaurant::776514.0\", \"name\": \"Golden Crown Bakery\"}, {\"node_key\": \"Restaurant::5813531.0\", \"name\": \"MAS Tapas y Vino\"}, {\"node_key\": \"Restaurant::3639753.0\", \"name\": \"Vinaigrette\"}, {\"node_key\": \"Restaurant::2180203.0\", \"name\": \"The Original Cocina Azul\"}], \"dinner\": [{\"node_key\": \"Restaurant::386964.0\", \"name\": \"Pappadeaux Seafood Kitchen\"}, {\"node_key\": \"Restaurant::498418.0\", \"name\": \"High Noon Restaurant & Saloon\"}, {\"node_key\": \"Restaurant::386993.0\", \"name\": \"Monroe's Restaurant\"}, {\"node_key\": \"Restaurant::1630527.0\", \"name\": \"D. H. LESCOMBES WINERY & BISTRO\"}, {\"node_key\": \"Restaurant::444201.0\", \"name\": \"Antiquity Restaurant\"}, {\"node_key\": \"Restaurant::776514.0\", \"name\": \"Golden Crown Bakery\"}, {\"node_key\": \"Restaurant::5813531.0\", \"name\": \"MAS Tapas y Vino\"}, {\"node_key\": \"Restaurant::386953.0\", \"name\": \"The Artichoke Cafe\"}, {\"node_key\": \"Restaurant::3639753.0\", \"name\": \"Vinaigrette\"}, {\"node_key\": \"Restaurant::2180203.0\", \"name\": \"The Original Cocina Azul\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-05\", \"required_slots\": {\"Flight::F0664079\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F1628291\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2234694\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F3993144\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F0060618\": [\"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-06\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-07\", \"required_slots\": {\"Flight::F0683108\": [], \"Flight::F2691319\": [\"breakfast\", \"morning_attraction\"], \"Flight::F0064861\": [\"breakfast\", \"morning_attraction\"], \"Flight::F2238987\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1632963\": [\"breakfast\", \"morning_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-05\": [], \"2024-11-06\": [], \"2024-11-07\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_29",
+    "query_text": "Plan a 3-day trip for 2 people from San Diego to Albuquerque from November 5th to November 7th, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. Include visits to attractions such as Nature & Parks and Sights & Landmarks.",
+    "request": {
+      "org": "San Diego",
+      "dest": "Albuquerque",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-05', '2024-11-06', '2024-11-07']",
+      "people_number": 2,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': 'not shared room', 'transportation': 'no self-driving', 'event': None, 'attraction': ['Nature & Parks', 'Sights & Landmarks']}",
+      "budget": 1500,
+      "query": "Plan a 3-day trip for 2 people from San Diego to Albuquerque from November 5th to November 7th, 2024, with a budget of $1,500. Accommodations should be in a non-shared room, and transportation should not involve self-driving. Include visits to attractions such as Nature & Parks and Sights & Landmarks.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-05",
+      "2024-11-06",
+      "2024-11-07"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": "not shared room",
+      "transportation": "no self-driving",
+      "event": null,
+      "attraction": "Nature & Parks, Sights & Landmarks"
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F0664079",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Albuquerque",
+          "DepTime": "06:35",
+          "ArrTime": "09:13",
+          "Price": 168
+        }
+      },
+      {
+        "node_key": "Flight::F1628291",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Albuquerque",
+          "DepTime": "10:01",
+          "ArrTime": "12:47",
+          "Price": 191
+        }
+      },
+      {
+        "node_key": "Flight::F2234694",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Albuquerque",
+          "DepTime": "10:22",
+          "ArrTime": "13:00",
+          "Price": 210
+        }
+      },
+      {
+        "node_key": "Flight::F3993144",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Albuquerque",
+          "DepTime": "06:41",
+          "ArrTime": "09:10",
+          "Price": 251
+        }
+      },
+      {
+        "node_key": "Flight::F0060618",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-05",
+          "OriginCityName": "San Diego",
+          "DestCityName": "Albuquerque",
+          "DepTime": "10:23",
+          "ArrTime": "13:14",
+          "Price": 266
+        }
+      },
+      {
+        "node_key": "Flight::F0683108",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Albuquerque",
+          "DestCityName": "San Diego",
+          "DepTime": "11:58",
+          "ArrTime": "12:46",
+          "Price": 151
+        }
+      },
+      {
+        "node_key": "Flight::F2691319",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Albuquerque",
+          "DestCityName": "San Diego",
+          "DepTime": "14:43",
+          "ArrTime": "15:26",
+          "Price": 221
+        }
+      },
+      {
+        "node_key": "Flight::F0064861",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Albuquerque",
+          "DestCityName": "San Diego",
+          "DepTime": "13:47",
+          "ArrTime": "14:29",
+          "Price": 232
+        }
+      },
+      {
+        "node_key": "Flight::F2238987",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Albuquerque",
+          "DestCityName": "San Diego",
+          "DepTime": "16:00",
+          "ArrTime": "16:40",
+          "Price": 255
+        }
+      },
+      {
+        "node_key": "Flight::F1632963",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-07",
+          "OriginCityName": "Albuquerque",
+          "DestCityName": "San Diego",
+          "DepTime": "14:19",
+          "ArrTime": "14:58",
+          "Price": 275
+        }
+      },
+      {
+        "node_key": "Accommodation::8795686.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "8795686.0",
+          "name": "Affordable Elegance - Mountain View for Six People",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$189 per night",
+            "originalPrice": null,
+            "price": "$189",
+            "qualifier": "night",
+            "total": "$941 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  179 reviews",
+            "localizedLabel": "4.96 (179)",
+            "average": 4.96,
+            "reviewsCount": 179
+          },
+          "coordinates": {
+            "latitude": 35.16892,
+            "longitude": -106.54426
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::19159018.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "19159018.0",
+          "name": "Casita Canoncito--private suite with kitchenette",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$103 per night",
+            "originalPrice": null,
+            "price": "$103",
+            "qualifier": "night",
+            "total": "$515 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  628 reviews",
+            "localizedLabel": "4.92 (628)",
+            "average": 4.92,
+            "reviewsCount": 628
+          },
+          "coordinates": {
+            "latitude": 35.21832,
+            "longitude": -106.48642
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::33896784.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "33896784.0",
+          "name": "Backyard Casita - Designer Reno!",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$90 per night",
+            "originalPrice": null,
+            "price": "$90",
+            "qualifier": "night",
+            "total": "$450 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  213 reviews",
+            "localizedLabel": "4.95 (213)",
+            "average": 4.95,
+            "reviewsCount": 213
+          },
+          "coordinates": {
+            "latitude": 35.08494,
+            "longitude": -106.64191
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::35581209.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "35581209.0",
+          "name": "Casita Agave. Luxury, secure and central location",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$158 per night",
+            "originalPrice": null,
+            "price": "$158",
+            "qualifier": "night",
+            "total": "$790 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  249 reviews",
+            "localizedLabel": "5.0 (249)",
+            "average": 5,
+            "reviewsCount": 249
+          },
+          "coordinates": {
+            "latitude": 35.12084,
+            "longitude": -106.68392
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::52077742.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "52077742.0",
+          "name": "Clean & Cozy 1-bed Casita with relaxing courtyard",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$93 per night",
+            "originalPrice": null,
+            "price": "$93",
+            "qualifier": "night",
+            "total": "$465 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  206 reviews",
+            "localizedLabel": "4.94 (206)",
+            "average": 4.94,
+            "reviewsCount": 206
+          },
+          "coordinates": {
+            "latitude": 35.18913,
+            "longitude": -106.67025
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::53202683.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "53202683.0",
+          "name": "Artisan Casita, Near Old Town, Fully Stocked!",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No parties & No smoking",
+          "pricing": {
+            "label": "$166 per night",
+            "originalPrice": null,
+            "price": "$166",
+            "qualifier": "night",
+            "total": "$829 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  325 reviews",
+            "localizedLabel": "4.98 (325)",
+            "average": 4.98,
+            "reviewsCount": 325
+          },
+          "coordinates": {
+            "latitude": 35.09097,
+            "longitude": -106.66092
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::21069051.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21069051.0",
+          "name": "In the Heart of Albuquerque!",
+          "City": "Albuquerque",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$57 per night",
+            "originalPrice": null,
+            "price": "$57",
+            "qualifier": "night",
+            "total": "$285 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  129 reviews",
+            "localizedLabel": "5.0 (129)",
+            "average": 5,
+            "reviewsCount": 129
+          },
+          "coordinates": {
+            "latitude": 35.16795,
+            "longitude": -106.69578
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::40117400.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "40117400.0",
+          "name": "Casita de Tierra - Slow, Intentional Living",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No pets & No smoking",
+          "pricing": {
+            "label": "$72 per night, originally $82",
+            "originalPrice": "$82",
+            "price": "$72",
+            "qualifier": "night",
+            "total": "$356 total"
+          },
+          "rating": {
+            "label": "4.88 out of 5 average rating,  424 reviews",
+            "localizedLabel": "4.88 (424)",
+            "average": 4.88,
+            "reviewsCount": 424
+          },
+          "coordinates": {
+            "latitude": 35.08106,
+            "longitude": -106.59046
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::15660482.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "15660482.0",
+          "name": "$0Pet Fee-Right Behind Balloon Fiesta-Adobe Casita",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$132 per night, originally $183",
+            "originalPrice": "$183",
+            "price": "$132",
+            "qualifier": "night",
+            "total": "$655 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  423 reviews",
+            "localizedLabel": "4.98 (423)",
+            "average": 4.98,
+            "reviewsCount": 423
+          },
+          "coordinates": {
+            "latitude": 35.19868,
+            "longitude": -106.601
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5383225.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5383225.0",
+          "name": "The Cozy Corrales Cottage",
+          "City": "Albuquerque",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$181 per night, originally $201",
+            "originalPrice": "$201",
+            "price": "$181",
+            "qualifier": "night",
+            "total": "$901 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  230 reviews",
+            "localizedLabel": "5.0 (230)",
+            "average": 5,
+            "reviewsCount": 230
+          },
+          "coordinates": {
+            "latitude": 35.22081,
+            "longitude": -106.62797
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::2242229",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2242229",
+          "name": "New Mexico Steam Locomotive and Railroad Historical Society",
+          "City": "Albuquerque",
+          "subtype": [
+            "Specialty Museums",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#1 of 383 things to do in Albuquerque",
+          "address": "1833 8th St NW Only a few blocks South of I-40 on 8th St at the railroad tracks, Albuquerque, NM 87102-1210",
+          "description": "New Mexico Steam Locomotive & Railroad Historical Society, an all-volunteer, 501(c)3 non-profit, is preserving New Mexico's railway history. After over 20 years of effort, the society's volunteers have thoroughly restored the former Atchison Topeka & Santa Fe (AT&SF) No. 2926, a 4-8-4 “Northern,” built in 1944. The Santa Fe 2926 locomotive is the only operating 2900-class in the United States, and is listed on the National Register of Historic Places and recognized by the state's legislature ..."
+        }
+      },
+      {
+        "node_key": "Attraction::102667",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "102667",
+          "name": "Petroglyph National Monument",
+          "City": "Albuquerque",
+          "subtype": [
+            "Historic Sites",
+            "Geologic Formations",
+            "Monuments & Statues"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#15 of 383 things to do in Albuquerque",
+          "address": "Western Trail NW, Albuquerque, NM 87120-2069",
+          "description": "Up to 15,000 petroglyphs or prehistoric rock art images have been found on the West Mesa volcanic escarpment, located along a 17-mile canyon outside of Albuquerque."
+        }
+      },
+      {
+        "node_key": "Attraction::526945",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "526945",
+          "name": "ABQ BioPark Zoo",
+          "City": "Albuquerque",
+          "subtype": [
+            "Zoos"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#19 of 383 things to do in Albuquerque",
+          "address": "903 10th St SW, Albuquerque, NM 87102-4029"
+        }
+      },
+      {
+        "node_key": "Attraction::137172",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "137172",
+          "name": "Albuquerque Biological Park",
+          "City": "Albuquerque",
+          "subtype": [
+            "Aquariums",
+            "Zoos",
+            "Gardens"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.6666666666666665",
+          "rating": "4.5",
+          "rankingString": "#8 of 383 things to do in Albuquerque",
+          "address": "2601 Central Ave NW, Albuquerque, NM 87104-1615",
+          "description": "Park complex offering three main sections the whole family can enjoy: Albuquerque Aquarium, Rio Grande Botanic Garden and Rio Grande Zoo."
+        }
+      },
+      {
+        "node_key": "Attraction::559793",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "559793",
+          "name": "ABQ BioPark Botanic Garden",
+          "City": "Albuquerque",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#13 of 383 things to do in Albuquerque",
+          "address": "2601 Central Ave NW, Albuquerque, NM 87104-1615"
+        }
+      },
+      {
+        "node_key": "Attraction::126557",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126557",
+          "name": "San Felipe de Neri Church",
+          "City": "Albuquerque",
+          "subtype": [
+            "Sacred & Religious Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#16 of 383 things to do in Albuquerque",
+          "address": "2005 North Plaza, Albuquerque, NM 87104",
+          "description": "Built in 1706 and rebuilt in 1793, this historic church has been providing services ever since."
+        }
+      },
+      {
+        "node_key": "Attraction::559827",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "559827",
+          "name": "La Luz Trail",
+          "City": "Albuquerque",
+          "subtype": [
+            "Hiking Trails"
+          ],
+          "subcategories": [
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "4.25",
+          "rating": "4.5",
+          "rankingString": "#4 of 383 things to do in Albuquerque",
+          "address": "Albuquerque, NM 87113-1001"
+        }
+      },
+      {
+        "node_key": "Attraction::144329",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144329",
+          "name": "Albuquerque Old Town",
+          "City": "Albuquerque",
+          "subtype": [
+            "Neighborhoods",
+            "Historic Walking Areas"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Other"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.0",
+          "rankingString": "#23 of 383 things to do in Albuquerque",
+          "address": "N Plaza St NW, Albuquerque, NM 87104",
+          "description": "Founded in 1706 by Spanish Settlers, Old Town Albuquerque is a historical site in the city of Albuquerque. Built in a traditional Spanish colonial way, its quaint Plaza is anchored by the San Felipe de Neri Church. Today, the historic homes and buildings have been renovated into shops, art galleries, and cafes. You can stroll the district’s streets to discover stunning hidden patios and visit both the impressive Rattlesnake Museum and the history-laden Albuquerque Museum. Don't miss the Porta..."
+        }
+      },
+      {
+        "node_key": "Restaurant::386964.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "386964.0",
+          "name": "Pappadeaux Seafood Kitchen",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "5011 Pan American Frwy. Ne, Albuquerque, NM 87109",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::498418.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "498418.0",
+          "name": "High Noon Restaurant & Saloon",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Southwestern",
+            "Contemporary"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "425 San Felipe St NW, Albuquerque, NM 87104-1428",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::386993.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "386993.0",
+          "name": "Monroe's Restaurant",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1025 4th NW, Albuquerque, NM 87102",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1630527.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1630527.0",
+          "name": "D. H. LESCOMBES WINERY & BISTRO",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "International",
+            "Wine Bar"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "901 Rio Grande Blvd Nw B-100 #b100, Albuquerque, NM 87104",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::444201.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "444201.0",
+          "name": "Antiquity Restaurant",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "International"
+          ],
+          "avg_cost": "67.2",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "112 Romero NW, Albuquerque, NM 87104-1417",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::776514.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "776514.0",
+          "name": "Golden Crown Bakery",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Brew Pub",
+            "Pizza",
+            "Wine Bar"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1103 Mountain Rd NW, Albuquerque, NM 87102-1865",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::5813531.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "5813531.0",
+          "name": "MAS Tapas y Vino",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Spanish",
+            "Wine Bar"
+          ],
+          "avg_cost": "67.2",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "125 2nd St. NW Hotel Andaluz Albuquerque, Curio Collection by Hilton, Albuquerque, NM 87102",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::386953.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "386953.0",
+          "name": "The Artichoke Cafe",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "67.2",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "424 Central Ave SE, Albuquerque, NM 87102-3518",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3639753.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3639753.0",
+          "name": "Vinaigrette",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Healthy",
+            "Soups"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1828 Central Ave SW, Albuquerque, NM 87104-1160",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2180203.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2180203.0",
+          "name": "The Original Cocina Azul",
+          "City": "Albuquerque",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "Mexican",
+            "Southwestern"
+          ],
+          "avg_cost": "42.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1134 Mountain Rd NW, Albuquerque, NM 87102-1866",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/Denver"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 110.74
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 110.74
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 111.72
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 111.72
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 192.61
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 195.4
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 195.4
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 234.35
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 234.35
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 482.9
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 482.9
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 534.11
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 539.29
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 539.29
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 586.06
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 633.05
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 673.84
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 697.02
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 697.02
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 746.57
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 746.57
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 872.76
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 872.76
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 907.74
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 907.74
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 958.68
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 958.68
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 970.44
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 970.44
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 978.09
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 990.57
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 990.57
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1020.63
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1020.63
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1026.34
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1026.34
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1027.28
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1028.21
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1028.21
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1040.39
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1077.03
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1077.03
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1097.88
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1097.88
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1101.46
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1110.43
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1110.43
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1139.49
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1189.58
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1189.58
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1208.79
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1208.79
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1237.39
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1268.41
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1362.18
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1362.18
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1406.32
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1406.32
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1411.63
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1411.63
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1455.7
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1455.7
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1476.51
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1476.51
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1492.51
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1538.08
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1611.14
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1649.04
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1666.91
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1666.91
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1715.57
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1715.57
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1788.1
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1788.1
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1796.24
+      },
+      {
+        "source": "Restaurant::3639753.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1796.24
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1819.46
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1819.46
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1838.43
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1869.91
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1869.91
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1870.22
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1870.22
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1887.26
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1906.18
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1909.9
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1934.69
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1935.63
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1935.63
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2025.85
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2025.85
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2043.75
+      },
+      {
+        "source": "Restaurant::2180203.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2043.75
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2080.01
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2080.01
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2085.12
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2085.12
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2089.73
+      },
+      {
+        "source": "Restaurant::776514.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2089.73
+      },
+      {
+        "source": "Accommodation::19159018.0",
+        "target": "Attraction::559827",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2169.27
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2171.29
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2171.29
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2212.46
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2212.46
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2264.76
+      },
+      {
+        "source": "Restaurant::444201.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2264.76
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2274.26
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2274.26
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2316.42
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2360.16
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2482.86
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2501.25
+      },
+      {
+        "source": "Restaurant::498418.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2501.25
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2502.09
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2502.09
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2687.48
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2687.48
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2807.57
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2808.74
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2808.74
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2816.16
+      },
+      {
+        "source": "Attraction::144329",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2854.74
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2854.74
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2855.64
+      },
+      {
+        "source": "Restaurant::386993.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2855.64
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2867.62
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2871.3
+      },
+      {
+        "source": "Attraction::126557",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2915.82
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2915.82
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2925.26
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2969.47
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3013.39
+      },
+      {
+        "source": "Restaurant::5813531.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3013.39
+      },
+      {
+        "source": "Attraction::526945",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3016.44
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3016.44
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3027.9
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3037.04
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3084.25
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3224.85
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3288.85
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3312.34
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3466.97
+      },
+      {
+        "source": "Attraction::137172",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3468.37
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::137172",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3468.37
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3508.13
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3628.45
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3643.07
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3668.33
+      },
+      {
+        "source": "Attraction::559793",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3673.48
+      },
+      {
+        "source": "Restaurant::386953.0",
+        "target": "Attraction::559793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3673.48
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4284.46
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4736.21
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5063.63
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5301.8
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::5813531.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5374.45
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::386993.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5582.62
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Restaurant::386953.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5630.11
+      },
+      {
+        "source": "Accommodation::8795686.0",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5770.95
+      },
+      {
+        "source": "Accommodation::35581209.0",
+        "target": "Attraction::102667",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6250.66
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6352.26
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::776514.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6374.2
+      },
+      {
+        "source": "Accommodation::15660482.0",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6385.04
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Attraction::526945",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6398.33
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::2180203.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6424.88
+      },
+      {
+        "source": "Attraction::2242229",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 6661.42
+      },
+      {
+        "source": "Restaurant::386964.0",
+        "target": "Attraction::2242229",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 6661.42
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6734.6
+      },
+      {
+        "source": "Accommodation::21069051.0",
+        "target": "Attraction::102667",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7075.75
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::3639753.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7137.47
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Attraction::144329",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7385.34
+      },
+      {
+        "source": "Accommodation::33896784.0",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7431.93
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Attraction::126557",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7439.55
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7447.82
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::444201.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7467.91
+      },
+      {
+        "source": "Accommodation::21069051.0",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7575.92
+      },
+      {
+        "source": "Accommodation::40117400.0",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7715.12
+      },
+      {
+        "source": "Attraction::102667",
+        "target": "Restaurant::1630527.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7794.24
+      },
+      {
+        "source": "Restaurant::1630527.0",
+        "target": "Attraction::102667",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7794.24
+      },
+      {
+        "source": "Accommodation::53202683.0",
+        "target": "Restaurant::386964.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8004.65
+      },
+      {
+        "source": "Attraction::102667",
+        "target": "Restaurant::498418.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8082.37
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-05",
+        "2024-11-06",
+        "2024-11-07"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F0664079",
+          "dep_time": "06:35",
+          "arr_time": "09:13",
+          "local_activity_start_after_arrival_buffer": "09:43",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F1628291",
+          "dep_time": "10:01",
+          "arr_time": "12:47",
+          "local_activity_start_after_arrival_buffer": "13:17",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2234694",
+          "dep_time": "10:22",
+          "arr_time": "13:00",
+          "local_activity_start_after_arrival_buffer": "13:30",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F3993144",
+          "dep_time": "06:41",
+          "arr_time": "09:10",
+          "local_activity_start_after_arrival_buffer": "09:40",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F0060618",
+          "dep_time": "10:23",
+          "arr_time": "13:14",
+          "local_activity_start_after_arrival_buffer": "13:44",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F0683108",
+          "dep_time": "11:58",
+          "arr_time": "12:46",
+          "latest_local_activity_finish_before_airport_buffer": "09:58",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F2691319",
+          "dep_time": "14:43",
+          "arr_time": "15:26",
+          "latest_local_activity_finish_before_airport_buffer": "12:43",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F0064861",
+          "dep_time": "13:47",
+          "arr_time": "14:29",
+          "latest_local_activity_finish_before_airport_buffer": "11:47",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F2238987",
+          "dep_time": "16:00",
+          "arr_time": "16:40",
+          "latest_local_activity_finish_before_airport_buffer": "14:00",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1632963",
+          "dep_time": "14:19",
+          "arr_time": "14:58",
+          "latest_local_activity_finish_before_airport_buffer": "12:19",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::776514.0",
+          "Restaurant::5813531.0",
+          "Restaurant::2180203.0"
+        ],
+        "lunch": [
+          "Restaurant::386964.0",
+          "Restaurant::498418.0",
+          "Restaurant::386993.0",
+          "Restaurant::1630527.0",
+          "Restaurant::776514.0",
+          "Restaurant::5813531.0",
+          "Restaurant::3639753.0",
+          "Restaurant::2180203.0"
+        ],
+        "dinner": [
+          "Restaurant::386964.0",
+          "Restaurant::498418.0",
+          "Restaurant::386993.0",
+          "Restaurant::1630527.0",
+          "Restaurant::444201.0",
+          "Restaurant::776514.0",
+          "Restaurant::5813531.0",
+          "Restaurant::386953.0",
+          "Restaurant::3639753.0",
+          "Restaurant::2180203.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::2242229",
+          "Attraction::102667",
+          "Attraction::526945",
+          "Attraction::137172",
+          "Attraction::559793",
+          "Attraction::126557",
+          "Attraction::559827",
+          "Attraction::144329"
+        ],
+        "afternoon_attraction": [
+          "Attraction::2242229",
+          "Attraction::102667",
+          "Attraction::526945",
+          "Attraction::137172",
+          "Attraction::559793",
+          "Attraction::126557",
+          "Attraction::559827",
+          "Attraction::144329"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::776514.0",
+            "name": "Golden Crown Bakery"
+          },
+          {
+            "node_key": "Restaurant::5813531.0",
+            "name": "MAS Tapas y Vino"
+          },
+          {
+            "node_key": "Restaurant::2180203.0",
+            "name": "The Original Cocina Azul"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::386964.0",
+            "name": "Pappadeaux Seafood Kitchen"
+          },
+          {
+            "node_key": "Restaurant::498418.0",
+            "name": "High Noon Restaurant & Saloon"
+          },
+          {
+            "node_key": "Restaurant::386993.0",
+            "name": "Monroe's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::1630527.0",
+            "name": "D. H. LESCOMBES WINERY & BISTRO"
+          },
+          {
+            "node_key": "Restaurant::776514.0",
+            "name": "Golden Crown Bakery"
+          },
+          {
+            "node_key": "Restaurant::5813531.0",
+            "name": "MAS Tapas y Vino"
+          },
+          {
+            "node_key": "Restaurant::3639753.0",
+            "name": "Vinaigrette"
+          },
+          {
+            "node_key": "Restaurant::2180203.0",
+            "name": "The Original Cocina Azul"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::386964.0",
+            "name": "Pappadeaux Seafood Kitchen"
+          },
+          {
+            "node_key": "Restaurant::498418.0",
+            "name": "High Noon Restaurant & Saloon"
+          },
+          {
+            "node_key": "Restaurant::386993.0",
+            "name": "Monroe's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::1630527.0",
+            "name": "D. H. LESCOMBES WINERY & BISTRO"
+          },
+          {
+            "node_key": "Restaurant::444201.0",
+            "name": "Antiquity Restaurant"
+          },
+          {
+            "node_key": "Restaurant::776514.0",
+            "name": "Golden Crown Bakery"
+          },
+          {
+            "node_key": "Restaurant::5813531.0",
+            "name": "MAS Tapas y Vino"
+          },
+          {
+            "node_key": "Restaurant::386953.0",
+            "name": "The Artichoke Cafe"
+          },
+          {
+            "node_key": "Restaurant::3639753.0",
+            "name": "Vinaigrette"
+          },
+          {
+            "node_key": "Restaurant::2180203.0",
+            "name": "The Original Cocina Azul"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-05": [],
+        "2024-11-06": [],
+        "2024-11-07": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-05",
+          "required_slots": {
+            "Flight::F0664079": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1628291": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2234694": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3993144": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0060618": [
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-06",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-07",
+          "required_slots": {
+            "Flight::F0683108": [],
+            "Flight::F2691319": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F0064861": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F2238987": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1632963": [
+              "breakfast",
+              "morning_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-05": [],
+      "2024-11-06": [],
+      "2024-11-07": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

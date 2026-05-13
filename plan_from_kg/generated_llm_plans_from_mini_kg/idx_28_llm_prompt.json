@@ -1,0 +1,3383 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_28\", \"query_text\": \"Plan a 3-day trip for 5 people traveling from Dallas to Key West from November 1st to November 3rd, 2024. The budget is $6,450. Accommodations should be an entire home that allows visitors. Include dining options featuring Seafood, Caribbean, Latin, and American cuisines.\", \"request\": {\"org\": \"Dallas\", \"dest\": \"Key West\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-01', '2024-11-02', '2024-11-03']\", \"people_number\": 5, \"local_constraint\": \"{'house rule': 'visitors', 'cuisine': ['Seafood', 'Caribbean', 'Latin', 'American'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 6450, \"query\": \"Plan a 3-day trip for 5 people traveling from Dallas to Key West from November 1st to November 3rd, 2024. The budget is $6,450. Accommodations should be an entire home that allows visitors. Include dining options featuring Seafood, Caribbean, Latin, and American cuisines.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Cultural Exploration\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": \"visitors\", \"cuisine\": \"Seafood, Caribbean, Latin, American\", \"room type\": \"entire home\", \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F1918577\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Key West\", \"DepTime\": \"12:22\", \"ArrTime\": \"16:01\", \"Price\": 220}}, {\"node_key\": \"Flight::F1434506\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Key West\", \"DepTime\": \"12:27\", \"ArrTime\": \"16:10\", \"Price\": 282}}, {\"node_key\": \"Flight::F2821455\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Key West\", \"DepTime\": \"12:42\", \"ArrTime\": \"16:33\", \"Price\": 413}}, {\"node_key\": \"Flight::F0750764\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Key West\", \"DepTime\": \"12:44\", \"ArrTime\": \"16:16\", \"Price\": 480}}, {\"node_key\": \"Flight::F0190734\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-01\", \"OriginCityName\": \"Dallas\", \"DestCityName\": \"Key West\", \"DepTime\": \"12:54\", \"ArrTime\": \"16:15\", \"Price\": 532}}, {\"node_key\": \"Flight::F1918307\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Key West\", \"DestCityName\": \"Dallas\", \"DepTime\": \"15:50\", \"ArrTime\": \"17:45\", \"Price\": 243}}, {\"node_key\": \"Flight::F3685322\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Key West\", \"DestCityName\": \"Dallas\", \"DepTime\": \"17:43\", \"ArrTime\": \"19:54\", \"Price\": 290}}, {\"node_key\": \"Flight::F1434261\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Key West\", \"DestCityName\": \"Dallas\", \"DepTime\": \"14:50\", \"ArrTime\": \"16:27\", \"Price\": 291}}, {\"node_key\": \"Flight::F0190403\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Key West\", \"DestCityName\": \"Dallas\", \"DepTime\": \"18:54\", \"ArrTime\": \"20:50\", \"Price\": 466}}, {\"node_key\": \"Flight::F3255216\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-03\", \"OriginCityName\": \"Key West\", \"DestCityName\": \"Dallas\", \"DepTime\": \"18:05\", \"ArrTime\": \"19:59\", \"Price\": 540}}, {\"node_key\": \"Accommodation::8.87e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"8.87e+17\", \"name\": \"Downtown KeyWest 2Bed Oceanfront\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No pets & No children under 10\", \"pricing\": {\"label\": \"$577 per night\", \"originalPrice\": null, \"price\": \"$577\", \"qualifier\": \"night\", \"total\": \"$4,036 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  7 reviews\", \"localizedLabel\": \"5.0 (7)\", \"average\": 5, \"reviewsCount\": 7}, \"coordinates\": {\"latitude\": 24.5569989, \"longitude\": -81.80727739999999}}}, {\"node_key\": \"Accommodation::19353048.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"19353048.0\", \"name\": \"WALK TO BEACH, MALLORY SQUARE, DUVAL STREET\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No parties & No visitors\", \"pricing\": {\"label\": \"$273 per night\", \"originalPrice\": null, \"price\": \"$273\", \"qualifier\": \"night\", \"total\": \"$1,910 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  106 reviews\", \"localizedLabel\": \"4.92 (106)\", \"average\": 4.92, \"reviewsCount\": 106}, \"coordinates\": {\"latitude\": 24.55185, \"longitude\": -81.80369}}}, {\"node_key\": \"Accommodation::17297824.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"17297824.0\", \"name\": \"Bella Vita: 1B/1B Condo for 2 Just Steps off Duval\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$346 per night\", \"originalPrice\": null, \"price\": \"$346\", \"qualifier\": \"night\", \"total\": \"$1,728 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  470 reviews\", \"localizedLabel\": \"4.98 (470)\", \"average\": 4.98, \"reviewsCount\": 470}, \"coordinates\": {\"latitude\": 24.549, \"longitude\": -81.79898}}}, {\"node_key\": \"Accommodation::23810033.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"23810033.0\", \"name\": \"Hidden Beach unit 1 The Perfect Place to stay\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$654 per night\", \"originalPrice\": null, \"price\": \"$654\", \"qualifier\": \"night\", \"total\": \"$3,270 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  88 reviews\", \"localizedLabel\": \"4.97 (88)\", \"average\": 4.97, \"reviewsCount\": 88}, \"coordinates\": {\"latitude\": 24.54641, \"longitude\": -81.79351}}}, {\"node_key\": \"Accommodation::309653.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"309653.0\", \"name\": \"Old Town - Room Opens to Pool and Garden\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$379 per night\", \"originalPrice\": null, \"price\": \"$379\", \"qualifier\": \"night\", \"total\": \"$1,894 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  557 reviews\", \"localizedLabel\": \"4.94 (557)\", \"average\": 4.94, \"reviewsCount\": 557}, \"coordinates\": {\"latitude\": 24.55176, \"longitude\": -81.79241}}}, {\"node_key\": \"Accommodation::39800537.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39800537.0\", \"name\": \"Mallory House Room #3\", \"City\": \"Key West\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No pets & No smoking\", \"pricing\": {\"label\": \"$216 per night\", \"originalPrice\": null, \"price\": \"$216\", \"qualifier\": \"night\", \"total\": \"$1,078 total\"}, \"rating\": {\"label\": \"4.88 out of 5 average rating,  391 reviews\", \"localizedLabel\": \"4.88 (391)\", \"average\": 4.88, \"reviewsCount\": 391}, \"coordinates\": {\"latitude\": 24.5496, \"longitude\": -81.79855}}}, {\"node_key\": \"Accommodation::9.86e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.86e+17\", \"name\": \"Newly renovated + Free Full Breakfast - Queen Room\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$202 per night, originally $219\", \"originalPrice\": \"$219\", \"price\": \"$202\", \"qualifier\": \"night\", \"total\": \"$1,006 total\"}, \"rating\": {\"label\": \"4.6 out of 5 average rating,  214 reviews\", \"localizedLabel\": \"4.6 (214)\", \"average\": 4.6, \"reviewsCount\": 214}, \"coordinates\": {\"latitude\": 24.56817, \"longitude\": -81.75366}}}, {\"node_key\": \"Accommodation::51519216.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"51519216.0\", \"name\": \"Nuns Room, A single travelers delight!\", \"City\": \"Key West\", \"roomType\": \"private_room\", \"max_occupancy\": \"1\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$283 per night, originally $319\", \"originalPrice\": \"$319\", \"price\": \"$283\", \"qualifier\": \"night\", \"total\": \"$1,412 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  155 reviews\", \"localizedLabel\": \"4.95 (155)\", \"average\": 4.95, \"reviewsCount\": 155}, \"coordinates\": {\"latitude\": 24.55831, \"longitude\": -81.79893}}}, {\"node_key\": \"Accommodation::8.69e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"8.69e+17\", \"name\": \"Full houseboat with large observation deck\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$306 per night, originally $341\", \"originalPrice\": \"$341\", \"price\": \"$306\", \"qualifier\": \"night\", \"total\": \"$1,526 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  92 reviews\", \"localizedLabel\": \"4.97 (92)\", \"average\": 4.97, \"reviewsCount\": 92}, \"coordinates\": {\"latitude\": 24.56928, \"longitude\": -81.7797}}}, {\"node_key\": \"Accommodation::16650087.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16650087.0\", \"name\": \"Poolside Truman Annex 2 Bed | Conch Life Condo\", \"City\": \"Key West\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$486 per night, originally $595\", \"originalPrice\": \"$595\", \"price\": \"$486\", \"qualifier\": \"night\", \"total\": \"$2,428 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  256 reviews\", \"localizedLabel\": \"4.96 (256)\", \"average\": 4.96, \"reviewsCount\": 256}, \"coordinates\": {\"latitude\": 24.55281, \"longitude\": -81.80566}}}, {\"node_key\": \"Attraction::806330\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"806330\", \"name\": \"Saint Mary Star of the Sea\", \"City\": \"Key West\", \"subtype\": [\"Churches & Cathedrals\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#10 of 183 things to do in Key West\", \"address\": \"1010 Windsor Ln, Key West, FL 33040-3270\", \"description\": \"This basilica is the only Catholic church on Key West. Explore its Victorian-style architecture, history and grotto, believed to protect the island from hurricanes.\"}}, {\"node_key\": \"Attraction::12605545\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"12605545\", \"name\": \"Hemingway Rum -Papa's Pilar Distillery\", \"City\": \"Key West\", \"subtype\": [\"Distilleries\"], \"subcategories\": [\"Food & Drink\"], \"visit_duration\": \"2.5\", \"rating\": \"5.0\", \"rankingString\": \"#6 of 183 things to do in Key West\", \"address\": \"201 Simonton St, Key West, FL 33040-6628\", \"description\": \"Of everywhere he traveled in this world, \\\"Papa\\\" Ernest Hemingway chose Key West to call home. It's here that we chose to craft the rum made in his honor, Papa's Pilar. Our Rum Distillery is located in a historic tobacco warehouse built in 1878 by skilled Irish bricklayers . Here you can navigate the art of making rum, discover how our rum makers craft our unique spirit, uncover untold stories of Hemingway and experience an adventure Papa would be proud of. Taste, Experience, Explore, Shop and...\"}}, {\"node_key\": \"Attraction::130377\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"130377\", \"name\": \"The Ernest Hemingway Home and Museum\", \"City\": \"Key West\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 183 things to do in Key West\", \"address\": \"907 Whitehead Street, Key West, FL 33040-7473\", \"description\": \"Ernest Hemingway lived and wrote in this for ten years. During that time he wrote seventy percent of his life-time works. Today we operate as a museum providing guided tours every fifteen minutes from nine to five. The Museum is available for weddings and corporate events. Visit this National Historic Landmark, Literary Landmark and recognized by the Library of Congress for its importance in U.S. History. Grand Architecture, Lush Gardens, Educational Tours, Book Store/Gift Shop and the world ...\"}}, {\"node_key\": \"Attraction::104133\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104133\", \"name\": \"Mallory Square\", \"City\": \"Key West\", \"subtype\": [\"Points of Interest & Landmarks\", \"Piers & Boardwalks\", \"Parks\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 183 things to do in Key West\", \"address\": \"400 Wall St, Key West, FL 33040-6633\", \"description\": \"Welcome to Mallory Square where the fun starts and the sun sets. Everything Key West is famous for comes together in this one special place set on historic waterfront. Mallory Square is home to shops, restaurants, and many of the islands most popular attractions. Come for the day and stay into the night. There's always something happening in Mallory Square.\"}}, {\"node_key\": \"Attraction::108770\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"108770\", \"name\": \"Duval Street\", \"City\": \"Key West\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 183 things to do in Key West\", \"address\": \"Key West, FL 33040\", \"description\": \"This street is the bustling heart of Key West, and a great spot to experience the city's culture and nightlife. It's filled with fantastic restaurants, lively bars, art galleries, and shops selling unique gifts, clothes, and hand-rolled cigars. And don't forget to stand in line to take a photo at the Southernmost Point Buoy, which is just a block away. In the evening, you sip on a margarita and enjoy an al fresco meal, or join a haunted pub crawl and ghost tour of the area. Visit during the s...\"}}, {\"node_key\": \"Attraction::599396\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"599396\", \"name\": \"Key West Butterfly and Nature Conservatory\", \"City\": \"Key West\", \"subtype\": [\"Nature & Wildlife Areas\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 183 things to do in Key West\", \"address\": \"1316 Duval St, Key West, FL 33040-3132\", \"description\": \"Walk among hundreds of living butterflies and colorful birds! Take a stroll through a tropical paradise… walk through an exotic and inviting environment filled with hundreds of the most beautiful winged creatures in nature –butterflies. During your breathtaking journey, you will experience an impressive collection of flowering plants, cascading waterfalls and trees that set the stage for the “flowers of the sky.” Witness some 50 to 60 different species from around the world, as well as variet...\"}}, {\"node_key\": \"Attraction::104136\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104136\", \"name\": \"Fort Zachary Taylor Historic State Park\", \"City\": \"Key West\", \"subtype\": [\"Beaches\", \"Historic Sites\", \"State Parks\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"3.8333333333333335\", \"rating\": \"4.5\", \"rankingString\": \"#20 of 183 things to do in Key West\", \"address\": \"601 Howard England Way, Key West, FL 33040-8395\", \"description\": \"This historic fort has the largest collection of Civil War armaments in the world. Bonus: It's located along a beach that's popular for sunset views.\"}}, {\"node_key\": \"Attraction::109832\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"109832\", \"name\": \"The Overseas Highway\", \"City\": \"Key West\", \"subtype\": [\"Scenic Drives\"], \"subcategories\": [\"Sights & Landmarks\", \"Outdoor Activities\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#22 of 183 things to do in Key West\", \"address\": \"Key West, FL\", \"description\": \"This scenic 113-mile-long highway is a part of U.S. Route 1 and connects the entire length of the Keys over 42 bridges.\"}}, {\"node_key\": \"Attraction::130349\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"130349\", \"name\": \"Truman Little White House\", \"City\": \"Key West\", \"subtype\": [\"History Museums\", \"Points of Interest & Landmarks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#14 of 183 things to do in Key West\", \"address\": \"111 Front St Naval Air Station, Key West, FL 33040-8311\", \"description\": \"As Florida’s only presidential museum, the Harry S. Truman Little White House was the winter White House for this country's 33rd president. Truman spent 175 days during 13 vacations in the home that is filled with original furnishing and memorabilia from Truman’s days. Presidents Taft, Eisenhower, Kennedy, Carter and Clinton also used the house. Guided tours offer guests a window into the world President Truman and life of a US president.\"}}, {\"node_key\": \"Attraction::130312\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"130312\", \"name\": \"Key West Lighthouse and Keeper's Quarters Museum\", \"City\": \"Key West\", \"subtype\": [\"Lighthouses\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#23 of 183 things to do in Key West\", \"address\": \"938 Whitehead St, Key West, FL 33040-7423\", \"description\": \"Operated by the Key West Art & Historical Society, the Keys oldest cultural non-profit. The mission of the Key West Art & Historical Society is to preserve the culture of the Florida Keys through exhibiting and displaying regional art, architecture and history for the purpose of educating the community and visiting public.\"}}, {\"node_key\": \"Restaurant::15829055.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"15829055.0\", \"name\": \"Seaside Cafe at the Mansion\", \"City\": \"Key West\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Bar\", \"Pizza\", \"Cafe\", \"Seafood\"], \"avg_cost\": \"70.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1400 Duval St Located at the Southernmost House, Key West, FL 33040-3133\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::23162562.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"23162562.0\", \"name\": \"Kaya island Eats\", \"City\": \"Key West\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Caribbean\", \"Bar\", \"Seafood\", \"Polynesian\", \"Hawaiian\", \"Jamaican\"], \"avg_cost\": \"70.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"618 Rear Duval St, Key West, FL 33040\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::21141783.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"21141783.0\", \"name\": \"Red Shoe Island Bistro\", \"City\": \"Key West\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"Seafood\", \"European\"], \"avg_cost\": \"70.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"411 Petronia St, Key West, FL 33040-7412\", \"hours\": {\"weekRanges\": [[], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1080, \"openHours\": \"18:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::10374592.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"10374592.0\", \"name\": \"Key West Cuban Coffee Shop\", \"City\": \"Key West\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"Latin\"], \"avg_cost\": \"24.0\", \"rating\": \"5.0\", \"priceLevel\": \"$\", \"address\": \"517 Truman Ave, Key West, FL 33040-3173\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1200, \"closeHours\": \"20:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::447631.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"447631.0\", \"name\": \"Blue Heaven\", \"City\": \"Key West\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Caribbean\"], \"avg_cost\": \"70.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"729 Thomas St, Key West, FL 33040-7334\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::680742.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"680742.0\", \"name\": \"Latitudes - Sunset Key Cottages\", \"City\": \"Key West\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Caribbean\", \"Seafood\", \"Fusion\"], \"avg_cost\": \"112.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"245 Front St Sunset Key Cottages, Key West, FL 33040\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 855, \"closeHours\": \"14:15\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::492237.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"492237.0\", \"name\": \"El Siboney Restaurant\", \"City\": \"Key West\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Caribbean\", \"Latin\", \"Cuban\"], \"avg_cost\": \"70.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"900 Catherine St, Key West, FL 33040-3202\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::512779.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"512779.0\", \"name\": \"Two Friends Patio Restaurant\", \"City\": \"Key West\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\", \"Seafood\"], \"avg_cost\": \"70.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"512 Front St, Key West, FL 33040-6619\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::447632.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"447632.0\", \"name\": \"Louie's Backyard\", \"City\": \"Key West\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"American\", \"Seafood\", \"International\"], \"avg_cost\": \"112.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"700 Waddell Avenue, Key West, FL 33040\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}], [{\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1110, \"openHours\": \"18:30\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::447770.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"447770.0\", \"name\": \"Pepe's Cafe\", \"City\": \"Key West\", \"mealTypes\": [], \"cuisines\": [\"Steakhouse\", \"Seafood\"], \"avg_cost\": \"70.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"806 Caroline St, Key West, FL 33040-6643\", \"hours\": {\"weekRanges\": [[{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 450, \"openHours\": \"07:30\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::108770\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 36.21}, {\"source\": \"Restaurant::512779.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 36.21}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 72.35}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 87.95}, {\"source\": \"Restaurant::15829055.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 87.95}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 90.24}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 110.37}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 165.99}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 165.99}, {\"source\": \"Attraction::12605545\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 183.75}, {\"source\": \"Restaurant::512779.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 183.75}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 194.07}, {\"source\": \"Restaurant::10374592.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 194.07}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 205.91}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 205.91}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 212.22}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 224.92}, {\"source\": \"Restaurant::10374592.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 224.92}, {\"source\": \"Attraction::104133\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 230.62}, {\"source\": \"Restaurant::512779.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 230.62}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 231.14}, {\"source\": \"Restaurant::492237.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 231.14}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 234.83}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 235.5}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 237.44}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 242.39}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 242.39}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 244.66}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 244.66}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 260.14}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 269.39}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 277.63}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 278.58}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 284.99}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 286.5}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 288.54}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 295.15}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 295.15}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 297.58}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 299.02}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 308.03}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 314.94}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 321.62}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 330.94}, {\"source\": \"Attraction::12605545\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 337.89}, {\"source\": \"Restaurant::447770.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 337.89}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 342.32}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 346.52}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 359.72}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 370.08}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 373.45}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 373.45}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 392.5}, {\"source\": \"Restaurant::10374592.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 392.5}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 404.19}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 414.75}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 423.12}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 423.79}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 430.25}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 444.4}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 446.7}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 460.51}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 474.39}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 476.99}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 478.82}, {\"source\": \"Restaurant::10374592.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 478.82}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 482.17}, {\"source\": \"Attraction::130349\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 485.31}, {\"source\": \"Restaurant::512779.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 485.31}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 492.45}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 498.72}, {\"source\": \"Restaurant::447632.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 498.72}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 499.15}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 521.02}, {\"source\": \"Attraction::108770\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 527.05}, {\"source\": \"Restaurant::447770.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 527.05}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 536.57}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 553.41}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 568.33}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 570.78}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 582.01}, {\"source\": \"Restaurant::15829055.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 582.01}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 584.28}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 588.0}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 588.2}, {\"source\": \"Attraction::130349\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 600.27}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 600.27}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 617.28}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 617.28}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 624.74}, {\"source\": \"Restaurant::447632.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 624.74}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 633.8}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 641.11}, {\"source\": \"Restaurant::15829055.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 641.11}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 643.56}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 643.92}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 644.61}, {\"source\": \"Restaurant::492237.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 644.61}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 645.7}, {\"source\": \"Attraction::130349\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 663.82}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 663.82}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 667.65}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 667.65}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 674.77}, {\"source\": \"Restaurant::15829055.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 674.77}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 675.92}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 677.94}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 687.89}, {\"source\": \"Accommodation::39800537.0\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 694.33}, {\"source\": \"Attraction::130349\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 701.61}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 701.61}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 703.88}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 704.68}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 711.97}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 715.15}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 715.15}, {\"source\": \"Accommodation::17297824.0\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 723.01}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 725.01}, {\"source\": \"Attraction::12605545\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 725.76}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 725.76}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 726.39}, {\"source\": \"Attraction::104133\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 731.63}, {\"source\": \"Restaurant::447770.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 731.63}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 733.46}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 746.05}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 746.05}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 751.49}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 757.63}, {\"source\": \"Attraction::104133\", \"target\": \"Restaurant::680742.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 758.34}, {\"source\": \"Restaurant::680742.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 758.34}, {\"source\": \"Attraction::806330\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 762.59}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 762.59}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Restaurant::10374592.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 776.61}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 782.28}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 786.36}, {\"source\": \"Restaurant::492237.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 786.36}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 788.7}, {\"source\": \"Attraction::130349\", \"target\": \"Restaurant::447770.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 798.84}, {\"source\": \"Restaurant::447770.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 798.84}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 803.39}, {\"source\": \"Restaurant::492237.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 803.39}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 810.05}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 810.97}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 814.6}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 819.27}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::104136\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 831.17}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::130349\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 835.91}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 836.76}, {\"source\": \"Attraction::599396\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 838.17}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 838.17}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::599396\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 841.37}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 848.38}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Restaurant::512779.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 849.26}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 852.73}, {\"source\": \"Attraction::12605545\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 854.86}, {\"source\": \"Restaurant::21141783.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 854.86}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::806330\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 869.78}, {\"source\": \"Accommodation::16650087.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 879.78}, {\"source\": \"Attraction::108770\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 881.05}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 881.05}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 891.29}, {\"source\": \"Accommodation::23810033.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 897.95}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 898.49}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::21141783.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 898.84}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 901.73}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Attraction::104136\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 901.78}, {\"source\": \"Accommodation::51519216.0\", \"target\": \"Restaurant::492237.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 910.93}, {\"source\": \"Attraction::108770\", \"target\": \"Restaurant::680742.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 912.19}, {\"source\": \"Restaurant::680742.0\", \"target\": \"Attraction::108770\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 912.19}, {\"source\": \"Accommodation::19353048.0\", \"target\": \"Restaurant::15829055.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 915.08}, {\"source\": \"Attraction::104133\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 917.33}, {\"source\": \"Restaurant::23162562.0\", \"target\": \"Attraction::104133\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 917.33}, {\"source\": \"Attraction::12605545\", \"target\": \"Restaurant::447631.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 917.76}, {\"source\": \"Restaurant::447631.0\", \"target\": \"Attraction::12605545\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 917.76}, {\"source\": \"Attraction::130312\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 927.1}, {\"source\": \"Restaurant::447632.0\", \"target\": \"Attraction::130312\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 927.1}, {\"source\": \"Accommodation::8.87e+17\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 929.59}, {\"source\": \"Attraction::130377\", \"target\": \"Restaurant::447632.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 953.58}, {\"source\": \"Restaurant::447632.0\", \"target\": \"Attraction::130377\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 953.58}, {\"source\": \"Accommodation::309653.0\", \"target\": \"Restaurant::23162562.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 961.13}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-01\", \"2024-11-02\", \"2024-11-03\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1918577\", \"dep_time\": \"12:22\", \"arr_time\": \"16:01\", \"local_activity_start_after_arrival_buffer\": \"16:31\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F1434506\", \"dep_time\": \"12:27\", \"arr_time\": \"16:10\", \"local_activity_start_after_arrival_buffer\": \"16:40\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F2821455\", \"dep_time\": \"12:42\", \"arr_time\": \"16:33\", \"local_activity_start_after_arrival_buffer\": \"17:03\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F0750764\", \"dep_time\": \"12:44\", \"arr_time\": \"16:16\", \"local_activity_start_after_arrival_buffer\": \"16:46\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F0190734\", \"dep_time\": \"12:54\", \"arr_time\": \"16:15\", \"local_activity_start_after_arrival_buffer\": \"16:45\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F1918307\", \"dep_time\": \"15:50\", \"arr_time\": \"17:45\", \"latest_local_activity_finish_before_airport_buffer\": \"13:50\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F3685322\", \"dep_time\": \"17:43\", \"arr_time\": \"19:54\", \"latest_local_activity_finish_before_airport_buffer\": \"15:43\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1434261\", \"dep_time\": \"14:50\", \"arr_time\": \"16:27\", \"latest_local_activity_finish_before_airport_buffer\": \"12:50\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\"], \"guidance\": \"Departure allows a short morning plan.\"}, {\"flight_node_key\": \"Flight::F0190403\", \"dep_time\": \"18:54\", \"arr_time\": \"20:50\", \"latest_local_activity_finish_before_airport_buffer\": \"16:54\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F3255216\", \"dep_time\": \"18:05\", \"arr_time\": \"19:59\", \"latest_local_activity_finish_before_airport_buffer\": \"16:05\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::10374592.0\", \"Restaurant::447631.0\", \"Restaurant::680742.0\", \"Restaurant::512779.0\", \"Restaurant::447770.0\"], \"lunch\": [\"Restaurant::15829055.0\", \"Restaurant::23162562.0\", \"Restaurant::10374592.0\", \"Restaurant::447631.0\", \"Restaurant::680742.0\", \"Restaurant::492237.0\", \"Restaurant::512779.0\", \"Restaurant::447632.0\", \"Restaurant::447770.0\"], \"dinner\": [\"Restaurant::15829055.0\", \"Restaurant::23162562.0\", \"Restaurant::21141783.0\", \"Restaurant::447631.0\", \"Restaurant::680742.0\", \"Restaurant::492237.0\", \"Restaurant::512779.0\", \"Restaurant::447632.0\", \"Restaurant::447770.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::806330\", \"Attraction::12605545\", \"Attraction::130377\", \"Attraction::104133\", \"Attraction::108770\", \"Attraction::599396\", \"Attraction::104136\", \"Attraction::109832\", \"Attraction::130349\", \"Attraction::130312\"], \"afternoon_attraction\": [\"Attraction::806330\", \"Attraction::12605545\", \"Attraction::130377\", \"Attraction::104133\", \"Attraction::108770\", \"Attraction::599396\", \"Attraction::104136\", \"Attraction::109832\", \"Attraction::130349\", \"Attraction::130312\"]}, \"event_slots_by_date\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::10374592.0\", \"name\": \"Key West Cuban Coffee Shop\"}, {\"node_key\": \"Restaurant::447631.0\", \"name\": \"Blue Heaven\"}, {\"node_key\": \"Restaurant::680742.0\", \"name\": \"Latitudes - Sunset Key Cottages\"}, {\"node_key\": \"Restaurant::512779.0\", \"name\": \"Two Friends Patio Restaurant\"}, {\"node_key\": \"Restaurant::447770.0\", \"name\": \"Pepe's Cafe\"}], \"lunch\": [{\"node_key\": \"Restaurant::15829055.0\", \"name\": \"Seaside Cafe at the Mansion\"}, {\"node_key\": \"Restaurant::23162562.0\", \"name\": \"Kaya island Eats\"}, {\"node_key\": \"Restaurant::10374592.0\", \"name\": \"Key West Cuban Coffee Shop\"}, {\"node_key\": \"Restaurant::447631.0\", \"name\": \"Blue Heaven\"}, {\"node_key\": \"Restaurant::680742.0\", \"name\": \"Latitudes - Sunset Key Cottages\"}, {\"node_key\": \"Restaurant::492237.0\", \"name\": \"El Siboney Restaurant\"}, {\"node_key\": \"Restaurant::512779.0\", \"name\": \"Two Friends Patio Restaurant\"}, {\"node_key\": \"Restaurant::447632.0\", \"name\": \"Louie's Backyard\"}, {\"node_key\": \"Restaurant::447770.0\", \"name\": \"Pepe's Cafe\"}], \"dinner\": [{\"node_key\": \"Restaurant::15829055.0\", \"name\": \"Seaside Cafe at the Mansion\"}, {\"node_key\": \"Restaurant::23162562.0\", \"name\": \"Kaya island Eats\"}, {\"node_key\": \"Restaurant::21141783.0\", \"name\": \"Red Shoe Island Bistro\"}, {\"node_key\": \"Restaurant::447631.0\", \"name\": \"Blue Heaven\"}, {\"node_key\": \"Restaurant::680742.0\", \"name\": \"Latitudes - Sunset Key Cottages\"}, {\"node_key\": \"Restaurant::492237.0\", \"name\": \"El Siboney Restaurant\"}, {\"node_key\": \"Restaurant::512779.0\", \"name\": \"Two Friends Patio Restaurant\"}, {\"node_key\": \"Restaurant::447632.0\", \"name\": \"Louie's Backyard\"}, {\"node_key\": \"Restaurant::447770.0\", \"name\": \"Pepe's Cafe\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-01\": [{\"node_key\": \"Event::vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\"}], \"2024-11-02\": [], \"2024-11-03\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-01\", \"required_slots\": {\"Flight::F1918577\": [\"dinner\"], \"Flight::F1434506\": [\"dinner\"], \"Flight::F2821455\": [\"dinner\"], \"Flight::F0750764\": [\"dinner\"], \"Flight::F0190734\": [\"dinner\"]}, \"event_allowed_node_keys\": [\"Event::vvG1zZb49KDdSL\"], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-02\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-03\", \"required_slots\": {\"Flight::F1918307\": [\"breakfast\", \"morning_attraction\"], \"Flight::F3685322\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1434261\": [\"breakfast\", \"morning_attraction\"], \"Flight::F0190403\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F3255216\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-01\": [\"Event::vvG1zZb49KDdSL\"], \"2024-11-02\": [], \"2024-11-03\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_28",
+    "query_text": "Plan a 3-day trip for 5 people traveling from Dallas to Key West from November 1st to November 3rd, 2024. The budget is $6,450. Accommodations should be an entire home that allows visitors. Include dining options featuring Seafood, Caribbean, Latin, and American cuisines.",
+    "request": {
+      "org": "Dallas",
+      "dest": "Key West",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-01', '2024-11-02', '2024-11-03']",
+      "people_number": 5,
+      "local_constraint": "{'house rule': 'visitors', 'cuisine': ['Seafood', 'Caribbean', 'Latin', 'American'], 'room type': 'entire home', 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 6450,
+      "query": "Plan a 3-day trip for 5 people traveling from Dallas to Key West from November 1st to November 3rd, 2024. The budget is $6,450. Accommodations should be an entire home that allows visitors. Include dining options featuring Seafood, Caribbean, Latin, and American cuisines.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-01",
+      "2024-11-02",
+      "2024-11-03"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Cultural Exploration",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": "visitors",
+      "cuisine": "Seafood, Caribbean, Latin, American",
+      "room type": "entire home",
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1918577",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Key West",
+          "DepTime": "12:22",
+          "ArrTime": "16:01",
+          "Price": 220
+        }
+      },
+      {
+        "node_key": "Flight::F1434506",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Key West",
+          "DepTime": "12:27",
+          "ArrTime": "16:10",
+          "Price": 282
+        }
+      },
+      {
+        "node_key": "Flight::F2821455",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Key West",
+          "DepTime": "12:42",
+          "ArrTime": "16:33",
+          "Price": 413
+        }
+      },
+      {
+        "node_key": "Flight::F0750764",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Key West",
+          "DepTime": "12:44",
+          "ArrTime": "16:16",
+          "Price": 480
+        }
+      },
+      {
+        "node_key": "Flight::F0190734",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-01",
+          "OriginCityName": "Dallas",
+          "DestCityName": "Key West",
+          "DepTime": "12:54",
+          "ArrTime": "16:15",
+          "Price": 532
+        }
+      },
+      {
+        "node_key": "Flight::F1918307",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Key West",
+          "DestCityName": "Dallas",
+          "DepTime": "15:50",
+          "ArrTime": "17:45",
+          "Price": 243
+        }
+      },
+      {
+        "node_key": "Flight::F3685322",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Key West",
+          "DestCityName": "Dallas",
+          "DepTime": "17:43",
+          "ArrTime": "19:54",
+          "Price": 290
+        }
+      },
+      {
+        "node_key": "Flight::F1434261",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Key West",
+          "DestCityName": "Dallas",
+          "DepTime": "14:50",
+          "ArrTime": "16:27",
+          "Price": 291
+        }
+      },
+      {
+        "node_key": "Flight::F0190403",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Key West",
+          "DestCityName": "Dallas",
+          "DepTime": "18:54",
+          "ArrTime": "20:50",
+          "Price": 466
+        }
+      },
+      {
+        "node_key": "Flight::F3255216",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-03",
+          "OriginCityName": "Key West",
+          "DestCityName": "Dallas",
+          "DepTime": "18:05",
+          "ArrTime": "19:59",
+          "Price": 540
+        }
+      },
+      {
+        "node_key": "Accommodation::8.87e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "8.87e+17",
+          "name": "Downtown KeyWest 2Bed Oceanfront",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No pets & No children under 10",
+          "pricing": {
+            "label": "$577 per night",
+            "originalPrice": null,
+            "price": "$577",
+            "qualifier": "night",
+            "total": "$4,036 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  7 reviews",
+            "localizedLabel": "5.0 (7)",
+            "average": 5,
+            "reviewsCount": 7
+          },
+          "coordinates": {
+            "latitude": 24.5569989,
+            "longitude": -81.80727739999999
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::19353048.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "19353048.0",
+          "name": "WALK TO BEACH, MALLORY SQUARE, DUVAL STREET",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No parties & No visitors",
+          "pricing": {
+            "label": "$273 per night",
+            "originalPrice": null,
+            "price": "$273",
+            "qualifier": "night",
+            "total": "$1,910 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  106 reviews",
+            "localizedLabel": "4.92 (106)",
+            "average": 4.92,
+            "reviewsCount": 106
+          },
+          "coordinates": {
+            "latitude": 24.55185,
+            "longitude": -81.80369
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::17297824.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "17297824.0",
+          "name": "Bella Vita: 1B/1B Condo for 2 Just Steps off Duval",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$346 per night",
+            "originalPrice": null,
+            "price": "$346",
+            "qualifier": "night",
+            "total": "$1,728 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  470 reviews",
+            "localizedLabel": "4.98 (470)",
+            "average": 4.98,
+            "reviewsCount": 470
+          },
+          "coordinates": {
+            "latitude": 24.549,
+            "longitude": -81.79898
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::23810033.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "23810033.0",
+          "name": "Hidden Beach unit 1 The Perfect Place to stay",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$654 per night",
+            "originalPrice": null,
+            "price": "$654",
+            "qualifier": "night",
+            "total": "$3,270 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  88 reviews",
+            "localizedLabel": "4.97 (88)",
+            "average": 4.97,
+            "reviewsCount": 88
+          },
+          "coordinates": {
+            "latitude": 24.54641,
+            "longitude": -81.79351
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::309653.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "309653.0",
+          "name": "Old Town - Room Opens to Pool and Garden",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$379 per night",
+            "originalPrice": null,
+            "price": "$379",
+            "qualifier": "night",
+            "total": "$1,894 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  557 reviews",
+            "localizedLabel": "4.94 (557)",
+            "average": 4.94,
+            "reviewsCount": 557
+          },
+          "coordinates": {
+            "latitude": 24.55176,
+            "longitude": -81.79241
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::39800537.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39800537.0",
+          "name": "Mallory House Room #3",
+          "City": "Key West",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No pets & No smoking",
+          "pricing": {
+            "label": "$216 per night",
+            "originalPrice": null,
+            "price": "$216",
+            "qualifier": "night",
+            "total": "$1,078 total"
+          },
+          "rating": {
+            "label": "4.88 out of 5 average rating,  391 reviews",
+            "localizedLabel": "4.88 (391)",
+            "average": 4.88,
+            "reviewsCount": 391
+          },
+          "coordinates": {
+            "latitude": 24.5496,
+            "longitude": -81.79855
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.86e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.86e+17",
+          "name": "Newly renovated + Free Full Breakfast - Queen Room",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$202 per night, originally $219",
+            "originalPrice": "$219",
+            "price": "$202",
+            "qualifier": "night",
+            "total": "$1,006 total"
+          },
+          "rating": {
+            "label": "4.6 out of 5 average rating,  214 reviews",
+            "localizedLabel": "4.6 (214)",
+            "average": 4.6,
+            "reviewsCount": 214
+          },
+          "coordinates": {
+            "latitude": 24.56817,
+            "longitude": -81.75366
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::51519216.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "51519216.0",
+          "name": "Nuns Room, A single travelers delight!",
+          "City": "Key West",
+          "roomType": "private_room",
+          "max_occupancy": "1",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$283 per night, originally $319",
+            "originalPrice": "$319",
+            "price": "$283",
+            "qualifier": "night",
+            "total": "$1,412 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  155 reviews",
+            "localizedLabel": "4.95 (155)",
+            "average": 4.95,
+            "reviewsCount": 155
+          },
+          "coordinates": {
+            "latitude": 24.55831,
+            "longitude": -81.79893
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::8.69e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "8.69e+17",
+          "name": "Full houseboat with large observation deck",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$306 per night, originally $341",
+            "originalPrice": "$341",
+            "price": "$306",
+            "qualifier": "night",
+            "total": "$1,526 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  92 reviews",
+            "localizedLabel": "4.97 (92)",
+            "average": 4.97,
+            "reviewsCount": 92
+          },
+          "coordinates": {
+            "latitude": 24.56928,
+            "longitude": -81.7797
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16650087.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16650087.0",
+          "name": "Poolside Truman Annex 2 Bed | Conch Life Condo",
+          "City": "Key West",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$486 per night, originally $595",
+            "originalPrice": "$595",
+            "price": "$486",
+            "qualifier": "night",
+            "total": "$2,428 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  256 reviews",
+            "localizedLabel": "4.96 (256)",
+            "average": 4.96,
+            "reviewsCount": 256
+          },
+          "coordinates": {
+            "latitude": 24.55281,
+            "longitude": -81.80566
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::806330",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "806330",
+          "name": "Saint Mary Star of the Sea",
+          "City": "Key West",
+          "subtype": [
+            "Churches & Cathedrals"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#10 of 183 things to do in Key West",
+          "address": "1010 Windsor Ln, Key West, FL 33040-3270",
+          "description": "This basilica is the only Catholic church on Key West. Explore its Victorian-style architecture, history and grotto, believed to protect the island from hurricanes."
+        }
+      },
+      {
+        "node_key": "Attraction::12605545",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "12605545",
+          "name": "Hemingway Rum -Papa's Pilar Distillery",
+          "City": "Key West",
+          "subtype": [
+            "Distilleries"
+          ],
+          "subcategories": [
+            "Food & Drink"
+          ],
+          "visit_duration": "2.5",
+          "rating": "5.0",
+          "rankingString": "#6 of 183 things to do in Key West",
+          "address": "201 Simonton St, Key West, FL 33040-6628",
+          "description": "Of everywhere he traveled in this world, \"Papa\" Ernest Hemingway chose Key West to call home. It's here that we chose to craft the rum made in his honor, Papa's Pilar. Our Rum Distillery is located in a historic tobacco warehouse built in 1878 by skilled Irish bricklayers . Here you can navigate the art of making rum, discover how our rum makers craft our unique spirit, uncover untold stories of Hemingway and experience an adventure Papa would be proud of. Taste, Experience, Explore, Shop and..."
+        }
+      },
+      {
+        "node_key": "Attraction::130377",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "130377",
+          "name": "The Ernest Hemingway Home and Museum",
+          "City": "Key West",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 183 things to do in Key West",
+          "address": "907 Whitehead Street, Key West, FL 33040-7473",
+          "description": "Ernest Hemingway lived and wrote in this for ten years. During that time he wrote seventy percent of his life-time works. Today we operate as a museum providing guided tours every fifteen minutes from nine to five. The Museum is available for weddings and corporate events. Visit this National Historic Landmark, Literary Landmark and recognized by the Library of Congress for its importance in U.S. History. Grand Architecture, Lush Gardens, Educational Tours, Book Store/Gift Shop and the world ..."
+        }
+      },
+      {
+        "node_key": "Attraction::104133",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104133",
+          "name": "Mallory Square",
+          "City": "Key West",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Piers & Boardwalks",
+            "Parks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#3 of 183 things to do in Key West",
+          "address": "400 Wall St, Key West, FL 33040-6633",
+          "description": "Welcome to Mallory Square where the fun starts and the sun sets. Everything Key West is famous for comes together in this one special place set on historic waterfront. Mallory Square is home to shops, restaurants, and many of the islands most popular attractions. Come for the day and stay into the night. There's always something happening in Mallory Square."
+        }
+      },
+      {
+        "node_key": "Attraction::108770",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "108770",
+          "name": "Duval Street",
+          "City": "Key West",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 183 things to do in Key West",
+          "address": "Key West, FL 33040",
+          "description": "This street is the bustling heart of Key West, and a great spot to experience the city's culture and nightlife. It's filled with fantastic restaurants, lively bars, art galleries, and shops selling unique gifts, clothes, and hand-rolled cigars. And don't forget to stand in line to take a photo at the Southernmost Point Buoy, which is just a block away. In the evening, you sip on a margarita and enjoy an al fresco meal, or join a haunted pub crawl and ghost tour of the area. Visit during the s..."
+        }
+      },
+      {
+        "node_key": "Attraction::599396",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "599396",
+          "name": "Key West Butterfly and Nature Conservatory",
+          "City": "Key West",
+          "subtype": [
+            "Nature & Wildlife Areas"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#1 of 183 things to do in Key West",
+          "address": "1316 Duval St, Key West, FL 33040-3132",
+          "description": "Walk among hundreds of living butterflies and colorful birds! Take a stroll through a tropical paradise… walk through an exotic and inviting environment filled with hundreds of the most beautiful winged creatures in nature –butterflies. During your breathtaking journey, you will experience an impressive collection of flowering plants, cascading waterfalls and trees that set the stage for the “flowers of the sky.” Witness some 50 to 60 different species from around the world, as well as variet..."
+        }
+      },
+      {
+        "node_key": "Attraction::104136",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104136",
+          "name": "Fort Zachary Taylor Historic State Park",
+          "City": "Key West",
+          "subtype": [
+            "Beaches",
+            "Historic Sites",
+            "State Parks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.8333333333333335",
+          "rating": "4.5",
+          "rankingString": "#20 of 183 things to do in Key West",
+          "address": "601 Howard England Way, Key West, FL 33040-8395",
+          "description": "This historic fort has the largest collection of Civil War armaments in the world. Bonus: It's located along a beach that's popular for sunset views."
+        }
+      },
+      {
+        "node_key": "Attraction::109832",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "109832",
+          "name": "The Overseas Highway",
+          "City": "Key West",
+          "subtype": [
+            "Scenic Drives"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#22 of 183 things to do in Key West",
+          "address": "Key West, FL",
+          "description": "This scenic 113-mile-long highway is a part of U.S. Route 1 and connects the entire length of the Keys over 42 bridges."
+        }
+      },
+      {
+        "node_key": "Attraction::130349",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "130349",
+          "name": "Truman Little White House",
+          "City": "Key West",
+          "subtype": [
+            "History Museums",
+            "Points of Interest & Landmarks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#14 of 183 things to do in Key West",
+          "address": "111 Front St Naval Air Station, Key West, FL 33040-8311",
+          "description": "As Florida’s only presidential museum, the Harry S. Truman Little White House was the winter White House for this country's 33rd president. Truman spent 175 days during 13 vacations in the home that is filled with original furnishing and memorabilia from Truman’s days. Presidents Taft, Eisenhower, Kennedy, Carter and Clinton also used the house. Guided tours offer guests a window into the world President Truman and life of a US president."
+        }
+      },
+      {
+        "node_key": "Attraction::130312",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "130312",
+          "name": "Key West Lighthouse and Keeper's Quarters Museum",
+          "City": "Key West",
+          "subtype": [
+            "Lighthouses",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#23 of 183 things to do in Key West",
+          "address": "938 Whitehead St, Key West, FL 33040-7423",
+          "description": "Operated by the Key West Art & Historical Society, the Keys oldest cultural non-profit. The mission of the Key West Art & Historical Society is to preserve the culture of the Florida Keys through exhibiting and displaying regional art, architecture and history for the purpose of educating the community and visiting public."
+        }
+      },
+      {
+        "node_key": "Restaurant::15829055.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "15829055.0",
+          "name": "Seaside Cafe at the Mansion",
+          "City": "Key West",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Bar",
+            "Pizza",
+            "Cafe",
+            "Seafood"
+          ],
+          "avg_cost": "70.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "1400 Duval St Located at the Southernmost House, Key West, FL 33040-3133",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::23162562.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "23162562.0",
+          "name": "Kaya island Eats",
+          "City": "Key West",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Caribbean",
+            "Bar",
+            "Seafood",
+            "Polynesian",
+            "Hawaiian",
+            "Jamaican"
+          ],
+          "avg_cost": "70.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "618 Rear Duval St, Key West, FL 33040",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::21141783.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "21141783.0",
+          "name": "Red Shoe Island Bistro",
+          "City": "Key West",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "Seafood",
+            "European"
+          ],
+          "avg_cost": "70.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "411 Petronia St, Key West, FL 33040-7412",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1080,
+                  "openHours": "18:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::10374592.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "10374592.0",
+          "name": "Key West Cuban Coffee Shop",
+          "City": "Key West",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Latin"
+          ],
+          "avg_cost": "24.0",
+          "rating": "5.0",
+          "priceLevel": "$",
+          "address": "517 Truman Ave, Key West, FL 33040-3173",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1200,
+                  "closeHours": "20:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::447631.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "447631.0",
+          "name": "Blue Heaven",
+          "City": "Key West",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Caribbean"
+          ],
+          "avg_cost": "70.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "729 Thomas St, Key West, FL 33040-7334",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::680742.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "680742.0",
+          "name": "Latitudes - Sunset Key Cottages",
+          "City": "Key West",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Caribbean",
+            "Seafood",
+            "Fusion"
+          ],
+          "avg_cost": "112.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "245 Front St Sunset Key Cottages, Key West, FL 33040",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 855,
+                  "closeHours": "14:15"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::492237.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "492237.0",
+          "name": "El Siboney Restaurant",
+          "City": "Key West",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Caribbean",
+            "Latin",
+            "Cuban"
+          ],
+          "avg_cost": "70.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "900 Catherine St, Key West, FL 33040-3202",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::512779.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "512779.0",
+          "name": "Two Friends Patio Restaurant",
+          "City": "Key West",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Seafood"
+          ],
+          "avg_cost": "70.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "512 Front St, Key West, FL 33040-6619",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::447632.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "447632.0",
+          "name": "Louie's Backyard",
+          "City": "Key West",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "International"
+          ],
+          "avg_cost": "112.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "700 Waddell Avenue, Key West, FL 33040",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                }
+              ],
+              [
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1110,
+                  "openHours": "18:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::447770.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "447770.0",
+          "name": "Pepe's Cafe",
+          "City": "Key West",
+          "mealTypes": [],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "70.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "806 Caroline St, Key West, FL 33040-6643",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 450,
+                  "openHours": "07:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::108770",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 36.21
+      },
+      {
+        "source": "Restaurant::512779.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 36.21
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 72.35
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 87.95
+      },
+      {
+        "source": "Restaurant::15829055.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 87.95
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 90.24
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 110.37
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 165.99
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 165.99
+      },
+      {
+        "source": "Attraction::12605545",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 183.75
+      },
+      {
+        "source": "Restaurant::512779.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 183.75
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 194.07
+      },
+      {
+        "source": "Restaurant::10374592.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 194.07
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 205.91
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 205.91
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 212.22
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 224.92
+      },
+      {
+        "source": "Restaurant::10374592.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 224.92
+      },
+      {
+        "source": "Attraction::104133",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 230.62
+      },
+      {
+        "source": "Restaurant::512779.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 230.62
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 231.14
+      },
+      {
+        "source": "Restaurant::492237.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 231.14
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 234.83
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 235.5
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 237.44
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 242.39
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 242.39
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 244.66
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 244.66
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 260.14
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 269.39
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 277.63
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 278.58
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 284.99
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 286.5
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 288.54
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 295.15
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 295.15
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 297.58
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 299.02
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 308.03
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 314.94
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 321.62
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 330.94
+      },
+      {
+        "source": "Attraction::12605545",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 337.89
+      },
+      {
+        "source": "Restaurant::447770.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 337.89
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 342.32
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 346.52
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 359.72
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 370.08
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 373.45
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 373.45
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 392.5
+      },
+      {
+        "source": "Restaurant::10374592.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 392.5
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 404.19
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 414.75
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 423.12
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 423.79
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 430.25
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 444.4
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 446.7
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 460.51
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 474.39
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 476.99
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 478.82
+      },
+      {
+        "source": "Restaurant::10374592.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 478.82
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 482.17
+      },
+      {
+        "source": "Attraction::130349",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 485.31
+      },
+      {
+        "source": "Restaurant::512779.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 485.31
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 492.45
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 498.72
+      },
+      {
+        "source": "Restaurant::447632.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 498.72
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 499.15
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 521.02
+      },
+      {
+        "source": "Attraction::108770",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 527.05
+      },
+      {
+        "source": "Restaurant::447770.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 527.05
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 536.57
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 553.41
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 568.33
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 570.78
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 582.01
+      },
+      {
+        "source": "Restaurant::15829055.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 582.01
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 584.28
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 588.0
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 588.2
+      },
+      {
+        "source": "Attraction::130349",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 600.27
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 600.27
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 617.28
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 617.28
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 624.74
+      },
+      {
+        "source": "Restaurant::447632.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 624.74
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 633.8
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 641.11
+      },
+      {
+        "source": "Restaurant::15829055.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 641.11
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 643.56
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 643.92
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 644.61
+      },
+      {
+        "source": "Restaurant::492237.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 644.61
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 645.7
+      },
+      {
+        "source": "Attraction::130349",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 663.82
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 663.82
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 667.65
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 667.65
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 674.77
+      },
+      {
+        "source": "Restaurant::15829055.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 674.77
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 675.92
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 677.94
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 687.89
+      },
+      {
+        "source": "Accommodation::39800537.0",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 694.33
+      },
+      {
+        "source": "Attraction::130349",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 701.61
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 701.61
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 703.88
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 704.68
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 711.97
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 715.15
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 715.15
+      },
+      {
+        "source": "Accommodation::17297824.0",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 723.01
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 725.01
+      },
+      {
+        "source": "Attraction::12605545",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 725.76
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 725.76
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 726.39
+      },
+      {
+        "source": "Attraction::104133",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 731.63
+      },
+      {
+        "source": "Restaurant::447770.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 731.63
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 733.46
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 746.05
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 746.05
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 751.49
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 757.63
+      },
+      {
+        "source": "Attraction::104133",
+        "target": "Restaurant::680742.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 758.34
+      },
+      {
+        "source": "Restaurant::680742.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 758.34
+      },
+      {
+        "source": "Attraction::806330",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 762.59
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 762.59
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Restaurant::10374592.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 776.61
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 782.28
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 786.36
+      },
+      {
+        "source": "Restaurant::492237.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 786.36
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 788.7
+      },
+      {
+        "source": "Attraction::130349",
+        "target": "Restaurant::447770.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 798.84
+      },
+      {
+        "source": "Restaurant::447770.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 798.84
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 803.39
+      },
+      {
+        "source": "Restaurant::492237.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 803.39
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 810.05
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 810.97
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 814.6
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 819.27
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::104136",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 831.17
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::130349",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 835.91
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 836.76
+      },
+      {
+        "source": "Attraction::599396",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 838.17
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 838.17
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::599396",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 841.37
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 848.38
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Restaurant::512779.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 849.26
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 852.73
+      },
+      {
+        "source": "Attraction::12605545",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 854.86
+      },
+      {
+        "source": "Restaurant::21141783.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 854.86
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::806330",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 869.78
+      },
+      {
+        "source": "Accommodation::16650087.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 879.78
+      },
+      {
+        "source": "Attraction::108770",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 881.05
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 881.05
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 891.29
+      },
+      {
+        "source": "Accommodation::23810033.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 897.95
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 898.49
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::21141783.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 898.84
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 901.73
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Attraction::104136",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 901.78
+      },
+      {
+        "source": "Accommodation::51519216.0",
+        "target": "Restaurant::492237.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 910.93
+      },
+      {
+        "source": "Attraction::108770",
+        "target": "Restaurant::680742.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 912.19
+      },
+      {
+        "source": "Restaurant::680742.0",
+        "target": "Attraction::108770",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 912.19
+      },
+      {
+        "source": "Accommodation::19353048.0",
+        "target": "Restaurant::15829055.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 915.08
+      },
+      {
+        "source": "Attraction::104133",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 917.33
+      },
+      {
+        "source": "Restaurant::23162562.0",
+        "target": "Attraction::104133",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 917.33
+      },
+      {
+        "source": "Attraction::12605545",
+        "target": "Restaurant::447631.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 917.76
+      },
+      {
+        "source": "Restaurant::447631.0",
+        "target": "Attraction::12605545",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 917.76
+      },
+      {
+        "source": "Attraction::130312",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 927.1
+      },
+      {
+        "source": "Restaurant::447632.0",
+        "target": "Attraction::130312",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 927.1
+      },
+      {
+        "source": "Accommodation::8.87e+17",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 929.59
+      },
+      {
+        "source": "Attraction::130377",
+        "target": "Restaurant::447632.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 953.58
+      },
+      {
+        "source": "Restaurant::447632.0",
+        "target": "Attraction::130377",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 953.58
+      },
+      {
+        "source": "Accommodation::309653.0",
+        "target": "Restaurant::23162562.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 961.13
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-01",
+        "2024-11-02",
+        "2024-11-03"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1918577",
+          "dep_time": "12:22",
+          "arr_time": "16:01",
+          "local_activity_start_after_arrival_buffer": "16:31",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F1434506",
+          "dep_time": "12:27",
+          "arr_time": "16:10",
+          "local_activity_start_after_arrival_buffer": "16:40",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F2821455",
+          "dep_time": "12:42",
+          "arr_time": "16:33",
+          "local_activity_start_after_arrival_buffer": "17:03",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F0750764",
+          "dep_time": "12:44",
+          "arr_time": "16:16",
+          "local_activity_start_after_arrival_buffer": "16:46",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F0190734",
+          "dep_time": "12:54",
+          "arr_time": "16:15",
+          "local_activity_start_after_arrival_buffer": "16:45",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F1918307",
+          "dep_time": "15:50",
+          "arr_time": "17:45",
+          "latest_local_activity_finish_before_airport_buffer": "13:50",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F3685322",
+          "dep_time": "17:43",
+          "arr_time": "19:54",
+          "latest_local_activity_finish_before_airport_buffer": "15:43",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1434261",
+          "dep_time": "14:50",
+          "arr_time": "16:27",
+          "latest_local_activity_finish_before_airport_buffer": "12:50",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction"
+          ],
+          "guidance": "Departure allows a short morning plan."
+        },
+        {
+          "flight_node_key": "Flight::F0190403",
+          "dep_time": "18:54",
+          "arr_time": "20:50",
+          "latest_local_activity_finish_before_airport_buffer": "16:54",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F3255216",
+          "dep_time": "18:05",
+          "arr_time": "19:59",
+          "latest_local_activity_finish_before_airport_buffer": "16:05",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::10374592.0",
+          "Restaurant::447631.0",
+          "Restaurant::680742.0",
+          "Restaurant::512779.0",
+          "Restaurant::447770.0"
+        ],
+        "lunch": [
+          "Restaurant::15829055.0",
+          "Restaurant::23162562.0",
+          "Restaurant::10374592.0",
+          "Restaurant::447631.0",
+          "Restaurant::680742.0",
+          "Restaurant::492237.0",
+          "Restaurant::512779.0",
+          "Restaurant::447632.0",
+          "Restaurant::447770.0"
+        ],
+        "dinner": [
+          "Restaurant::15829055.0",
+          "Restaurant::23162562.0",
+          "Restaurant::21141783.0",
+          "Restaurant::447631.0",
+          "Restaurant::680742.0",
+          "Restaurant::492237.0",
+          "Restaurant::512779.0",
+          "Restaurant::447632.0",
+          "Restaurant::447770.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::806330",
+          "Attraction::12605545",
+          "Attraction::130377",
+          "Attraction::104133",
+          "Attraction::108770",
+          "Attraction::599396",
+          "Attraction::104136",
+          "Attraction::109832",
+          "Attraction::130349",
+          "Attraction::130312"
+        ],
+        "afternoon_attraction": [
+          "Attraction::806330",
+          "Attraction::12605545",
+          "Attraction::130377",
+          "Attraction::104133",
+          "Attraction::108770",
+          "Attraction::599396",
+          "Attraction::104136",
+          "Attraction::109832",
+          "Attraction::130349",
+          "Attraction::130312"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-01": [
+          "Event::vvG1zZb49KDdSL"
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::10374592.0",
+            "name": "Key West Cuban Coffee Shop"
+          },
+          {
+            "node_key": "Restaurant::447631.0",
+            "name": "Blue Heaven"
+          },
+          {
+            "node_key": "Restaurant::680742.0",
+            "name": "Latitudes - Sunset Key Cottages"
+          },
+          {
+            "node_key": "Restaurant::512779.0",
+            "name": "Two Friends Patio Restaurant"
+          },
+          {
+            "node_key": "Restaurant::447770.0",
+            "name": "Pepe's Cafe"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::15829055.0",
+            "name": "Seaside Cafe at the Mansion"
+          },
+          {
+            "node_key": "Restaurant::23162562.0",
+            "name": "Kaya island Eats"
+          },
+          {
+            "node_key": "Restaurant::10374592.0",
+            "name": "Key West Cuban Coffee Shop"
+          },
+          {
+            "node_key": "Restaurant::447631.0",
+            "name": "Blue Heaven"
+          },
+          {
+            "node_key": "Restaurant::680742.0",
+            "name": "Latitudes - Sunset Key Cottages"
+          },
+          {
+            "node_key": "Restaurant::492237.0",
+            "name": "El Siboney Restaurant"
+          },
+          {
+            "node_key": "Restaurant::512779.0",
+            "name": "Two Friends Patio Restaurant"
+          },
+          {
+            "node_key": "Restaurant::447632.0",
+            "name": "Louie's Backyard"
+          },
+          {
+            "node_key": "Restaurant::447770.0",
+            "name": "Pepe's Cafe"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::15829055.0",
+            "name": "Seaside Cafe at the Mansion"
+          },
+          {
+            "node_key": "Restaurant::23162562.0",
+            "name": "Kaya island Eats"
+          },
+          {
+            "node_key": "Restaurant::21141783.0",
+            "name": "Red Shoe Island Bistro"
+          },
+          {
+            "node_key": "Restaurant::447631.0",
+            "name": "Blue Heaven"
+          },
+          {
+            "node_key": "Restaurant::680742.0",
+            "name": "Latitudes - Sunset Key Cottages"
+          },
+          {
+            "node_key": "Restaurant::492237.0",
+            "name": "El Siboney Restaurant"
+          },
+          {
+            "node_key": "Restaurant::512779.0",
+            "name": "Two Friends Patio Restaurant"
+          },
+          {
+            "node_key": "Restaurant::447632.0",
+            "name": "Louie's Backyard"
+          },
+          {
+            "node_key": "Restaurant::447770.0",
+            "name": "Pepe's Cafe"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-01": [
+          {
+            "node_key": "Event::vvG1zZb49KDdSL",
+            "name": "A Beautiful Noise"
+          }
+        ],
+        "2024-11-02": [],
+        "2024-11-03": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-01",
+          "required_slots": {
+            "Flight::F1918577": [
+              "dinner"
+            ],
+            "Flight::F1434506": [
+              "dinner"
+            ],
+            "Flight::F2821455": [
+              "dinner"
+            ],
+            "Flight::F0750764": [
+              "dinner"
+            ],
+            "Flight::F0190734": [
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [
+            "Event::vvG1zZb49KDdSL"
+          ],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-02",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-03",
+          "required_slots": {
+            "Flight::F1918307": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F3685322": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1434261": [
+              "breakfast",
+              "morning_attraction"
+            ],
+            "Flight::F0190403": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F3255216": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-01": [
+        "Event::vvG1zZb49KDdSL"
+      ],
+      "2024-11-02": [],
+      "2024-11-03": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

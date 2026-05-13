@@ -1,0 +1,2602 @@
+{
+  "query_id": "idx_27",
+  "query_text": "Plan a 3-day trip for 2 people from Indianapolis to Huntsville from November 5th to November 7th, 2024, with a budget of $1,350. Accommodations should allow pets. Include dining options featuring Tuscan, Chinese, Italian, and Mexican cuisines, and prioritize attractions such as sights & landmarks and shopping.",
+  "request": {
+    "org": "Indianapolis",
+    "dest": "Huntsville",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-05', '2024-11-06', '2024-11-07']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': 'pets', 'cuisine': ['Tuscan', 'Chinese', 'Italian', 'Mexican'], 'room type': None, 'transportation': None, 'event': None, 'attraction': ['Sights & Landmarks', 'Shopping']}",
+    "budget": 1350,
+    "query": "Plan a 3-day trip for 2 people from Indianapolis to Huntsville from November 5th to November 7th, 2024, with a budget of $1,350. Accommodations should allow pets. Include dining options featuring Tuscan, Chinese, Italian, and Mexican cuisines, and prioritize attractions such as sights & landmarks and shopping.",
+    "level": "hard",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Cities"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Cultural Exploration",
+    "spending_preference": "Luxury Traveler",
+    "location_preference": "Cities"
+  },
+  "constraints": {
+    "house rule": "pets",
+    "cuisine": "Tuscan, Chinese, Italian, Mexican",
+    "room type": null,
+    "transportation": null,
+    "event": null,
+    "attraction": "Sights & Landmarks, Shopping"
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "This itinerary maximizes meal and attraction coverage while adhering to flight schedules and budget constraints.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1350.0,
+    "min_estimated_total_cost": 643.0,
+    "max_estimated_total_cost": 643.0,
+    "best_option_remaining_budget": 707.0
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 643.0,
+      "stay": {
+        "node_key": "Accommodation::8.37e+17",
+        "label": "Accommodation",
+        "name": "Central HSV Mid Century Modern Apartment",
+        "id": "8.37e+17",
+        "City": "Huntsville",
+        "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+      },
+      "outbound": {
+        "node_key": "Flight::F3227542",
+        "label": "Flight",
+        "name": "F3227542: Indianapolis to Huntsville, 11:45-12:11",
+        "Flight Number": "F3227542",
+        "FlightDate": "2024-11-11",
+        "OriginCityName": "Indianapolis",
+        "DestCityName": "Huntsville",
+        "Price": 111,
+        "DepTime": "11:45",
+        "ArrTime": "12:11"
+      },
+      "return": {
+        "node_key": "Flight::F3227557",
+        "label": "Flight",
+        "name": "F3227557: Huntsville to Indianapolis, 10:05-12:22",
+        "Flight Number": "F3227557",
+        "FlightDate": "2024-11-08",
+        "OriginCityName": "Huntsville",
+        "DestCityName": "Indianapolis",
+        "Price": 119,
+        "DepTime": "10:05",
+        "ArrTime": "12:22"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-05",
+          "current_city": "Huntsville",
+          "llm_notes": "First day includes the outbound flight. No local activities before arrival. After arrival, schedule an attraction and dinner.",
+          "outbound_flight": {
+            "node_key": "Flight::F3227542",
+            "label": "Flight",
+            "name": "F3227542: Indianapolis to Huntsville, 11:45-12:11",
+            "Flight Number": "F3227542",
+            "FlightDate": "2024-11-11",
+            "OriginCityName": "Indianapolis",
+            "DestCityName": "Huntsville",
+            "Price": 111,
+            "DepTime": "11:45",
+            "ArrTime": "12:11"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::8.37e+17",
+            "label": "Accommodation",
+            "name": "Central HSV Mid Century Modern Apartment",
+            "id": "8.37e+17",
+            "City": "Huntsville",
+            "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::6909952",
+            "label": "Attraction",
+            "name": "Sugarbush Hill Maple Farm",
+            "id": "6909952",
+            "City": "Huntsville",
+            "rating": "5.0"
+          },
+          "dinner": {
+            "node_key": "Restaurant::2294896.0",
+            "label": "Restaurant",
+            "name": "Pane E Vino",
+            "id": "2294896.0",
+            "City": "Huntsville",
+            "avg_cost": "31.25",
+            "rating": "4.0"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::8.37e+17",
+            "label": "Accommodation",
+            "name": "Central HSV Mid Century Modern Apartment",
+            "id": "8.37e+17",
+            "City": "Huntsville",
+            "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-06",
+          "current_city": "Huntsville",
+          "llm_notes": "Full non-travel day with breakfast, morning attraction, lunch, afternoon attraction, and dinner.",
+          "start_accommodation": {
+            "node_key": "Accommodation::8.37e+17",
+            "label": "Accommodation",
+            "name": "Central HSV Mid Century Modern Apartment",
+            "id": "8.37e+17",
+            "City": "Huntsville",
+            "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::108243",
+            "label": "Attraction",
+            "name": "U.S. Space and Rocket Center",
+            "id": "108243",
+            "City": "Huntsville",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::1089821.0",
+            "label": "Restaurant",
+            "name": "Phil Sandoval's",
+            "id": "1089821.0",
+            "City": "Huntsville",
+            "avg_cost": "31.25",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::3533233",
+            "label": "Attraction",
+            "name": "Lions Lookout",
+            "id": "3533233",
+            "City": "Huntsville",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::1224777.0",
+            "label": "Restaurant",
+            "name": "Rosie's Cantina",
+            "id": "1224777.0",
+            "City": "Huntsville",
+            "avg_cost": "31.25",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::8.37e+17",
+            "label": "Accommodation",
+            "name": "Central HSV Mid Century Modern Apartment",
+            "id": "8.37e+17",
+            "City": "Huntsville",
+            "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-07",
+          "current_city": "Huntsville",
+          "llm_notes": "Last day includes the return flight. Schedule breakfast, morning attraction, and lunch before the return flight.",
+          "start_accommodation": {
+            "node_key": "Accommodation::8.37e+17",
+            "label": "Accommodation",
+            "name": "Central HSV Mid Century Modern Apartment",
+            "id": "8.37e+17",
+            "City": "Huntsville",
+            "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::664915",
+            "label": "Attraction",
+            "name": "Group of Seven Outdoor Gallery",
+            "id": "664915",
+            "City": "Huntsville",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::556517.0",
+            "label": "Restaurant",
+            "name": "Rosie's Mexican Cantina",
+            "id": "556517.0",
+            "City": "Huntsville",
+            "avg_cost": "31.25",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F3227557",
+            "label": "Flight",
+            "name": "F3227557: Huntsville to Indianapolis, 10:05-12:22",
+            "Flight Number": "F3227557",
+            "FlightDate": "2024-11-08",
+            "OriginCityName": "Huntsville",
+            "DestCityName": "Indianapolis",
+            "Price": 119,
+            "DepTime": "10:05",
+            "ArrTime": "12:22"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_27",
+    "node_count": 31,
+    "edge_count": 428,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::8.37e+17",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "6",
+        "house_rules": "No pets",
+        "State": "Alabama",
+        "name": "Central HSV Mid Century Modern Apartment",
+        "coordinates": "{\"latitude\": 34.717297426890006, \"longitude\": -86.57164552170408}",
+        "rating": "{\"label\": \"4.99 out of 5 average rating,  78 reviews\", \"localizedLabel\": \"4.99 (78)\", \"average\": 4.99, \"reviewsCount\": 78}",
+        "id": "8.37e+17",
+        "City": "Huntsville",
+        "title": "Apartment in Huntsville",
+        "url": "https://www.airbnb.com/rooms/836535023277464655?locale=en-US&currency=USD&check_in=2024-11-01&check_out=2024-11-06",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$144 per night\", \"originalPrice\": null, \"price\": \"$144\", \"qualifier\": \"night\", \"total\": \"$716 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:804",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::108243",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "3290",
+        "latitude": "34.711143",
+        "rating": "4.5",
+        "description": "Home to Space Camp, Aviation Challenge, Space Camp Robotics, U.S. Cyber Camp and NASA's Official Visitor Information Center for Marshall Space Flight Center; The U.S. Space & Rocket Center is recognized as one of the most comprehensive U.S. manned space flight hardware museums in the world.",
+        "visit_duration": "2.25",
+        "addressObj": "{\"street1\": \"1 Tranquility Base\", \"street2\": \"\", \"city\": \"Huntsville\", \"state\": \"AL\", \"country\": \"United States\", \"postalcode\": \"35805-3371\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.42\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FAlabama%2FHuntsville-and-North-Alabama-Ticket%2Fd22212-351289P11%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4a6f2b1336e00fad7&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=108243&clt=TD&from=api&nt=true\", \"price\": \"$42.00\", \"roundedUpPrice\": \"$42\", \"offerType\": null, \"title\": \"Huntsville and North Alabama Multi-Attraction Pass\", \"productCode\": \"351289P11\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/36/d0/6b.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}]}",
+        "subtype": [
+          "Gift & Specialty Shops",
+          "Science Museums",
+          "Observatories & Planetariums"
+        ],
+        "ratingHistogram": "{\"count1\": 30, \"count2\": 84, \"count3\": 284, \"count4\": 834, \"count5\": 2058}",
+        "location_contains_city": "True",
+        "id": "108243",
+        "longitude": "-86.65394",
+        "website": "http://www.rocketcenter.com",
+        "rankingPosition": "1.0",
+        "address": "1 Tranquility Base, Huntsville, AL 35805-3371",
+        "neighborhoodLocations": [],
+        "rankingString": "#1 of 66 Shopping in Huntsville",
+        "City": "Huntsville",
+        "localName": "U.S. Space and Rocket Center",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g30620-d108243-Reviews-U_S_Space_and_Rocket_Center-Huntsville_Alabama.html",
+        "localAddress": "1 Tranquility Base, 35805-3371",
+        "rankingDenominator": "66.0",
+        "name": "U.S. Space and Rocket Center",
+        "locationString": "Huntsville, Alabama",
+        "subcategories": [
+          "Shopping",
+          "Museums"
+        ],
+        "rawRanking": "3.928613424"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:4001",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::3533233",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-CA",
+        "numberOfReviews": "315",
+        "latitude": "45.326893",
+        "rating": "4.5",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"Lookout Rd\", \"street2\": null, \"city\": \"Huntsville\", \"state\": null, \"country\": \"Canada\", \"postalcode\": \"P1H 1R1\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.04\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHuntsville%2FSelf-Guided-Audio-Driving-Tour-bw-Huntsville-and-Barrie%2Fd51539-214606P12%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=a40631bdce00aa8a8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=3533233&clt=TD&from=api&nt=true\", \"price\": \"$5.21\", \"roundedUpPrice\": \"$6\", \"offerType\": null, \"title\": \"Smartphone Audio Driving Tour between Huntsville & Toronto\", \"productCode\": \"214606P12\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/fd/74/8c.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Lookouts"
+        ],
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 7, \"count3\": 33, \"count4\": 117, \"count5\": 155}",
+        "location_contains_city": "True",
+        "id": "3533233",
+        "longitude": "-79.20752",
+        "website": "http://www.discovermuskoka.ca/directories/1321-lions_lookout.html",
+        "rankingPosition": "3.0",
+        "address": "Lookout Rd, Huntsville, Ontario P1H 1R1 Canada",
+        "neighborhoodLocations": [],
+        "rankingString": "#3 of 27 things to do in Huntsville",
+        "City": "Huntsville",
+        "localName": "Lions Lookout",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g181752-d3533233-Reviews-Lions_Lookout-Huntsville_Muskoka_District_Ontario.html",
+        "localAddress": "Lookout Rd, P1H 1R1",
+        "rankingDenominator": "27.0",
+        "name": "Lions Lookout",
+        "locationString": "Huntsville, Muskoka District, Ontario",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "3.82570076"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3999",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::664915",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-CA",
+        "numberOfReviews": "76",
+        "latitude": "45.326473",
+        "rating": "4.5",
+        "visit_duration": "2.5",
+        "addressObj": "{\"street1\": \"\", \"street2\": \"\", \"city\": \"Huntsville\", \"state\": null, \"country\": \"Canada\", \"postalcode\": \"\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.04\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHuntsville%2FSelf-Guided-Audio-Driving-Tour-bw-Huntsville-and-Barrie%2Fd51539-214606P12%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=a40631bdce00aa8a8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=664915&clt=TD&from=api&nt=true\", \"price\": \"$5.21\", \"roundedUpPrice\": \"$6\", \"offerType\": null, \"title\": \"Smartphone Audio Driving Tour between Huntsville & Toronto\", \"productCode\": \"214606P12\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/fd/74/8c.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Monuments & Statues",
+          "Art Galleries"
+        ],
+        "ratingHistogram": "{\"count1\": 0, \"count2\": 0, \"count3\": 0, \"count4\": 26, \"count5\": 50}",
+        "location_contains_city": "True",
+        "id": "664915",
+        "longitude": "-79.221176",
+        "website": "http://www.thegroupofsevenoutdoorgallery.com/Huntsville.aspx",
+        "rankingPosition": "4.0",
+        "address": "Huntsville, Ontario Canada",
+        "neighborhoodLocations": [],
+        "rankingString": "#4 of 27 things to do in Huntsville",
+        "City": "Huntsville",
+        "localName": "Group of Seven Outdoor Gallery",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g181752-d664915-Reviews-Group_of_Seven_Outdoor_Gallery-Huntsville_Muskoka_District_Ontario.html",
+        "rankingDenominator": "27.0",
+        "name": "Group of Seven Outdoor Gallery",
+        "locationString": "Huntsville, Muskoka District, Ontario",
+        "subcategories": [
+          "Shopping",
+          "Sights & Landmarks",
+          "Museums"
+        ],
+        "rawRanking": "3.274446487"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:4011",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::6909952",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-CA",
+        "numberOfReviews": "573",
+        "latitude": "45.2578",
+        "rating": "5.0",
+        "description": "Sugarbush Hill is a \"State Of The Art\" maple sugaring operation near the Town of Huntsville. We are the largest sugarhouse open to the public on a year round basis in the District of Muskoka. We offer 100% pure maple syrup and other delicious maple products produced right here from our own sugarbush. SUGARHOUSE TOURS and TASTINGS from May to October, please check tour times and hours on our website under \"Contact\" and \"Tours Details\". Reservations and payment is required for tours in advance as they fill up quickly. See our huge eco-friendly and highly efficient wood-fired evaporator, many displays of maple antiques and artifacts or stroll our maple forest. We would be pleased to take the time to explain the complete maple sugaring process from the past to the present day. A Canadian heritage at it's finest is waiting for you. For your premium MUSKOKA MAPLE EXPERIENCE come to Sugarbush Hill Maple Farm and see what all the fuss has been about for centuries.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"2389 Muskoka Rd 10\", \"street2\": null, \"city\": \"Huntsville\", \"state\": null, \"country\": \"Canada\", \"postalcode\": \"P1H 2J3\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.04\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FHuntsville%2FSelf-Guided-Audio-Driving-Tour-bw-Huntsville-and-Barrie%2Fd51539-214606P12%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=a40631bdce00aa8a8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=6909952&clt=TD&from=api&nt=true\", \"price\": \"$5.21\", \"roundedUpPrice\": \"$6\", \"offerType\": null, \"title\": \"Smartphone Audio Driving Tour between Huntsville & Toronto\", \"productCode\": \"214606P12\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/11/fd/74/8c.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Farms"
+        ],
+        "ratingHistogram": "{\"count1\": 3, \"count2\": 3, \"count3\": 2, \"count4\": 20, \"count5\": 545}",
+        "location_contains_city": "True",
+        "id": "6909952",
+        "longitude": "-79.21698",
+        "website": "http://www.sugarbushhill.com/",
+        "rankingPosition": "1.0",
+        "address": "2389 Muskoka Rd 10, Huntsville, Ontario P1H 2J3 Canada",
+        "neighborhoodLocations": [],
+        "rankingString": "#1 of 27 things to do in Huntsville",
+        "City": "Huntsville",
+        "localName": "Sugarbush Hill Maple Farm",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g181752-d6909952-Reviews-Sugarbush_Hill_Maple_Farm-Huntsville_Muskoka_District_Ontario.html",
+        "localAddress": "2389 Muskoka Rd 10, P1H 2J3",
+        "rankingDenominator": "27.0",
+        "name": "Sugarbush Hill Maple Farm",
+        "locationString": "Huntsville, Muskoka District, Ontario",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.359519958"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3998",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Huntsville",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Huntsville"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Indianapolis",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Indianapolis"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F3227542",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F3227542",
+        "Price": 111,
+        "DepTime": "11:45",
+        "ArrTime": "12:11",
+        "ActualElapsedTime": "1 hours 26 minutes",
+        "FlightDate": "2024-11-11",
+        "OriginCityName": "Indianapolis",
+        "DestCityName": "Huntsville",
+        "Distance": 351.0,
+        "route_role": "route_match_without_date"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F3227557",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F3227557",
+        "Price": 119,
+        "DepTime": "10:05",
+        "ArrTime": "12:22",
+        "ActualElapsedTime": "1 hours 17 minutes",
+        "FlightDate": "2024-11-08",
+        "OriginCityName": "Huntsville",
+        "DestCityName": "Indianapolis",
+        "Distance": 351.0,
+        "route_role": "route_match_without_date"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_27::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "current_city": "Huntsville"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_27::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "current_city": "Huntsville"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_27::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "current_city": "Huntsville"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_27::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 643.0,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::8.37e+17",
+        "outbound_node_key": "Flight::F3227542",
+        "return_node_key": "Flight::F3227557"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_27",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_27",
+        "query": "Plan a 3-day trip for 2 people from Indianapolis to Huntsville from November 5th to November 7th, 2024, with a budget of $1,350. Accommodations should allow pets. Include dining options featuring Tuscan, Chinese, Italian, and Mexican cuisines, and prioritize attractions such as sights & landmarks and shopping.",
+        "days": 3,
+        "origin_city": "Indianapolis",
+        "destination_city": "Huntsville",
+        "budget": 1350.0,
+        "source_mini_kg_query_id": "idx_27"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::1089821.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "539.0",
+        "avg_cost": "31.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"6125 University Dr NW\", \"street2\": \"Ste E18\", \"city\": \"Huntsville\", \"state\": \"AL\", \"country\": \"United States\", \"postalcode\": \"35806-1757\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/78/d3/shrimp-fajitas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/78/ce/triple-tostada.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/78/37/street-tacos.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/78/34/casa-salad.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/77/c4/waiting-area.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/77/a9/patio.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/76/70/exterior.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/76/64/exterior.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/73/71/chicken-fajitas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/73/06/hamburger.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/28/07/73/02/flautas.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/02/60/3f/cd/there-s-pork-in-this.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/cf/ad/5c/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/21/4a/0a/20181021-183319-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/04/83/82/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/29/04/83/81/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/b7/5e/04/phil-sandoval-s-mexican.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/98/our-spread-boy-was-it.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/96/fun-and-colorful-decor.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/89/not-sure-what-chicken.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/1d/38/df/phil-sandoval-s-mexican.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/dd/19/14/phil-sandoval-s-mexican.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/15/21/4a/0d/20181021-182815-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/98/our-spread-boy-was-it.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/96/fun-and-colorful-decor.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/3c/00/89/not-sure-what-chicken.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/04/83/81/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/29/04/83/82/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Outdoor Seating",
+          "Seating",
+          "Parking Available",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "1089821.0",
+        "longitude": "-86.677185",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/28/07/78/d3/shrimp-fajitas.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "35.00 - 130.00",
+        "rankingString": "#8 of 566 Restaurants in Huntsville",
+        "openNowText": "Closed Now",
+        "City": "Huntsville",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern"
+        ],
+        "localName": "Phil Sandoval's",
+        "input": "Huntsville",
+        "phone": "+1 256-489-5711",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g30620-d1089821-Reviews-Phil_Sandoval_s-Huntsville_Alabama.html",
+        "localAddress": "6125 University Dr NW, Ste E18, 35806-1757",
+        "Rest-MidRange": "62.5",
+        "name": "Phil Sandoval's",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.014839172",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Grubhub&src=253805319&geo=1089821&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=25768&bucket=852508&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311337364&managed=false&capped=false&gosox=I-ADlg7wY8lqEq92hGOCPH9yxKao4fnJtoYdd5TLctoCVK2EaqcCi9rOMrUCyEbyECBmuqhIjymTVgbPOp1kvQBxbpuNOoqq6r5IiNr9YOM&cs=1353a0715a8ae0ff510bdac899b3d8d2c_f4x\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/grubhub_05.11.2022.png\", \"provider\": \"Grubhub\", \"providerId\": \"13712\", \"providerDisplayName\": \"Grubhub\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.74311",
+        "menuWebUrl": "https://checkle.menu/philsandovals_huntsville",
+        "photoCount": "44.0",
+        "ratingHistogram": "{\"count1\": 14, \"count2\": 27, \"count3\": 70, \"count4\": 125, \"count5\": 303}",
+        "website": "http://www.philsandovals.com",
+        "rankingPosition": "8.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1230, \"closeHours\": \"20:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "6125 University Dr NW Ste E18, Huntsville, AL 35806-1757",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Burrito",
+          "Shrimp",
+          "Tortillas",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Fajitas",
+          "Nachos",
+          "Queso",
+          "Beef",
+          "Soft serve ice cream",
+          "Fish",
+          "Pork",
+          "Refried Beans",
+          "Enchiladas",
+          "Taco Salad",
+          "Tamales",
+          "Soup",
+          "Chile Relleno",
+          "Chicken Enchiladas",
+          "Tamale",
+          "Chicken Tacos",
+          "Chips and Salsa",
+          "Mole",
+          "Chimichanga",
+          "Quesadilla",
+          "Guacamole",
+          "Black Beans",
+          "Quesadillas"
+        ],
+        "reviewTags": "[{\"text\": \"fajitas\", \"reviews\": 44}, {\"text\": \"chips and salsa\", \"reviews\": 36}, {\"text\": \"rice\", \"reviews\": 20}, {\"text\": \"the wait staff\", \"reviews\": 15}, {\"text\": \"margarita\", \"reviews\": 10}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "58",
+        "rankingDenominator": "566.0",
+        "locationString": "Huntsville, Alabama",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"30620\", \"name\": \"Huntsville\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28922\", \"name\": \"Alabama\", \"abbreviation\": \"AL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8590",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::1224777.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "373.0",
+        "avg_cost": "31.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"6125 University Dr NW\", \"street2\": null, \"city\": \"Huntsville\", \"state\": \"AL\", \"country\": \"United States\", \"postalcode\": \"35806-1757\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/47/70/04/rosie-s-cantina.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/32/27/e9/rocket-city-wake-up-and.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/07/fa/82/f8/rosie-s-mexican-cantina.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/1b/4f/22/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/1b/4f/21/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1d/1b/4f/20/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/07/13/71/photo0jpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options"
+        ],
+        "id": "1224777.0",
+        "longitude": "-86.679726",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/03/32/27/e9/rocket-city-wake-up-and.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "35.00 - 130.00",
+        "rankingString": "#10 of 566 Restaurants in Huntsville",
+        "openNowText": "Closed Now",
+        "City": "Huntsville",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern"
+        ],
+        "localName": "Rosie's Cantina",
+        "input": "Huntsville",
+        "phone": "+1 256-922-1001",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g30620-d1224777-Reviews-Rosie_s_Cantina-Huntsville_Alabama.html",
+        "localAddress": "6125 University Dr NW, 35806-1757",
+        "Rest-MidRange": "62.5",
+        "name": "Rosie's Cantina",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "3.95488739",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.745373",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g30620-d1224777-Rosie_s_Cantina-Huntsville_Alabama.html",
+        "photoCount": "29.0",
+        "ratingHistogram": "{\"count1\": 11, \"count2\": 10, \"count3\": 45, \"count4\": 113, \"count5\": 194}",
+        "website": "http://www.rosiesmexicancantina.com",
+        "rankingPosition": "10.0",
+        "hours": "{\"weekRanges\": [[], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 645, \"openHours\": \"10:45\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "6125 University Dr NW, Huntsville, AL 35806-1757",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Burrito",
+          "Shrimp",
+          "Tortillas",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Fajitas",
+          "Nachos",
+          "Queso",
+          "Beef",
+          "Fish",
+          "Refried Beans",
+          "Enchiladas",
+          "Taco Salad",
+          "Tamales",
+          "Soup",
+          "Tamale",
+          "Chips and Salsa",
+          "Quesadilla",
+          "Guacamole",
+          "Quesadillas"
+        ],
+        "reviewTags": "[{\"text\": \"fajitas\", \"reviews\": 29}, {\"text\": \"rice and beans\", \"reviews\": 8}, {\"text\": \"guacamole\", \"reviews\": 10}, {\"text\": \"mexican restaurant\", \"reviews\": 19}, {\"text\": \"university drive\", \"reviews\": 7}, {\"text\": \"great food and service\", \"reviews\": 4}, {\"text\": \"chips\", \"reviews\": 25}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "58",
+        "rankingDenominator": "566.0",
+        "locationString": "Huntsville, Alabama",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"30620\", \"name\": \"Huntsville\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28922\", \"name\": \"Alabama\", \"abbreviation\": \"AL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8597",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::2294896.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "253.0",
+        "avg_cost": "31.25",
+        "rating": "4.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"300 Church St SW\", \"street2\": \"\", \"city\": \"Huntsville\", \"state\": \"AL\", \"country\": \"United States\", \"postalcode\": \"35801-4910\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/e3/2c/68/20200209-074017-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/64/26/ae/sign.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/64/25/7d/salads.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/9a/b0/88/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/9e/9c/56/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1e/4d/a9/2b/chopped-salad.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e3/2c/69/20200209-074007-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e3/2c/68/20200209-074017-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e3/2c/66/20200208-181537-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/9a/b0/88/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Reservations",
+          "Outdoor Seating",
+          "Seating",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Table Service",
+          "Live Music"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "2294896.0",
+        "longitude": "-86.58722",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/03/64/25/7d/salads.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "35.00 - 130.00",
+        "rankingString": "#29 of 566 Restaurants in Huntsville",
+        "openNowText": "Closed Now",
+        "City": "Huntsville",
+        "mealTypes": [
+          "Lunch",
+          "Dinner"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "Italian",
+          "Pizza"
+        ],
+        "localName": "Pane E Vino",
+        "input": "Huntsville",
+        "phone": "+1 256-533-1180",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g30620-d2294896-Reviews-Pane_E_Vino-Huntsville_Alabama.html",
+        "localAddress": "300 Church St SW, 35801-4910",
+        "Rest-MidRange": "62.5",
+        "name": "Pane E Vino",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "3.4756248",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.727444",
+        "menuWebUrl": "http://www.paneevinopizzeria.com/s/PV-Menu-6-7-18.pdf",
+        "photoCount": "49.0",
+        "ratingHistogram": "{\"count1\": 15, \"count2\": 16, \"count3\": 26, \"count4\": 81, \"count5\": 115}",
+        "email": "info@paneevinopizzeria.com",
+        "website": "http://www.paneevinopizzeria.com/",
+        "rankingPosition": "29.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "300 Church St SW, Huntsville, AL 35801-4910",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Salad",
+          "Tiramisu",
+          "Meatballs",
+          "Chicken Parmesan",
+          "Pesto",
+          "Chicken Parma",
+          "Pepperoni",
+          "Sausage",
+          "Calzone",
+          "Cake",
+          "Greek Salad"
+        ],
+        "reviewTags": "[{\"text\": \"pizza\", \"reviews\": 128}, {\"text\": \"salad\", \"reviews\": 29}, {\"text\": \"art museum\", \"reviews\": 19}, {\"text\": \"arugula\", \"reviews\": 8}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "58",
+        "rankingDenominator": "566.0",
+        "locationString": "Huntsville, Alabama",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"30620\", \"name\": \"Huntsville\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28922\", \"name\": \"Alabama\", \"abbreviation\": \"AL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8600",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::556517.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "1058.0",
+        "avg_cost": "31.25",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"7540-A South Memorial Pkwy.\", \"street2\": \"Ste AA\", \"city\": \"Huntsville\", \"state\": \"AL\", \"country\": \"United States\", \"postalcode\": \"35802-2265\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/0d/5d/2f/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/43/be/1f/rosie-s-cantina-s-memorial.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/43/be/1e/rosie-s-cantina.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/07/ca/37/patio-seating-on-a-summer.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/db/f8/fc/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/08/96/8a/a7/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/f4/52/0c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/f4/52/0b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2c/f4/52/0a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/19/52/f2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2b/19/52/f1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2a/17/66/88/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/2e/61/37/this-was-my-first-time.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/fa/a1/c2/welcome-to-rosie-s-sign.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/fa/a1/bf/outside-of-rosie-s.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/fa/a1/b8/flowers-on-the-patio.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/22/6d/b8/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/10/7a/8d/rosie-s-mexican-cantina.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/ab/99/4b/rosie-s-mexican-cantina.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/82/77/b4/un-superbe-guacamole.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/17/1d/de/pollo-verde-at-rosie.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/0c/28/a9/great-place-for-a-big.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/06/a0/5e/19/lunch-special-at-rosie.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0d/11/95/ca/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/17/66/88/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/19/52/f2/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2b/19/52/f1/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Outdoor Seating",
+          "Seating",
+          "Parking Available",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "556517.0",
+        "longitude": "-86.5744",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-s/01/07/ca/37/patio-seating-on-a-summer.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "17.0",
+        "Range.1": "35.00 - 130.00",
+        "rankingString": "#4 of 566 Restaurants in Huntsville",
+        "openNowText": "Closed Now",
+        "City": "Huntsville",
+        "mealTypes": [
+          "Lunch",
+          "Dinner",
+          "Late Night",
+          "Drinks"
+        ],
+        "Range": "10.00 - 25.00",
+        "cuisines": [
+          "Mexican",
+          "Southwestern"
+        ],
+        "localName": "Rosie's Mexican Cantina",
+        "input": "Huntsville",
+        "phone": "+1 256-382-3232",
+        "State": "Alabama",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g30620-d556517-Reviews-Rosie_s_Mexican_Cantina-Huntsville_Alabama.html",
+        "localAddress": "7540-A South Memorial Pkwy., Ste AA, 35802-2265",
+        "Rest-MidRange": "62.5",
+        "name": "Rosie's Mexican Cantina",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.281988621",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "34.666016",
+        "menuWebUrl": "http://rosiesmexicancantina.com/menu",
+        "photoCount": "87.0",
+        "ratingHistogram": "{\"count1\": 28, \"count2\": 36, \"count3\": 115, \"count4\": 261, \"count5\": 618}",
+        "email": "rosiessouth@outlook.com",
+        "website": "http://www.rosiesmexicancantina.com",
+        "rankingPosition": "4.0",
+        "hours": "{\"weekRanges\": [[], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 2040, \"closeHours\": \"10:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 2040, \"closeHours\": \"10:00\"}]], \"timezone\": \"America/Chicago\"}",
+        "address": "7540-A South Memorial Pkwy. Ste AA, Huntsville, AL 35802-2265",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Burrito",
+          "Shrimp",
+          "Tortillas",
+          "Fish Taco",
+          "Salad",
+          "Tacos",
+          "Chili",
+          "Fajitas",
+          "Nachos",
+          "Queso",
+          "Beef",
+          "Fish",
+          "Enchiladas",
+          "Beef Tacos",
+          "Taco Salad",
+          "Tamales",
+          "Soup",
+          "Chicken Enchiladas",
+          "Tamale",
+          "Chips and Salsa",
+          "Quesadilla",
+          "Guacamole",
+          "Quesadillas"
+        ],
+        "reviewTags": "[{\"text\": \"chips and salsa\", \"reviews\": 71}, {\"text\": \"fajitas\", \"reviews\": 55}, {\"text\": \"beef\", \"reviews\": 15}, {\"text\": \"mexican food\", \"reviews\": 138}, {\"text\": \"south parkway\", \"reviews\": 16}, {\"text\": \"the wait staff\", \"reviews\": 17}, {\"text\": \"rosies\", \"reviews\": 51}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "58",
+        "rankingDenominator": "566.0",
+        "locationString": "Huntsville, Alabama",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"30620\", \"name\": \"Huntsville\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28922\", \"name\": \"Alabama\", \"abbreviation\": \"AL\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:8616",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::108243",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.082524,
+        "distance_m": 7552.99,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::108243",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::3533233",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 12.91487,
+        "distance_m": 1334639.03,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::664915",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 12.906743,
+        "distance_m": 1334058.27,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::664915",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::6909952",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 12.852755,
+        "distance_m": 1327644.01,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Attraction::6909952",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Restaurant::1089821.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.10865,
+        "distance_m": 10062.74,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Restaurant::1224777.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.111667,
+        "distance_m": 10358.42,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Restaurant::2294896.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.018588,
+        "distance_m": 1816.32,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::8.37e+17",
+      "target": "Restaurant::556517.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.051355,
+        "distance_m": 5707.79,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Attraction::664915",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.860869,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Restaurant::1089821.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Restaurant::1089821.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.039525,
+        "distance_m": 4140.98,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Restaurant::1224777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.042856,
+        "distance_m": 4476.64,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Restaurant::2294896.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.068682,
+        "distance_m": 6361.69,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::108243",
+      "target": "Restaurant::556517.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.09145,
+        "distance_m": 8835.56,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Attraction::6909952",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Restaurant::1089821.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.954241,
+        "distance_m": 1336262.83,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Restaurant::1224777.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Restaurant::1224777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.953858,
+        "distance_m": 1336138.69,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Restaurant::2294896.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.915428,
+        "distance_m": 1334240.04,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::3533233",
+      "target": "Restaurant::556517.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.958596,
+        "distance_m": 1339889.09,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Attraction::108243",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.860869,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Restaurant::1089821.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.946028,
+        "distance_m": 1335675.37,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Restaurant::1224777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.945642,
+        "distance_m": 1335551.01,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Restaurant::2294896.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.907286,
+        "distance_m": 1333658.09,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Restaurant::556517.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::664915",
+      "target": "Restaurant::556517.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.950492,
+        "distance_m": 1339309.85,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Attraction::3533233",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 4,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "classes & workshops",
+          "concerts & shows",
+          "events",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "nightlife",
+          "other",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Restaurant::1089821.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.892376,
+        "distance_m": 1329292.5,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Restaurant::1224777.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.892001,
+        "distance_m": 1329169.16,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Restaurant::2294896.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Restaurant::2294896.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.853359,
+        "distance_m": 1327249.4,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6909952",
+      "target": "Restaurant::556517.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 12.896415,
+        "distance_m": 1332888.54,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F3227542",
+      "target": "Accommodation::8.37e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::1",
+      "target": "Accommodation::8.37e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::1",
+      "target": "Accommodation::8.37e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "order": 5,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::1",
+      "target": "Attraction::6909952",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "order": 3,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::1",
+      "target": "Flight::F3227542",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::1",
+      "target": "Restaurant::2294896.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "order": 4,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Accommodation::8.37e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Accommodation::8.37e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 6,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Attraction::108243",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 2,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Attraction::3533233",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 4,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Restaurant::1089821.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 3,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::2",
+      "target": "Restaurant::1224777.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "order": 5,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::3",
+      "target": "Accommodation::8.37e+17",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::3",
+      "target": "Attraction::664915",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "order": 2,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::3",
+      "target": "Flight::F3227557",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "order": 4,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_27::option_001::3",
+      "target": "Restaurant::556517.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "order": 3,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "Accommodation::8.37e+17",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "Flight::F3227542",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "Flight::F3227557",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "PlanDay::idx_27::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "PlanDay::idx_27::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_27::option_001",
+      "target": "PlanDay::idx_27::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_27",
+      "target": "PlanOption::idx_27::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 643.0
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Attraction::108243",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.039525,
+        "distance_m": 4140.98,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Attraction::3533233",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.954241,
+        "distance_m": 1336262.83,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Attraction::3533233",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Attraction::664915",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.946028,
+        "distance_m": 1335675.37,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Attraction::6909952",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.892376,
+        "distance_m": 1329292.5,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Restaurant::1224777.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1089821.0",
+      "target": "Restaurant::556517.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Accommodation::8.37e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-06",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Attraction::108243",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.042856,
+        "distance_m": 4476.64,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Attraction::3533233",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.953858,
+        "distance_m": 1336138.69,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Attraction::664915",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.945642,
+        "distance_m": 1335551.01,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Attraction::6909952",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.892001,
+        "distance_m": 1329169.16,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Restaurant::1089821.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ],
+        "reciprocal_of": "Restaurant::1089821.0->Restaurant::1224777.0"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::1224777.0",
+      "target": "Restaurant::556517.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2294896.0",
+      "target": "Accommodation::8.37e+17",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-05",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::2294896.0",
+      "target": "Attraction::108243",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.068682,
+        "distance_m": 6361.69,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2294896.0",
+      "target": "Attraction::3533233",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.915428,
+        "distance_m": 1334240.04,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2294896.0",
+      "target": "Attraction::664915",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.907286,
+        "distance_m": 1333658.09,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2294896.0",
+      "target": "Attraction::6909952",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.853359,
+        "distance_m": 1327249.4,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Attraction::108243",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.09145,
+        "distance_m": 8835.56,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Attraction::3533233",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.958596,
+        "distance_m": 1339889.09,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Attraction::664915",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.950492,
+        "distance_m": 1339309.85,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Attraction::6909952",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 12.896415,
+        "distance_m": 1332888.54,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Flight::F3227557",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-07",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Restaurant::1089821.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 2,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ],
+        "reciprocal_of": "Restaurant::1089821.0->Restaurant::556517.0"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::556517.0",
+      "target": "Restaurant::1224777.0",
+      "type": "SHARES_CUISINE",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "american",
+          "asian",
+          "central-italian",
+          "chinese",
+          "international",
+          "italian",
+          "japanese",
+          "lazio",
+          "mexican",
+          "pizza",
+          "romana",
+          "southwestern",
+          "steakhouse",
+          "sushi",
+          "tuscan"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-05",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F3227542",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-05",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::8.37e+17",
+      "label": "Accommodation",
+      "name": "Central HSV Mid Century Modern Apartment",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-05",
+      "order": 3,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::6909952",
+      "label": "Attraction",
+      "name": "Sugarbush Hill Maple Farm",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-05",
+      "order": 4,
+      "slot": "dinner",
+      "node_key": "Restaurant::2294896.0",
+      "label": "Restaurant",
+      "name": "Pane E Vino",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-05",
+      "order": 5,
+      "slot": "accommodation",
+      "node_key": "Accommodation::8.37e+17",
+      "label": "Accommodation",
+      "name": "Central HSV Mid Century Modern Apartment",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::8.37e+17",
+      "label": "Accommodation",
+      "name": "Central HSV Mid Century Modern Apartment",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 2,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::108243",
+      "label": "Attraction",
+      "name": "U.S. Space and Rocket Center",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 3,
+      "slot": "lunch",
+      "node_key": "Restaurant::1089821.0",
+      "label": "Restaurant",
+      "name": "Phil Sandoval's",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 4,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::3533233",
+      "label": "Attraction",
+      "name": "Lions Lookout",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 5,
+      "slot": "dinner",
+      "node_key": "Restaurant::1224777.0",
+      "label": "Restaurant",
+      "name": "Rosie's Cantina",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-06",
+      "order": 6,
+      "slot": "accommodation",
+      "node_key": "Accommodation::8.37e+17",
+      "label": "Accommodation",
+      "name": "Central HSV Mid Century Modern Apartment",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-07",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::8.37e+17",
+      "label": "Accommodation",
+      "name": "Central HSV Mid Century Modern Apartment",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-07",
+      "order": 2,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::664915",
+      "label": "Attraction",
+      "name": "Group of Seven Outdoor Gallery",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-07",
+      "order": 3,
+      "slot": "lunch",
+      "node_key": "Restaurant::556517.0",
+      "label": "Restaurant",
+      "name": "Rosie's Mexican Cantina",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-07",
+      "order": 4,
+      "slot": "return_flight",
+      "node_key": "Flight::F3227557",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}

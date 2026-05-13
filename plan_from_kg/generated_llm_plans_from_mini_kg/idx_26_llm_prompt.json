@@ -1,0 +1,2909 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_26\", \"query_text\": \"Plan a 3-day trip for 2 people from Charlotte to Lexington from November 22nd to November 24th, 2024, with a budget of $1,200. Accommodations should allow pets. Include dining options featuring French, Indian, Italian, and American cuisines, and visits to attractions such as sights, landmarks, and traveler resources.\", \"request\": {\"org\": \"Charlotte\", \"dest\": \"Lexington\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-22', '2024-11-23', '2024-11-24']\", \"people_number\": 2, \"local_constraint\": \"{'house rule': 'pets', 'cuisine': ['French', 'Indian', 'Italian', 'American'], 'room type': None, 'transportation': None, 'event': None, 'attraction': ['Sights & Landmarks', 'Traveler Resources']}\", \"budget\": 1200, \"query\": \"Plan a 3-day trip for 2 people from Charlotte to Lexington from November 22nd to November 24th, 2024, with a budget of $1,200. Accommodations should allow pets. Include dining options featuring French, Indian, Italian, and American cuisines, and visits to attractions such as sights, landmarks, and traveler resources.\", \"level\": \"hard\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": \"pets\", \"cuisine\": \"French, Indian, Italian, American\", \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": \"Sights & Landmarks, Traveler Resources\"}, \"nodes\": [{\"node_key\": \"Flight::F1509894\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Lexington\", \"DepTime\": \"08:50\", \"ArrTime\": \"10:07\", \"Price\": 91}}, {\"node_key\": \"Flight::F3794211\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Lexington\", \"DepTime\": \"08:56\", \"ArrTime\": \"10:34\", \"Price\": 99}}, {\"node_key\": \"Flight::F2871905\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Lexington\", \"DepTime\": \"08:51\", \"ArrTime\": \"10:06\", \"Price\": 100}}, {\"node_key\": \"Flight::F3071540\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Lexington\", \"DepTime\": \"10:02\", \"ArrTime\": \"11:43\", \"Price\": 112}}, {\"node_key\": \"Flight::F1965168\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Lexington\", \"DepTime\": \"08:50\", \"ArrTime\": \"10:16\", \"Price\": 119}}, {\"node_key\": \"Flight::F3735091\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Lexington\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"20:03\", \"ArrTime\": \"21:35\", \"Price\": 64}}, {\"node_key\": \"Flight::F0801006\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Lexington\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"20:03\", \"ArrTime\": \"21:46\", \"Price\": 84}}, {\"node_key\": \"Flight::F2872162\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Lexington\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"19:43\", \"ArrTime\": \"21:14\", \"Price\": 112}}, {\"node_key\": \"Flight::F1510145\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Lexington\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"19:42\", \"ArrTime\": \"21:16\", \"Price\": 132}}, {\"node_key\": \"Flight::F1509838\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Lexington\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"18:36\", \"ArrTime\": \"19:52\", \"Price\": 139}}, {\"node_key\": \"Accommodation::37679833.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"37679833.0\", \"name\": \"KY & Bourbon & Horses, Oh My! Close to Keeneland\", \"City\": \"Lexington\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$122 per night\", \"originalPrice\": null, \"price\": \"$122\", \"qualifier\": \"night\", \"total\": \"$608 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  518 reviews\", \"localizedLabel\": \"4.92 (518)\", \"average\": 4.92, \"reviewsCount\": 518}, \"coordinates\": {\"latitude\": 38.02369, \"longitude\": -84.54565}}}, {\"node_key\": \"Accommodation::17448918.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"17448918.0\", \"name\": \"EmeraldShinobi Villa Plus\", \"City\": \"Lexington\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$47 per night\", \"originalPrice\": null, \"price\": \"$47\", \"qualifier\": \"night\", \"total\": \"$232 total\"}, \"rating\": {\"label\": \"4.91 out of 5 average rating,  726 reviews\", \"localizedLabel\": \"4.91 (726)\", \"average\": 4.91, \"reviewsCount\": 726}, \"coordinates\": {\"latitude\": 38.1013, \"longitude\": -84.54017}}}, {\"node_key\": \"Attraction::103526\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103526\", \"name\": \"Kentucky Horse Park\", \"City\": \"Lexington\", \"subtype\": [\"Specialty Museums\", \"Points of Interest & Landmarks\", \"State Parks\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\", \"Nature & Parks\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 173 things to do in Lexington\", \"address\": \"4089 Iron Works Pkwy, Lexington, KY 40511-8400\", \"description\": \"The only park of its kind in the world, the Kentucky Horse Park is a working horse farm, educational theme park and equine competition facility dedicated to man's relationship with the horse. Set on more than 1,200 acres in the heart of the Kentucky's famous Bluegrass region, the park is THE place to get close to horses! Featuring dozens of breeds of horse at work and at play, the park showcases the horse in daily equine presentations, horse drawn tours, horseback and pony rides, and an array...\"}}, {\"node_key\": \"Attraction::104565\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104565\", \"name\": \"Lexington Green\", \"City\": \"Lexington\", \"subtype\": [\"Battlefields\", \"Points of Interest & Landmarks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 18 things to do in Lexington\", \"address\": \"Bedford St, Lexington, MA 02420-4403\", \"description\": \"Site of the first battle between the Minutemen and the Redcoats during the Revolutionary War.\"}}, {\"node_key\": \"Attraction::103543\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103543\", \"name\": \"Lexington Cemetery\", \"City\": \"Lexington\", \"subtype\": [\"Cemeteries\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#8 of 173 things to do in Lexington\", \"address\": \"833 W Main St, Lexington, KY 40508-2094\", \"description\": \"Established in 1824, this is considered one of America's most beautifully landscaped cemeteries.\"}}, {\"node_key\": \"Attraction::104835\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104835\", \"name\": \"Buckman Tavern\", \"City\": \"Lexington\", \"subtype\": [\"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 18 things to do in Lexington\", \"address\": \"1 Bedford St, Lexington, MA 02420-4339\", \"description\": \"This Historic Tavern is one of the few colonial era buildings still standing around the Battle Green and was used by the Lexington Militia on April 19th, 1775 as a gathering place. It is now a Museum with self-guided audio tours. *Due to COVID-19 concerns, Buckman Tavern is closed until March 30th*\"}}, {\"node_key\": \"Attraction::4406496\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"4406496\", \"name\": \"Lexington Visitors Center\", \"City\": \"Lexington\", \"subtype\": [\"Visitor Centers\"], \"subcategories\": [\"Traveler Resources\"], \"visit_duration\": \"1.0\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 173 things to do in Lexington\", \"address\": \"215 W Main St Suite 75, Lexington, KY 40507-1305\", \"description\": \"When you are in Lexington, KY, Horse Capital of the World, be sure to stop by and see us at the Visitors Center! Address: 215 West Main Street, at Courthouse Square Hours: Monday through Saturday from 10:00 a.m. to 4 p.m. Closed Sundays Parking: You can park on Upper Street beside the courthouse where you’ll find two 30-minute metered spots marked for visitors. There is other street parking and pay lots nearby. The Victorian Square parking garage (enter from Short Street) is another good opti...\"}}, {\"node_key\": \"Attraction::104836\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104836\", \"name\": \"Hancock-Clarke House\", \"City\": \"Lexington\", \"subtype\": [\"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 18 things to do in Lexington\", \"address\": \"36 Hancock St, Lexington, MA 02420-3432\", \"description\": \"The home of Lexington's first two ministers and the location where John Hancock and Sam Adams were staying on April 18, 1775. Paul Revere stopped here on his famous \\\"Midnight Ride\\\" to warn Hancock and Adams that British troops had left Boston.\"}}, {\"node_key\": \"Attraction::603267\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"603267\", \"name\": \"Munroe Tavern\", \"City\": \"Lexington\", \"subtype\": [\"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#6 of 18 things to do in Lexington\", \"address\": \"1332 Massachusetts Ave, Lexington, MA 02420-3809\", \"description\": \"Munroe Tavern was built in 1735 and temporarily served as a field hospital for the British Army on their retreat back to Boston from Concord on April 19, 1775. Later in 1789, George Washington paid a visit to the Tavern and dined in one of the rooms.\"}}, {\"node_key\": \"Restaurant::405800.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"405800.0\", \"name\": \"Ramsey's Diner Zandale\", \"City\": \"Lexington\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"153 W Zandale Dr, Lexington, KY 40503-2465\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::938940.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"938940.0\", \"name\": \"Harry's American Bar & Grill\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Seafood\", \"Sushi\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1920 Pleasant Ridge Dr, Lexington, KY 40509\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::489905.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"489905.0\", \"name\": \"Joe Bologna's Restaurant and Pizzeria\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Italian\", \"Pizza\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"120 W Maxwell St, Lexington, KY 40508-2530\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::405797.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"405797.0\", \"name\": \"Bella Notte\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Italian\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3715 Nicholasville Rd, Lexington, KY 40503-4441\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::445580.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"445580.0\", \"name\": \"Dudley's on Short\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"259 W. Short St., Lexington, KY 40507\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::7651903.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"7651903.0\", \"name\": \"Pies & Pints\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Italian\", \"American\", \"Bar\", \"Pizza\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"401 W Main St Suite 106, Lexington, KY 40507-1640\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::11932816.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"11932816.0\", \"name\": \"Carson's Food & Drink - On Main\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"362 E Main St, Lexington, KY 40507\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2569001.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2569001.0\", \"name\": \"Malone's Palomar\", \"City\": \"Lexington\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Steakhouse\", \"Sushi\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"3735 Palomar Centre Dr, Lexington, KY 40513\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2663717.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2663717.0\", \"name\": \"Coles 735 Main\", \"City\": \"Lexington\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"International\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"735 E Main St, Lexington, KY 40502\", \"hours\": {\"weekRanges\": [[], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2392366.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2392366.0\", \"name\": \"Josie's\", \"City\": \"Lexington\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"37.5\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"821 Chevy Chase Pl, Lexington, KY 40502-2144\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::17AOvOG616jdE6U\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG616jdE6U\", \"name\": \"Coat Check - Gerry Dee - Not a Concert Ticket\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/coat-check-gerry-dee-not-a-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DC0E71F6\", \"availabilityStarts\": \"2024-05-06T14:00:00Z\", \"price\": 4, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::17AOvOG616QAEkF\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG616QAEkF\", \"name\": \"Fast Lane Access - Gerry Dee - Not a Concert Ticket\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/fast-lane-access-gerry-dee-not-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DA...\", \"availabilityStarts\": \"2024-05-06T14:00:00Z\", \"price\": 10, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK-Urd\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK-Urd\", \"name\": \"Mephiskapheles - Halloween Seance with Special Guests The Filthy Lowdown and Children of October\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/mephiskapheles-halloween-seance-club-cafe-tickets/13876783\", \"availabilityStarts\": \"2024-08-26T14:00:00Z\", \"price\": 15, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::17AOvOG616hf6kX\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG616hf6kX\", \"name\": \"Event Parking - Roxian Theatre\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/event-parking-roxian-theatre-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DB50...\", \"availabilityStarts\": \"2024-05-06T14:00:00Z\", \"price\": 20, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::17AOvOG616Z9JLP\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"17AOvOG616Z9JLP\", \"name\": \"Gerry Dee - Funny You Should Say That\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://concerts.livenation.com/gerry-dee-funny-you-should-say-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1C0...\", \"availabilityStarts\": \"2024-05-10T14:00:00Z\", \"price\": 35.5, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::1ApZkvPGkeyud8l\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"1ApZkvPGkeyud8l\", \"name\": \"Pittsburgh Steelers vs. New York Giants\", \"city\": \"Lexington\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/pittsburgh-steelers-vs-new-york-giants-pittsburgh-pennsylvania-10-28-2024/event/16006065...\", \"availabilityStarts\": \"2024-05-16T16:00:00Z\", \"price\": 50, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 101.58}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 101.58}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 157.82}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 157.82}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 580.86}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 580.86}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 955.7}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 955.7}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1475.7}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1475.7}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1691.07}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1691.07}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1911.05}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1911.05}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1974.56}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1974.56}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2289.71}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2289.71}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2584.96}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2584.96}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2871.42}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3124.95}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3535.46}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3535.46}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3876.91}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3876.91}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4435.19}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4715.56}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4715.56}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4807.3}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4824.23}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4906.71}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4933.46}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5017.83}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5105.74}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5176.24}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5269.54}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5524.15}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5658.91}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 5783.85}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 5783.85}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6743.69}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6897.36}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6951.45}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7217.86}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 7756.62}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 7756.62}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7846.22}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8022.53}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8022.53}, {\"source\": \"Attraction::4406496\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8198.37}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::4406496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8198.37}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8285.55}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8285.55}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8785.44}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8817.27}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8817.27}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 9133.7}, {\"source\": \"Attraction::103543\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 9640.79}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::103543\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 9640.79}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 10433.19}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11169.36}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11269.86}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11269.86}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11415.48}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11415.48}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 11547.3}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 11871.97}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 11871.97}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 12238.18}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 12238.18}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 13052.8}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 13052.8}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 13243.47}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 13669.36}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 13669.36}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 14183.68}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 14461.83}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 15635.91}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 15635.91}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 16817.47}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 16817.47}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 17386.58}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 17386.58}, {\"source\": \"Attraction::103526\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 18587.97}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::103526\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 18587.97}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1221019.22}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1221019.22}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1221152.94}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1221152.94}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1221378.04}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1221378.04}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::938940.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1221886.25}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1221886.25}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225512.89}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225512.89}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225648.17}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225648.17}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225785.73}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225785.73}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225872.13}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225872.13}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225880.71}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225880.71}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1225921.32}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1225921.32}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226016.21}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226016.21}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226016.59}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226016.59}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226145.06}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226145.06}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226152.16}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226152.16}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226240.12}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226240.12}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226375.64}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226375.64}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::2663717.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226386.64}, {\"source\": \"Restaurant::2663717.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226386.64}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226387.63}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226387.63}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226444.26}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226444.26}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1226452.4}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226522.78}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226522.78}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226580.04}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226580.04}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1226590.58}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::11932816.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226660.79}, {\"source\": \"Restaurant::11932816.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226660.79}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226746.84}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226746.84}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::445580.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226757.05}, {\"source\": \"Restaurant::445580.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226757.05}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226803.64}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226803.64}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1226812.43}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::7651903.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1226892.83}, {\"source\": \"Restaurant::7651903.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1226892.83}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::2392366.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1227260.82}, {\"source\": \"Restaurant::2392366.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1227260.82}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::489905.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1227320.18}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1227320.18}, {\"source\": \"Accommodation::17448918.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1227338.64}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1229547.61}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1229547.61}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1229682.48}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1229682.48}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1229906.74}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1229906.74}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::405800.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1230419.62}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1230419.62}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1230875.15}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1231010.87}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1231234.51}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1231648.57}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1231648.57}, {\"source\": \"Accommodation::37679833.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1231750.79}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1231782.71}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1231782.71}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1232007.5}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1232007.5}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::405797.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1232517.42}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1232517.42}, {\"source\": \"Attraction::104565\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1233859.46}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::104565\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1233859.46}, {\"source\": \"Attraction::104835\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1233994.88}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::104835\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1233994.88}, {\"source\": \"Attraction::104836\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1234218.75}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::104836\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1234218.75}, {\"source\": \"Attraction::603267\", \"target\": \"Restaurant::2569001.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1234733.78}, {\"source\": \"Restaurant::2569001.0\", \"target\": \"Attraction::603267\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1234733.78}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Restaurant::2392366.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Restaurant::11932816.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::405800.0\", \"target\": \"Restaurant::2663717.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::938940.0\", \"target\": \"Restaurant::2569001.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::489905.0\", \"target\": \"Restaurant::405797.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}, {\"source\": \"Restaurant::405797.0\", \"target\": \"Restaurant::489905.0\", \"type\": \"SHARES_CUISINE\", \"distance_m\": null}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1509894\", \"dep_time\": \"08:50\", \"arr_time\": \"10:07\", \"local_activity_start_after_arrival_buffer\": \"10:37\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3794211\", \"dep_time\": \"08:56\", \"arr_time\": \"10:34\", \"local_activity_start_after_arrival_buffer\": \"11:04\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2871905\", \"dep_time\": \"08:51\", \"arr_time\": \"10:06\", \"local_activity_start_after_arrival_buffer\": \"10:36\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}, {\"flight_node_key\": \"Flight::F3071540\", \"dep_time\": \"10:02\", \"arr_time\": \"11:43\", \"local_activity_start_after_arrival_buffer\": \"12:13\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F1965168\", \"dep_time\": \"08:50\", \"arr_time\": \"10:16\", \"local_activity_start_after_arrival_buffer\": \"10:46\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival is early enough for a real first day after check-in.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F3735091\", \"dep_time\": \"20:03\", \"arr_time\": \"21:35\", \"latest_local_activity_finish_before_airport_buffer\": \"18:03\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0801006\", \"dep_time\": \"20:03\", \"arr_time\": \"21:46\", \"latest_local_activity_finish_before_airport_buffer\": \"18:03\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2872162\", \"dep_time\": \"19:43\", \"arr_time\": \"21:14\", \"latest_local_activity_finish_before_airport_buffer\": \"17:43\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1510145\", \"dep_time\": \"19:42\", \"arr_time\": \"21:16\", \"latest_local_activity_finish_before_airport_buffer\": \"17:42\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1509838\", \"dep_time\": \"18:36\", \"arr_time\": \"19:52\", \"latest_local_activity_finish_before_airport_buffer\": \"16:36\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::405800.0\", \"Restaurant::2392366.0\"], \"lunch\": [\"Restaurant::405800.0\", \"Restaurant::938940.0\", \"Restaurant::489905.0\", \"Restaurant::405797.0\", \"Restaurant::445580.0\", \"Restaurant::7651903.0\", \"Restaurant::11932816.0\", \"Restaurant::2569001.0\", \"Restaurant::2392366.0\"], \"dinner\": [\"Restaurant::405800.0\", \"Restaurant::938940.0\", \"Restaurant::489905.0\", \"Restaurant::405797.0\", \"Restaurant::445580.0\", \"Restaurant::7651903.0\", \"Restaurant::11932816.0\", \"Restaurant::2569001.0\", \"Restaurant::2663717.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::103526\", \"Attraction::104565\", \"Attraction::103543\", \"Attraction::104835\", \"Attraction::4406496\", \"Attraction::104836\", \"Attraction::603267\"], \"afternoon_attraction\": [\"Attraction::103526\", \"Attraction::104565\", \"Attraction::103543\", \"Attraction::104835\", \"Attraction::4406496\", \"Attraction::104836\", \"Attraction::603267\"]}, \"event_slots_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::405800.0\", \"name\": \"Ramsey's Diner Zandale\"}, {\"node_key\": \"Restaurant::2392366.0\", \"name\": \"Josie's\"}], \"lunch\": [{\"node_key\": \"Restaurant::405800.0\", \"name\": \"Ramsey's Diner Zandale\"}, {\"node_key\": \"Restaurant::938940.0\", \"name\": \"Harry's American Bar & Grill\"}, {\"node_key\": \"Restaurant::489905.0\", \"name\": \"Joe Bologna's Restaurant and Pizzeria\"}, {\"node_key\": \"Restaurant::405797.0\", \"name\": \"Bella Notte\"}, {\"node_key\": \"Restaurant::445580.0\", \"name\": \"Dudley's on Short\"}, {\"node_key\": \"Restaurant::7651903.0\", \"name\": \"Pies & Pints\"}, {\"node_key\": \"Restaurant::11932816.0\", \"name\": \"Carson's Food & Drink - On Main\"}, {\"node_key\": \"Restaurant::2569001.0\", \"name\": \"Malone's Palomar\"}, {\"node_key\": \"Restaurant::2392366.0\", \"name\": \"Josie's\"}], \"dinner\": [{\"node_key\": \"Restaurant::405800.0\", \"name\": \"Ramsey's Diner Zandale\"}, {\"node_key\": \"Restaurant::938940.0\", \"name\": \"Harry's American Bar & Grill\"}, {\"node_key\": \"Restaurant::489905.0\", \"name\": \"Joe Bologna's Restaurant and Pizzeria\"}, {\"node_key\": \"Restaurant::405797.0\", \"name\": \"Bella Notte\"}, {\"node_key\": \"Restaurant::445580.0\", \"name\": \"Dudley's on Short\"}, {\"node_key\": \"Restaurant::7651903.0\", \"name\": \"Pies & Pints\"}, {\"node_key\": \"Restaurant::11932816.0\", \"name\": \"Carson's Food & Drink - On Main\"}, {\"node_key\": \"Restaurant::2569001.0\", \"name\": \"Malone's Palomar\"}, {\"node_key\": \"Restaurant::2663717.0\", \"name\": \"Coles 735 Main\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-22\", \"required_slots\": {\"Flight::F1509894\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3794211\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2871905\": [\"lunch\", \"afternoon_attraction\", \"dinner\"], \"Flight::F3071540\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F1965168\": [\"lunch\", \"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-23\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-24\", \"required_slots\": {\"Flight::F3735091\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0801006\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2872162\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1510145\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1509838\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_26",
+    "query_text": "Plan a 3-day trip for 2 people from Charlotte to Lexington from November 22nd to November 24th, 2024, with a budget of $1,200. Accommodations should allow pets. Include dining options featuring French, Indian, Italian, and American cuisines, and visits to attractions such as sights, landmarks, and traveler resources.",
+    "request": {
+      "org": "Charlotte",
+      "dest": "Lexington",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-22', '2024-11-23', '2024-11-24']",
+      "people_number": 2,
+      "local_constraint": "{'house rule': 'pets', 'cuisine': ['French', 'Indian', 'Italian', 'American'], 'room type': None, 'transportation': None, 'event': None, 'attraction': ['Sights & Landmarks', 'Traveler Resources']}",
+      "budget": 1200,
+      "query": "Plan a 3-day trip for 2 people from Charlotte to Lexington from November 22nd to November 24th, 2024, with a budget of $1,200. Accommodations should allow pets. Include dining options featuring French, Indian, Italian, and American cuisines, and visits to attractions such as sights, landmarks, and traveler resources.",
+      "level": "hard",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-22",
+      "2024-11-23",
+      "2024-11-24"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": "pets",
+      "cuisine": "French, Indian, Italian, American",
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": "Sights & Landmarks, Traveler Resources"
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1509894",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Lexington",
+          "DepTime": "08:50",
+          "ArrTime": "10:07",
+          "Price": 91
+        }
+      },
+      {
+        "node_key": "Flight::F3794211",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Lexington",
+          "DepTime": "08:56",
+          "ArrTime": "10:34",
+          "Price": 99
+        }
+      },
+      {
+        "node_key": "Flight::F2871905",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Lexington",
+          "DepTime": "08:51",
+          "ArrTime": "10:06",
+          "Price": 100
+        }
+      },
+      {
+        "node_key": "Flight::F3071540",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Lexington",
+          "DepTime": "10:02",
+          "ArrTime": "11:43",
+          "Price": 112
+        }
+      },
+      {
+        "node_key": "Flight::F1965168",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Lexington",
+          "DepTime": "08:50",
+          "ArrTime": "10:16",
+          "Price": 119
+        }
+      },
+      {
+        "node_key": "Flight::F3735091",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Lexington",
+          "DestCityName": "Charlotte",
+          "DepTime": "20:03",
+          "ArrTime": "21:35",
+          "Price": 64
+        }
+      },
+      {
+        "node_key": "Flight::F0801006",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Lexington",
+          "DestCityName": "Charlotte",
+          "DepTime": "20:03",
+          "ArrTime": "21:46",
+          "Price": 84
+        }
+      },
+      {
+        "node_key": "Flight::F2872162",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Lexington",
+          "DestCityName": "Charlotte",
+          "DepTime": "19:43",
+          "ArrTime": "21:14",
+          "Price": 112
+        }
+      },
+      {
+        "node_key": "Flight::F1510145",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Lexington",
+          "DestCityName": "Charlotte",
+          "DepTime": "19:42",
+          "ArrTime": "21:16",
+          "Price": 132
+        }
+      },
+      {
+        "node_key": "Flight::F1509838",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Lexington",
+          "DestCityName": "Charlotte",
+          "DepTime": "18:36",
+          "ArrTime": "19:52",
+          "Price": 139
+        }
+      },
+      {
+        "node_key": "Accommodation::37679833.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "37679833.0",
+          "name": "KY & Bourbon & Horses, Oh My! Close to Keeneland",
+          "City": "Lexington",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$122 per night",
+            "originalPrice": null,
+            "price": "$122",
+            "qualifier": "night",
+            "total": "$608 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  518 reviews",
+            "localizedLabel": "4.92 (518)",
+            "average": 4.92,
+            "reviewsCount": 518
+          },
+          "coordinates": {
+            "latitude": 38.02369,
+            "longitude": -84.54565
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::17448918.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "17448918.0",
+          "name": "EmeraldShinobi Villa Plus",
+          "City": "Lexington",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$47 per night",
+            "originalPrice": null,
+            "price": "$47",
+            "qualifier": "night",
+            "total": "$232 total"
+          },
+          "rating": {
+            "label": "4.91 out of 5 average rating,  726 reviews",
+            "localizedLabel": "4.91 (726)",
+            "average": 4.91,
+            "reviewsCount": 726
+          },
+          "coordinates": {
+            "latitude": 38.1013,
+            "longitude": -84.54017
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::103526",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103526",
+          "name": "Kentucky Horse Park",
+          "City": "Lexington",
+          "subtype": [
+            "Specialty Museums",
+            "Points of Interest & Landmarks",
+            "State Parks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#9 of 173 things to do in Lexington",
+          "address": "4089 Iron Works Pkwy, Lexington, KY 40511-8400",
+          "description": "The only park of its kind in the world, the Kentucky Horse Park is a working horse farm, educational theme park and equine competition facility dedicated to man's relationship with the horse. Set on more than 1,200 acres in the heart of the Kentucky's famous Bluegrass region, the park is THE place to get close to horses! Featuring dozens of breeds of horse at work and at play, the park showcases the horse in daily equine presentations, horse drawn tours, horseback and pony rides, and an array..."
+        }
+      },
+      {
+        "node_key": "Attraction::104565",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104565",
+          "name": "Lexington Green",
+          "City": "Lexington",
+          "subtype": [
+            "Battlefields",
+            "Points of Interest & Landmarks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#1 of 18 things to do in Lexington",
+          "address": "Bedford St, Lexington, MA 02420-4403",
+          "description": "Site of the first battle between the Minutemen and the Redcoats during the Revolutionary War."
+        }
+      },
+      {
+        "node_key": "Attraction::103543",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103543",
+          "name": "Lexington Cemetery",
+          "City": "Lexington",
+          "subtype": [
+            "Cemeteries"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#8 of 173 things to do in Lexington",
+          "address": "833 W Main St, Lexington, KY 40508-2094",
+          "description": "Established in 1824, this is considered one of America's most beautifully landscaped cemeteries."
+        }
+      },
+      {
+        "node_key": "Attraction::104835",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104835",
+          "name": "Buckman Tavern",
+          "City": "Lexington",
+          "subtype": [
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 18 things to do in Lexington",
+          "address": "1 Bedford St, Lexington, MA 02420-4339",
+          "description": "This Historic Tavern is one of the few colonial era buildings still standing around the Battle Green and was used by the Lexington Militia on April 19th, 1775 as a gathering place. It is now a Museum with self-guided audio tours. *Due to COVID-19 concerns, Buckman Tavern is closed until March 30th*"
+        }
+      },
+      {
+        "node_key": "Attraction::4406496",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "4406496",
+          "name": "Lexington Visitors Center",
+          "City": "Lexington",
+          "subtype": [
+            "Visitor Centers"
+          ],
+          "subcategories": [
+            "Traveler Resources"
+          ],
+          "visit_duration": "1.0",
+          "rating": "4.5",
+          "rankingString": "#13 of 173 things to do in Lexington",
+          "address": "215 W Main St Suite 75, Lexington, KY 40507-1305",
+          "description": "When you are in Lexington, KY, Horse Capital of the World, be sure to stop by and see us at the Visitors Center! Address: 215 West Main Street, at Courthouse Square Hours: Monday through Saturday from 10:00 a.m. to 4 p.m. Closed Sundays Parking: You can park on Upper Street beside the courthouse where you’ll find two 30-minute metered spots marked for visitors. There is other street parking and pay lots nearby. The Victorian Square parking garage (enter from Short Street) is another good opti..."
+        }
+      },
+      {
+        "node_key": "Attraction::104836",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104836",
+          "name": "Hancock-Clarke House",
+          "City": "Lexington",
+          "subtype": [
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#3 of 18 things to do in Lexington",
+          "address": "36 Hancock St, Lexington, MA 02420-3432",
+          "description": "The home of Lexington's first two ministers and the location where John Hancock and Sam Adams were staying on April 18, 1775. Paul Revere stopped here on his famous \"Midnight Ride\" to warn Hancock and Adams that British troops had left Boston."
+        }
+      },
+      {
+        "node_key": "Attraction::603267",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "603267",
+          "name": "Munroe Tavern",
+          "City": "Lexington",
+          "subtype": [
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#6 of 18 things to do in Lexington",
+          "address": "1332 Massachusetts Ave, Lexington, MA 02420-3809",
+          "description": "Munroe Tavern was built in 1735 and temporarily served as a field hospital for the British Army on their retreat back to Boston from Concord on April 19, 1775. Later in 1789, George Washington paid a visit to the Tavern and dined in one of the rooms."
+        }
+      },
+      {
+        "node_key": "Restaurant::405800.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "405800.0",
+          "name": "Ramsey's Diner Zandale",
+          "City": "Lexington",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "153 W Zandale Dr, Lexington, KY 40503-2465",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::938940.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "938940.0",
+          "name": "Harry's American Bar & Grill",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Seafood",
+            "Sushi"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1920 Pleasant Ridge Dr, Lexington, KY 40509",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::489905.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "489905.0",
+          "name": "Joe Bologna's Restaurant and Pizzeria",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian",
+            "Pizza"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "120 W Maxwell St, Lexington, KY 40508-2530",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::405797.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "405797.0",
+          "name": "Bella Notte",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Italian"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3715 Nicholasville Rd, Lexington, KY 40503-4441",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::445580.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "445580.0",
+          "name": "Dudley's on Short",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "259 W. Short St., Lexington, KY 40507",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::7651903.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "7651903.0",
+          "name": "Pies & Pints",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Italian",
+            "American",
+            "Bar",
+            "Pizza"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "401 W Main St Suite 106, Lexington, KY 40507-1640",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::11932816.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "11932816.0",
+          "name": "Carson's Food & Drink - On Main",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "362 E Main St, Lexington, KY 40507",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2569001.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2569001.0",
+          "name": "Malone's Palomar",
+          "City": "Lexington",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse",
+            "Sushi"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "3735 Palomar Centre Dr, Lexington, KY 40513",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2663717.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2663717.0",
+          "name": "Coles 735 Main",
+          "City": "Lexington",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "International"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "735 E Main St, Lexington, KY 40502",
+          "hours": {
+            "weekRanges": [
+              [],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2392366.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2392366.0",
+          "name": "Josie's",
+          "City": "Lexington",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "37.5",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "821 Chevy Chase Pl, Lexington, KY 40502-2144",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG616jdE6U",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG616jdE6U",
+          "name": "Coat Check - Gerry Dee - Not a Concert Ticket",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/coat-check-gerry-dee-not-a-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DC0E71F6",
+            "availabilityStarts": "2024-05-06T14:00:00Z",
+            "price": 4,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG616QAEkF",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG616QAEkF",
+          "name": "Fast Lane Access - Gerry Dee - Not a Concert Ticket",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/fast-lane-access-gerry-dee-not-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DA...",
+            "availabilityStarts": "2024-05-06T14:00:00Z",
+            "price": 10,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK-Urd",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK-Urd",
+          "name": "Mephiskapheles - Halloween Seance with Special Guests The Filthy Lowdown and Children of October",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/mephiskapheles-halloween-seance-club-cafe-tickets/13876783",
+            "availabilityStarts": "2024-08-26T14:00:00Z",
+            "price": 15,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG616hf6kX",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG616hf6kX",
+          "name": "Event Parking - Roxian Theatre",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/event-parking-roxian-theatre-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1DB50...",
+            "availabilityStarts": "2024-05-06T14:00:00Z",
+            "price": 20,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::17AOvOG616Z9JLP",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "17AOvOG616Z9JLP",
+          "name": "Gerry Dee - Funny You Should Say That",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://concerts.livenation.com/gerry-dee-funny-you-should-say-mc-kees-rocks-pennsylvania-10-28-2024/event/160060A1C0...",
+            "availabilityStarts": "2024-05-10T14:00:00Z",
+            "price": 35.5,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::1ApZkvPGkeyud8l",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "1ApZkvPGkeyud8l",
+          "name": "Pittsburgh Steelers vs. New York Giants",
+          "city": "Lexington",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/pittsburgh-steelers-vs-new-york-giants-pittsburgh-pennsylvania-10-28-2024/event/16006065...",
+            "availabilityStarts": "2024-05-16T16:00:00Z",
+            "price": 50,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 101.58
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 101.58
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 157.82
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 157.82
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 580.86
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 580.86
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 955.7
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 955.7
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1475.7
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1475.7
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1691.07
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1691.07
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1911.05
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1911.05
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1974.56
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1974.56
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2289.71
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2289.71
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2584.96
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2584.96
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2871.42
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3124.95
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3535.46
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3535.46
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3876.91
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3876.91
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4435.19
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4715.56
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4715.56
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4807.3
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4824.23
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4906.71
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4933.46
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5017.83
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5105.74
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5176.24
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5269.54
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5524.15
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5658.91
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 5783.85
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 5783.85
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6743.69
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6897.36
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6951.45
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7217.86
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 7756.62
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 7756.62
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7846.22
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8022.53
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8022.53
+      },
+      {
+        "source": "Attraction::4406496",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8198.37
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::4406496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8198.37
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8285.55
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8285.55
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8785.44
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8817.27
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8817.27
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 9133.7
+      },
+      {
+        "source": "Attraction::103543",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 9640.79
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::103543",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 9640.79
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 10433.19
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11169.36
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11269.86
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11269.86
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11415.48
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11415.48
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 11547.3
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 11871.97
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 11871.97
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 12238.18
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 12238.18
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 13052.8
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 13052.8
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 13243.47
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 13669.36
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 13669.36
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 14183.68
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 14461.83
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 15635.91
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 15635.91
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 16817.47
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 16817.47
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 17386.58
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 17386.58
+      },
+      {
+        "source": "Attraction::103526",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 18587.97
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::103526",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 18587.97
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1221019.22
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1221019.22
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1221152.94
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1221152.94
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1221378.04
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1221378.04
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::938940.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1221886.25
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1221886.25
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225512.89
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225512.89
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225648.17
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225648.17
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225785.73
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225785.73
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225872.13
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225872.13
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225880.71
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225880.71
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1225921.32
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1225921.32
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226016.21
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226016.21
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226016.59
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226016.59
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226145.06
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226145.06
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226152.16
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226152.16
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226240.12
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226240.12
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226375.64
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226375.64
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::2663717.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226386.64
+      },
+      {
+        "source": "Restaurant::2663717.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226386.64
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226387.63
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226387.63
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226444.26
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226444.26
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1226452.4
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226522.78
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226522.78
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226580.04
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226580.04
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1226590.58
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::11932816.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226660.79
+      },
+      {
+        "source": "Restaurant::11932816.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226660.79
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226746.84
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226746.84
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::445580.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226757.05
+      },
+      {
+        "source": "Restaurant::445580.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226757.05
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226803.64
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226803.64
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1226812.43
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::7651903.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1226892.83
+      },
+      {
+        "source": "Restaurant::7651903.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1226892.83
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::2392366.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1227260.82
+      },
+      {
+        "source": "Restaurant::2392366.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1227260.82
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::489905.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1227320.18
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1227320.18
+      },
+      {
+        "source": "Accommodation::17448918.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1227338.64
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1229547.61
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1229547.61
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1229682.48
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1229682.48
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1229906.74
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1229906.74
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::405800.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1230419.62
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1230419.62
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1230875.15
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1231010.87
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1231234.51
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1231648.57
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1231648.57
+      },
+      {
+        "source": "Accommodation::37679833.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1231750.79
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1231782.71
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1231782.71
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1232007.5
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1232007.5
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::405797.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1232517.42
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1232517.42
+      },
+      {
+        "source": "Attraction::104565",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1233859.46
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::104565",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1233859.46
+      },
+      {
+        "source": "Attraction::104835",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1233994.88
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::104835",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1233994.88
+      },
+      {
+        "source": "Attraction::104836",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1234218.75
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::104836",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1234218.75
+      },
+      {
+        "source": "Attraction::603267",
+        "target": "Restaurant::2569001.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1234733.78
+      },
+      {
+        "source": "Restaurant::2569001.0",
+        "target": "Attraction::603267",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1234733.78
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Restaurant::2392366.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Restaurant::11932816.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::405800.0",
+        "target": "Restaurant::2663717.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::938940.0",
+        "target": "Restaurant::2569001.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::489905.0",
+        "target": "Restaurant::405797.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      },
+      {
+        "source": "Restaurant::405797.0",
+        "target": "Restaurant::489905.0",
+        "type": "SHARES_CUISINE",
+        "distance_m": null
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-22",
+        "2024-11-23",
+        "2024-11-24"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1509894",
+          "dep_time": "08:50",
+          "arr_time": "10:07",
+          "local_activity_start_after_arrival_buffer": "10:37",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3794211",
+          "dep_time": "08:56",
+          "arr_time": "10:34",
+          "local_activity_start_after_arrival_buffer": "11:04",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2871905",
+          "dep_time": "08:51",
+          "arr_time": "10:06",
+          "local_activity_start_after_arrival_buffer": "10:36",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        },
+        {
+          "flight_node_key": "Flight::F3071540",
+          "dep_time": "10:02",
+          "arr_time": "11:43",
+          "local_activity_start_after_arrival_buffer": "12:13",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F1965168",
+          "dep_time": "08:50",
+          "arr_time": "10:16",
+          "local_activity_start_after_arrival_buffer": "10:46",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival is early enough for a real first day after check-in."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F3735091",
+          "dep_time": "20:03",
+          "arr_time": "21:35",
+          "latest_local_activity_finish_before_airport_buffer": "18:03",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0801006",
+          "dep_time": "20:03",
+          "arr_time": "21:46",
+          "latest_local_activity_finish_before_airport_buffer": "18:03",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2872162",
+          "dep_time": "19:43",
+          "arr_time": "21:14",
+          "latest_local_activity_finish_before_airport_buffer": "17:43",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1510145",
+          "dep_time": "19:42",
+          "arr_time": "21:16",
+          "latest_local_activity_finish_before_airport_buffer": "17:42",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1509838",
+          "dep_time": "18:36",
+          "arr_time": "19:52",
+          "latest_local_activity_finish_before_airport_buffer": "16:36",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::405800.0",
+          "Restaurant::2392366.0"
+        ],
+        "lunch": [
+          "Restaurant::405800.0",
+          "Restaurant::938940.0",
+          "Restaurant::489905.0",
+          "Restaurant::405797.0",
+          "Restaurant::445580.0",
+          "Restaurant::7651903.0",
+          "Restaurant::11932816.0",
+          "Restaurant::2569001.0",
+          "Restaurant::2392366.0"
+        ],
+        "dinner": [
+          "Restaurant::405800.0",
+          "Restaurant::938940.0",
+          "Restaurant::489905.0",
+          "Restaurant::405797.0",
+          "Restaurant::445580.0",
+          "Restaurant::7651903.0",
+          "Restaurant::11932816.0",
+          "Restaurant::2569001.0",
+          "Restaurant::2663717.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::103526",
+          "Attraction::104565",
+          "Attraction::103543",
+          "Attraction::104835",
+          "Attraction::4406496",
+          "Attraction::104836",
+          "Attraction::603267"
+        ],
+        "afternoon_attraction": [
+          "Attraction::103526",
+          "Attraction::104565",
+          "Attraction::103543",
+          "Attraction::104835",
+          "Attraction::4406496",
+          "Attraction::104836",
+          "Attraction::603267"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::405800.0",
+            "name": "Ramsey's Diner Zandale"
+          },
+          {
+            "node_key": "Restaurant::2392366.0",
+            "name": "Josie's"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::405800.0",
+            "name": "Ramsey's Diner Zandale"
+          },
+          {
+            "node_key": "Restaurant::938940.0",
+            "name": "Harry's American Bar & Grill"
+          },
+          {
+            "node_key": "Restaurant::489905.0",
+            "name": "Joe Bologna's Restaurant and Pizzeria"
+          },
+          {
+            "node_key": "Restaurant::405797.0",
+            "name": "Bella Notte"
+          },
+          {
+            "node_key": "Restaurant::445580.0",
+            "name": "Dudley's on Short"
+          },
+          {
+            "node_key": "Restaurant::7651903.0",
+            "name": "Pies & Pints"
+          },
+          {
+            "node_key": "Restaurant::11932816.0",
+            "name": "Carson's Food & Drink - On Main"
+          },
+          {
+            "node_key": "Restaurant::2569001.0",
+            "name": "Malone's Palomar"
+          },
+          {
+            "node_key": "Restaurant::2392366.0",
+            "name": "Josie's"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::405800.0",
+            "name": "Ramsey's Diner Zandale"
+          },
+          {
+            "node_key": "Restaurant::938940.0",
+            "name": "Harry's American Bar & Grill"
+          },
+          {
+            "node_key": "Restaurant::489905.0",
+            "name": "Joe Bologna's Restaurant and Pizzeria"
+          },
+          {
+            "node_key": "Restaurant::405797.0",
+            "name": "Bella Notte"
+          },
+          {
+            "node_key": "Restaurant::445580.0",
+            "name": "Dudley's on Short"
+          },
+          {
+            "node_key": "Restaurant::7651903.0",
+            "name": "Pies & Pints"
+          },
+          {
+            "node_key": "Restaurant::11932816.0",
+            "name": "Carson's Food & Drink - On Main"
+          },
+          {
+            "node_key": "Restaurant::2569001.0",
+            "name": "Malone's Palomar"
+          },
+          {
+            "node_key": "Restaurant::2663717.0",
+            "name": "Coles 735 Main"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-22",
+          "required_slots": {
+            "Flight::F1509894": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3794211": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2871905": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3071540": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F1965168": [
+              "lunch",
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-23",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-24",
+          "required_slots": {
+            "Flight::F3735091": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0801006": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2872162": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1510145": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1509838": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-22": [],
+      "2024-11-23": [],
+      "2024-11-24": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

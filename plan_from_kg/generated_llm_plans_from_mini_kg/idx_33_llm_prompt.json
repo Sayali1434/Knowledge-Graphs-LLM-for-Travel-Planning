@@ -1,0 +1,3389 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_33\", \"query_text\": \"Plan a 3-day trip for 1 person from Nashville to Charleston from November 22nd to November 24th, 2024, with a budget of $2,250.\", \"request\": {\"org\": \"Nashville\", \"dest\": \"Charleston\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-22', '2024-11-23', '2024-11-24']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 2250, \"query\": \"Plan a 3-day trip for 1 person from Nashville to Charleston from November 22nd to November 24th, 2024, with a budget of $2,250.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Beaches\"}, \"dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Relaxation\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Beaches\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F3104070\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Nashville\", \"DestCityName\": \"Charleston\", \"DepTime\": \"09:57\", \"ArrTime\": \"12:22\", \"Price\": 110}}, {\"node_key\": \"Flight::F0656100\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Nashville\", \"DestCityName\": \"Charleston\", \"DepTime\": \"09:40\", \"ArrTime\": \"11:47\", \"Price\": 118}}, {\"node_key\": \"Flight::F3981643\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Nashville\", \"DestCityName\": \"Charleston\", \"DepTime\": \"09:38\", \"ArrTime\": \"11:50\", \"Price\": 127}}, {\"node_key\": \"Flight::F0051870\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Nashville\", \"DestCityName\": \"Charleston\", \"DepTime\": \"10:05\", \"ArrTime\": \"12:20\", \"Price\": 165}}, {\"node_key\": \"Flight::F2222186\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-22\", \"OriginCityName\": \"Nashville\", \"DestCityName\": \"Charleston\", \"DepTime\": \"10:35\", \"ArrTime\": \"13:09\", \"Price\": 193}}, {\"node_key\": \"Flight::F2729735\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Charleston\", \"DestCityName\": \"Nashville\", \"DepTime\": \"20:58\", \"ArrTime\": \"21:31\", \"Price\": 120}}, {\"node_key\": \"Flight::F0077687\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Charleston\", \"DestCityName\": \"Nashville\", \"DepTime\": \"21:03\", \"ArrTime\": \"21:40\", \"Price\": 123}}, {\"node_key\": \"Flight::F2252583\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Charleston\", \"DestCityName\": \"Nashville\", \"DepTime\": \"20:53\", \"ArrTime\": \"21:10\", \"Price\": 125}}, {\"node_key\": \"Flight::F1675566\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Charleston\", \"DestCityName\": \"Nashville\", \"DepTime\": \"21:20\", \"ArrTime\": \"21:37\", \"Price\": 147}}, {\"node_key\": \"Flight::F4008990\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-24\", \"OriginCityName\": \"Charleston\", \"DestCityName\": \"Nashville\", \"DepTime\": \"21:09\", \"ArrTime\": \"21:35\", \"Price\": 185}}, {\"node_key\": \"Accommodation::45736481.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45736481.0\", \"name\": \"Dianna Browns Place | Historic District\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$645 per night\", \"originalPrice\": null, \"price\": \"$645\", \"qualifier\": \"night\", \"total\": \"$3,223 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  107 reviews\", \"localizedLabel\": \"4.93 (107)\", \"average\": 4.93, \"reviewsCount\": 107}, \"coordinates\": {\"latitude\": 32.778313, \"longitude\": -79.93053}}}, {\"node_key\": \"Accommodation::21025670.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"21025670.0\", \"name\": \"Charming and historic cottage South of Broad\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$434 per night\", \"originalPrice\": null, \"price\": \"$434\", \"qualifier\": \"night\", \"total\": \"$2,168 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  193 reviews\", \"localizedLabel\": \"4.94 (193)\", \"average\": 4.94, \"reviewsCount\": 193}, \"coordinates\": {\"latitude\": 32.77427, \"longitude\": -79.93723}}}, {\"node_key\": \"Accommodation::41956727.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"41956727.0\", \"name\": \"Private Waterfront Apartment Among The Grand Oaks\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$157 per night\", \"originalPrice\": null, \"price\": \"$157\", \"qualifier\": \"night\", \"total\": \"$783 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  414 reviews\", \"localizedLabel\": \"5.0 (414)\", \"average\": 5, \"reviewsCount\": 414}, \"coordinates\": {\"latitude\": 32.74655, \"longitude\": -79.92175}}}, {\"node_key\": \"Accommodation::36909032.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"36909032.0\", \"name\": \"86 Church Street kitchen house\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No pets & No visitors\", \"pricing\": {\"label\": \"$632 per night\", \"originalPrice\": null, \"price\": \"$632\", \"qualifier\": \"night\", \"total\": \"$3,160 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  100 reviews\", \"localizedLabel\": \"4.92 (100)\", \"average\": 4.92, \"reviewsCount\": 100}, \"coordinates\": {\"latitude\": 32.77638, \"longitude\": -79.928}}}, {\"node_key\": \"Accommodation::4138620.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"4138620.0\", \"name\": \"Historic City Charm | Private Modern Luxe\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$342 per night\", \"originalPrice\": null, \"price\": \"$342\", \"qualifier\": \"night\", \"total\": \"$1,706 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  372 reviews\", \"localizedLabel\": \"4.98 (372)\", \"average\": 4.98, \"reviewsCount\": 372}, \"coordinates\": {\"latitude\": 32.777254262175084, \"longitude\": -79.93807749570061}}}, {\"node_key\": \"Accommodation::20266997.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"20266997.0\", \"name\": \"Historic Kitchen House - South of Broad (Charming)\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$704 per night\", \"originalPrice\": null, \"price\": \"$704\", \"qualifier\": \"night\", \"total\": \"$3,518 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  151 reviews\", \"localizedLabel\": \"4.95 (151)\", \"average\": 4.95, \"reviewsCount\": 151}, \"coordinates\": {\"latitude\": 32.77068, \"longitude\": -79.93271}}}, {\"node_key\": \"Accommodation::49274418.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"49274418.0\", \"name\": \"The Backpacker\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"7\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$66 per night\", \"originalPrice\": null, \"price\": \"$66\", \"qualifier\": \"night\", \"total\": \"$327 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  340 reviews\", \"localizedLabel\": \"4.94 (340)\", \"average\": 4.94, \"reviewsCount\": 340}, \"coordinates\": {\"latitude\": 32.74493, \"longitude\": -79.90757}}}, {\"node_key\": \"Accommodation::39889237.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"39889237.0\", \"name\": \"Charleston Gem with parking! Close to King St!\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$393 per night\", \"originalPrice\": null, \"price\": \"$393\", \"qualifier\": \"night\", \"total\": \"$1,963 total\"}, \"rating\": {\"label\": \"4.96 out of 5 average rating,  139 reviews\", \"localizedLabel\": \"4.96 (139)\", \"average\": 4.96, \"reviewsCount\": 139}, \"coordinates\": {\"latitude\": 32.77632, \"longitude\": -79.93362}}}, {\"node_key\": \"Accommodation::9136246.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9136246.0\", \"name\": \"Private Lowcountry Cottage\", \"City\": \"Charleston\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$121 per night\", \"originalPrice\": null, \"price\": \"$121\", \"qualifier\": \"night\", \"total\": \"$603 total\"}, \"rating\": {\"label\": \"4.92 out of 5 average rating,  918 reviews\", \"localizedLabel\": \"4.92 (918)\", \"average\": 4.92, \"reviewsCount\": 918}, \"coordinates\": {\"latitude\": 32.7467, \"longitude\": -79.90884}}}, {\"node_key\": \"Accommodation::16646561.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16646561.0\", \"name\": \"Charleston's Most Charming Historic Inn\", \"City\": \"Charleston\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$388 per night\", \"originalPrice\": null, \"price\": \"$388\", \"qualifier\": \"night\", \"total\": \"$1,936 total\"}, \"rating\": {\"label\": \"4.69 out of 5 average rating,  305 reviews\", \"localizedLabel\": \"4.69 (305)\", \"average\": 4.69, \"reviewsCount\": 305}, \"coordinates\": {\"latitude\": 32.77731, \"longitude\": -79.93154}}}, {\"node_key\": \"Attraction::104632\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104632\", \"name\": \"Fort Sumter National Monument\", \"City\": \"Charleston\", \"subtype\": [\"Military Bases & Facilities\", \"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#16 of 284 things to do in Charleston\", \"address\": \"340 Concord Street, Charleston, SC 29482-9748\", \"description\": \"Learn all about this storied spot of the first clash between the Union and Confederate armies in the Civil War, in which the Union forces finally surrendered after a 34-hour bombardment by the Rebels.\"}}, {\"node_key\": \"Attraction::144260\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144260\", \"name\": \"Charleston Waterfront Park\", \"City\": \"Charleston\", \"subtype\": [\"Points of Interest & Landmarks\", \"Parks\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 284 things to do in Charleston\", \"address\": \"Concord Street Vendue Range, Charleston, SC 29401-2129\", \"description\": \"Overlooking Charleston Harbor and Cooper Park on the eastern coast of the peninsula, this expansive waterfront green space is perfect for laidback strolls and picnics.\"}}, {\"node_key\": \"Attraction::573722\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"573722\", \"name\": \"Arthur Ravenel Jr. Bridge\", \"City\": \"Charleston\", \"subtype\": [\"Bridges\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#9 of 284 things to do in Charleston\", \"address\": \"Charleston, SC 29403\", \"description\": \"With its twin diamond peaks, this cable-stay bridge spans the Cooper River and connects downtown Charleston to Mount Pleasant. It's become an icon.\"}}, {\"node_key\": \"Attraction::144683\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144683\", \"name\": \"Middleton Place\", \"City\": \"Charleston\", \"subtype\": [\"Historic Sites\", \"Points of Interest & Landmarks\", \"Gardens\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#12 of 284 things to do in Charleston\", \"address\": \"4300 Ashley River Road, Charleston, SC 29414-7206\", \"description\": \"Middleton Place National Historic Landmark is home to America’s oldest and most important landscaped gardens. Began in 1741, the historic site today encompasses 110 acres including the Gardens, House Museum, Stableyards, and Eliza’s House. Together they tell the inclusive history of all who lived, worked, and died here. The stories of the Middleton family including two Founding Fathers and generations of enslaved people are interwoven throughout the property. Visitors have opportunities to ex...\"}}, {\"node_key\": \"Attraction::2172814\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2172814\", \"name\": \"Battery & White Point Gardens\", \"City\": \"Charleston\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#17 of 284 things to do in Charleston\", \"address\": \"2 Murray Blvd., Charleston, SC 29401\", \"description\": \"Discover historical Civil War monuments nestled among the greenery in these lush gardens on Charleston's south coast. Bonus: There's spectacular views of Fort Sumter and Charleston Harbor.\"}}, {\"node_key\": \"Attraction::104625\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104625\", \"name\": \"Nathaniel Russell House\", \"City\": \"Charleston\", \"subtype\": [\"Historic Sites\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#11 of 284 things to do in Charleston\", \"address\": \"51 Meeting St, Charleston, SC 29401-2536\", \"description\": \"A National Historic Landmark, the Nathaniel Russell House Museum was completed in 1808 by merchant Nathaniel Russell. The home’s graceful, free-flying, three-story staircase is an architectural marvel and the elegant interiors with elaborate plasterwork, geometrically shaped rooms, formal gardens and collection of 18th-century decorative and fine art speak to the wealth of Charleston’s elite in the early days of the American Republic. Restored to its original splendor using forensic analysis ...\"}}, {\"node_key\": \"Attraction::105765\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105765\", \"name\": \"Drayton Hall\", \"City\": \"Charleston\", \"subtype\": [\"Historic Sites\", \"Architectural Buildings\", \"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#26 of 284 things to do in Charleston\", \"address\": \"3380 Ashley River Rd, Charleston, SC 29414-7126\", \"description\": \"Circa 1738, Drayton Hall is the oldest unrestored plantation house in America still open to the public.\"}}, {\"node_key\": \"Attraction::104623\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104623\", \"name\": \"Aiken-Rhett House\", \"City\": \"Charleston\", \"subtype\": [\"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#14 of 284 things to do in Charleston\", \"address\": \"48 Elizabeth St, Charleston, SC 29403-6250\", \"description\": \"The Aiken-Rhett House (c. 1820) is one of the best-preserved townhouse complexes in the nation. Vastly expanded by Governor and Mrs. William Aiken, Jr. in the 1830s and again in the 1850s, the house and its outbuildings include a kitchen, the original quarters of the enslaved, carriage block and back lot. When Historic Charleston Foundation assumed ownership in 1995, we adopted a preserved-as-found preservation approach, meaning the structure and contents are left in an “as-found” state, incl...\"}}, {\"node_key\": \"Attraction::104630\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104630\", \"name\": \"Old Exchange & Provost Dungeon\", \"City\": \"Charleston\", \"subtype\": [\"History Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#25 of 284 things to do in Charleston\", \"address\": \"122 E Bay St, Charleston, SC 29401-2103\", \"description\": \"History comes alive as Colonial dressed guides talk about Pirates, Patriots and Presidents! Explore the location where pirates were once held and view a section of the 1698 fortification that once protected the Walled City. Completed in 1771 as the New Exchange and Customs House, recognized today as South Carolina's most historic building. Where Patriots were imprisoned, the Constitution was ratified and George Washington was entertained.\"}}, {\"node_key\": \"Attraction::8036493\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8036493\", \"name\": \"McLeod Plantation Historic Site\", \"City\": \"Charleston\", \"subtype\": [\"Points of Interest & Landmarks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#13 of 284 things to do in Charleston\", \"address\": \"325 Country Club Dr, Charleston, SC 29412-2215\", \"description\": \"Established in 1851, McLeod Plantation has borne witness to some of the most significant periods of Charleston's - and our nations - history. Today McLeod Plantation is an important 37-acre Gullah/Geechee heritage site that has been carefully preserved in recognition of its cultural and historical significance. The grounds include a riverside outdoor pavilion, a sweeping oak allée, and the McLeod Oak, which is thought to be more than 600 years old. It is a place like no other, not frozen in t...\"}}, {\"node_key\": \"Restaurant::1389309.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1389309.0\", \"name\": \"Halls Chophouse Charleston\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"96.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"434 King St, Charleston, SC 29403-6230\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::14763409.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"14763409.0\", \"name\": \"Chubby Fish\", \"City\": \"Charleston\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"60.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"252 Coming St, Charleston, SC 29403-5433\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::476125.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"476125.0\", \"name\": \"Poogan's Porch\", \"City\": \"Charleston\", \"mealTypes\": [\"Dinner\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"72 Queen St, Charleston, SC 29401-2220\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 990, \"openHours\": \"16:30\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::463410.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"463410.0\", \"name\": \"Magnolias\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Seafood\", \"International\", \"Contemporary\", \"Soups\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"185 E Bay St, Charleston, SC 29401-2126\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::566804.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"566804.0\", \"name\": \"Fleet Landing Restaurant\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"186 Concord St Intersection of Concord and Cumberland, Charleston, SC 29401-2642\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 930, \"closeHours\": \"15:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::436710.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"436710.0\", \"name\": \"82 Queen\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\", \"Soups\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"82 Queen St, Charleston, SC 29401-2220\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::1943833.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"1943833.0\", \"name\": \"Husk Restaurant\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Drinks\"], \"cuisines\": [\"American\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"76 Queen St, Charleston, SC 29401-2220\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::436492.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"436492.0\", \"name\": \"Hank's Seafood Restaurant\", \"City\": \"Charleston\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Seafood\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"10 Hayne St, Charleston, SC 29401-3106\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::461777.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"461777.0\", \"name\": \"Slightly North of Broad\", \"City\": \"Charleston\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"American\"], \"avg_cost\": \"96.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"192 E Bay St, Charleston, SC 29401-2123\", \"hours\": {\"weekRanges\": [[{\"open\": 630, \"openHours\": \"10:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2362390.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2362390.0\", \"name\": \"Eli's Table\", \"City\": \"Charleston\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"American\"], \"avg_cost\": \"60.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"129 Meeting St, Charleston, SC 29401-2217\", \"hours\": {\"weekRanges\": [[{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 540, \"openHours\": \"09:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 960, \"openHours\": \"16:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AKb0b7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKb0b7\", \"name\": \"Blind Pig Comedy\", \"city\": \"Charleston\", \"dateTitle\": \"04-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Alternative\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/blind-pig-comedy-blind-pig-tickets/13624604\", \"availabilityStarts\": \"2024-09-25T22:10:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7C4p8\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7C4p8\", \"name\": \"Brett Young\", \"city\": \"Charleston\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7C4p8\", \"availabilityStarts\": \"2024-08-24T15:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uZFE\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uZFE\", \"name\": \"Central Michigan Chippewas Football vs. Bowling Green Falcons Football\", \"city\": \"Charleston\", \"dateTitle\": \"05-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Football\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uZFE\", \"availabilityStarts\": \"2024-07-29T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7AKGZ\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7AKGZ\", \"name\": \"Daniel O'Donnell\", \"city\": \"Charleston\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"World\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7AKGZ\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7upog\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7upog\", \"name\": \"Deer Tick\", \"city\": \"Charleston\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7upog\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7CZo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7CZo0\", \"name\": \"Doom Flamingo w/ Lespecial\", \"city\": \"Charleston\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7CZo0\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A71K1v\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A71K1v\", \"name\": \"Godspeed You! Black Emperor - Fall 2024 North American Tour\", \"city\": \"Charleston\", \"dateTitle\": \"07-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A71K1v\", \"availabilityStarts\": \"2024-06-07T14:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A78yeK\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A78yeK\", \"name\": \"Godspell\", \"city\": \"Charleston\", \"dateTitle\": \"02-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Theatre\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A78yeK\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A78yef\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A78yef\", \"name\": \"Godspell\", \"city\": \"Charleston\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Theatre\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A78yef\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uNPd\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uNPd\", \"name\": \"Grand Rapids Griffins vs. Rockford IceHogs\", \"city\": \"Charleston\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Hockey\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uNPd\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 81.34}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 88.9}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 96.17}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 106.69}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 112.04}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 112.63}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 131.38}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 151.03}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 155.82}, {\"source\": \"Restaurant::461777.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 155.82}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 162.48}, {\"source\": \"Restaurant::566804.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 162.48}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 168.53}, {\"source\": \"Restaurant::463410.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 168.53}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 188.06}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 202.76}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 236.82}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 250.73}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 286.33}, {\"source\": \"Restaurant::463410.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 286.33}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 297.9}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 303.87}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 328.28}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 338.97}, {\"source\": \"Restaurant::461777.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 338.97}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 343.76}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 358.18}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 368.27}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 371.07}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 372.98}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 381.47}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 383.9}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 386.98}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 390.95}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 405.2}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 406.84}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 409.18}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 425.8}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 430.56}, {\"source\": \"Restaurant::566804.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 430.56}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 431.18}, {\"source\": \"Restaurant::1389309.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 431.18}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 433.09}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 447.7}, {\"source\": \"Restaurant::2362390.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 447.7}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 449.38}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 451.7}, {\"source\": \"Restaurant::436710.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 451.7}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 457.92}, {\"source\": \"Restaurant::476125.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 457.92}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 459.97}, {\"source\": \"Restaurant::1943833.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 459.97}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 462.48}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 471.73}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 480.08}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 480.65}, {\"source\": \"Restaurant::2362390.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 480.65}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 482.53}, {\"source\": \"Restaurant::476125.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 482.53}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 500.84}, {\"source\": \"Restaurant::1943833.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 500.84}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 509.7}, {\"source\": \"Restaurant::436492.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 509.7}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 517.52}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 524.65}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 528.57}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 528.64}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 529.2}, {\"source\": \"Restaurant::436710.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 529.2}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 552.19}, {\"source\": \"Restaurant::2362390.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 552.19}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 564.53}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 567.68}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 584.27}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 587.85}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 590.08}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 598.27}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 602.87}, {\"source\": \"Restaurant::476125.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 602.87}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 610.26}, {\"source\": \"Restaurant::436492.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 610.26}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 622.45}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 622.59}, {\"source\": \"Restaurant::1943833.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 622.59}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 627.3}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 635.34}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 635.56}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 651.91}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 658.95}, {\"source\": \"Restaurant::436710.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 658.95}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 685.92}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 692.03}, {\"source\": \"Restaurant::463410.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 692.03}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 697.72}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 701.7}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 706.75}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 751.75}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 757.75}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 761.04}, {\"source\": \"Restaurant::461777.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 761.04}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 763.32}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 799.36}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 810.4}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 819.21}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 822.38}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 823.0}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 857.87}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 865.09}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 865.6}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 866.44}, {\"source\": \"Restaurant::436492.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 866.44}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 872.76}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::14763409.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 890.92}, {\"source\": \"Restaurant::14763409.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 890.92}, {\"source\": \"Attraction::104625\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 899.99}, {\"source\": \"Restaurant::566804.0\", \"target\": \"Attraction::104625\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 899.99}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 915.0}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 925.14}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 945.38}, {\"source\": \"Restaurant::436710.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 945.38}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 952.48}, {\"source\": \"Restaurant::476125.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 952.48}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 954.64}, {\"source\": \"Restaurant::1943833.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 954.64}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 963.11}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 972.94}, {\"source\": \"Restaurant::2362390.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 972.94}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1003.9}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1038.43}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Attraction::104630\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1042.22}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1078.87}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1092.58}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1094.84}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1095.9}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1107.05}, {\"source\": \"Restaurant::463410.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1107.05}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1139.5}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1146.9}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1158.84}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1164.42}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1169.62}, {\"source\": \"Restaurant::461777.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1169.62}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1178.16}, {\"source\": \"Restaurant::436492.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1178.16}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1187.09}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1211.02}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1248.36}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1259.04}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1268.35}, {\"source\": \"Restaurant::566804.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1268.35}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1273.62}, {\"source\": \"Accommodation::20266997.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1296.23}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1323.92}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1331.3}, {\"source\": \"Attraction::2172814\", \"target\": \"Restaurant::436492.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1342.62}, {\"source\": \"Restaurant::436492.0\", \"target\": \"Attraction::2172814\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1342.62}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1377.02}, {\"source\": \"Accommodation::39889237.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1410.09}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::461777.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1493.76}, {\"source\": \"Restaurant::461777.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1493.76}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::2362390.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1497.89}, {\"source\": \"Restaurant::2362390.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1497.89}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::1943833.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1515.94}, {\"source\": \"Restaurant::1943833.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1515.94}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::476125.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1517.31}, {\"source\": \"Restaurant::476125.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1517.31}, {\"source\": \"Accommodation::45736481.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1518.26}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::463410.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1519.09}, {\"source\": \"Restaurant::463410.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1519.09}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::436710.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1528.46}, {\"source\": \"Restaurant::436710.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1528.46}, {\"source\": \"Attraction::104623\", \"target\": \"Restaurant::566804.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1547.9}, {\"source\": \"Restaurant::566804.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1547.9}, {\"source\": \"Attraction::144260\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1565.96}, {\"source\": \"Restaurant::1389309.0\", \"target\": \"Attraction::144260\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1565.96}, {\"source\": \"Accommodation::21025670.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1581.32}, {\"source\": \"Accommodation::16646561.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1604.54}, {\"source\": \"Accommodation::4138620.0\", \"target\": \"Attraction::104623\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1605.95}, {\"source\": \"Accommodation::36909032.0\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1633.04}, {\"source\": \"Attraction::104630\", \"target\": \"Restaurant::1389309.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1649.9}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F3104070\", \"dep_time\": \"09:57\", \"arr_time\": \"12:22\", \"local_activity_start_after_arrival_buffer\": \"12:52\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F0656100\", \"dep_time\": \"09:40\", \"arr_time\": \"11:47\", \"local_activity_start_after_arrival_buffer\": \"12:17\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F3981643\", \"dep_time\": \"09:38\", \"arr_time\": \"11:50\", \"local_activity_start_after_arrival_buffer\": \"12:20\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F0051870\", \"dep_time\": \"10:05\", \"arr_time\": \"12:20\", \"local_activity_start_after_arrival_buffer\": \"12:50\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}, {\"flight_node_key\": \"Flight::F2222186\", \"dep_time\": \"10:35\", \"arr_time\": \"13:09\", \"local_activity_start_after_arrival_buffer\": \"13:39\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"afternoon_attraction\", \"dinner\"], \"guidance\": \"Arrival leaves enough time for a light attraction and dinner.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F2729735\", \"dep_time\": \"20:58\", \"arr_time\": \"21:31\", \"latest_local_activity_finish_before_airport_buffer\": \"18:58\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0077687\", \"dep_time\": \"21:03\", \"arr_time\": \"21:40\", \"latest_local_activity_finish_before_airport_buffer\": \"19:03\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F2252583\", \"dep_time\": \"20:53\", \"arr_time\": \"21:10\", \"latest_local_activity_finish_before_airport_buffer\": \"18:53\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F1675566\", \"dep_time\": \"21:20\", \"arr_time\": \"21:37\", \"latest_local_activity_finish_before_airport_buffer\": \"19:20\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F4008990\", \"dep_time\": \"21:09\", \"arr_time\": \"21:35\", \"latest_local_activity_finish_before_airport_buffer\": \"19:09\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::2362390.0\"], \"lunch\": [\"Restaurant::1389309.0\", \"Restaurant::463410.0\", \"Restaurant::566804.0\", \"Restaurant::436710.0\", \"Restaurant::1943833.0\", \"Restaurant::461777.0\", \"Restaurant::2362390.0\"], \"dinner\": [\"Restaurant::1389309.0\", \"Restaurant::14763409.0\", \"Restaurant::476125.0\", \"Restaurant::463410.0\", \"Restaurant::566804.0\", \"Restaurant::436710.0\", \"Restaurant::1943833.0\", \"Restaurant::436492.0\", \"Restaurant::461777.0\", \"Restaurant::2362390.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::104632\", \"Attraction::144260\", \"Attraction::573722\", \"Attraction::144683\", \"Attraction::2172814\", \"Attraction::104625\", \"Attraction::105765\", \"Attraction::104623\", \"Attraction::104630\", \"Attraction::8036493\"], \"afternoon_attraction\": [\"Attraction::104632\", \"Attraction::144260\", \"Attraction::573722\", \"Attraction::144683\", \"Attraction::2172814\", \"Attraction::104625\", \"Attraction::105765\", \"Attraction::104623\", \"Attraction::104630\", \"Attraction::8036493\"]}, \"event_slots_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::2362390.0\", \"name\": \"Eli's Table\"}], \"lunch\": [{\"node_key\": \"Restaurant::1389309.0\", \"name\": \"Halls Chophouse Charleston\"}, {\"node_key\": \"Restaurant::463410.0\", \"name\": \"Magnolias\"}, {\"node_key\": \"Restaurant::566804.0\", \"name\": \"Fleet Landing Restaurant\"}, {\"node_key\": \"Restaurant::436710.0\", \"name\": \"82 Queen\"}, {\"node_key\": \"Restaurant::1943833.0\", \"name\": \"Husk Restaurant\"}, {\"node_key\": \"Restaurant::461777.0\", \"name\": \"Slightly North of Broad\"}, {\"node_key\": \"Restaurant::2362390.0\", \"name\": \"Eli's Table\"}], \"dinner\": [{\"node_key\": \"Restaurant::1389309.0\", \"name\": \"Halls Chophouse Charleston\"}, {\"node_key\": \"Restaurant::14763409.0\", \"name\": \"Chubby Fish\"}, {\"node_key\": \"Restaurant::476125.0\", \"name\": \"Poogan's Porch\"}, {\"node_key\": \"Restaurant::463410.0\", \"name\": \"Magnolias\"}, {\"node_key\": \"Restaurant::566804.0\", \"name\": \"Fleet Landing Restaurant\"}, {\"node_key\": \"Restaurant::436710.0\", \"name\": \"82 Queen\"}, {\"node_key\": \"Restaurant::1943833.0\", \"name\": \"Husk Restaurant\"}, {\"node_key\": \"Restaurant::436492.0\", \"name\": \"Hank's Seafood Restaurant\"}, {\"node_key\": \"Restaurant::461777.0\", \"name\": \"Slightly North of Broad\"}, {\"node_key\": \"Restaurant::2362390.0\", \"name\": \"Eli's Table\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-22\", \"required_slots\": {\"Flight::F3104070\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F0656100\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F3981643\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F0051870\": [\"afternoon_attraction\", \"dinner\"], \"Flight::F2222186\": [\"afternoon_attraction\", \"dinner\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-23\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-24\", \"required_slots\": {\"Flight::F2729735\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0077687\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F2252583\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F1675566\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F4008990\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_33",
+    "query_text": "Plan a 3-day trip for 1 person from Nashville to Charleston from November 22nd to November 24th, 2024, with a budget of $2,250.",
+    "request": {
+      "org": "Nashville",
+      "dest": "Charleston",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-22', '2024-11-23', '2024-11-24']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 2250,
+      "query": "Plan a 3-day trip for 1 person from Nashville to Charleston from November 22nd to November 24th, 2024, with a budget of $2,250.",
+      "level": "easy",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Relaxation; Spending Preference: Economical Traveler; Location Preference: Beaches"
+    },
+    "dates": [
+      "2024-11-22",
+      "2024-11-23",
+      "2024-11-24"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Relaxation",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Beaches"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F3104070",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Nashville",
+          "DestCityName": "Charleston",
+          "DepTime": "09:57",
+          "ArrTime": "12:22",
+          "Price": 110
+        }
+      },
+      {
+        "node_key": "Flight::F0656100",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Nashville",
+          "DestCityName": "Charleston",
+          "DepTime": "09:40",
+          "ArrTime": "11:47",
+          "Price": 118
+        }
+      },
+      {
+        "node_key": "Flight::F3981643",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Nashville",
+          "DestCityName": "Charleston",
+          "DepTime": "09:38",
+          "ArrTime": "11:50",
+          "Price": 127
+        }
+      },
+      {
+        "node_key": "Flight::F0051870",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Nashville",
+          "DestCityName": "Charleston",
+          "DepTime": "10:05",
+          "ArrTime": "12:20",
+          "Price": 165
+        }
+      },
+      {
+        "node_key": "Flight::F2222186",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-22",
+          "OriginCityName": "Nashville",
+          "DestCityName": "Charleston",
+          "DepTime": "10:35",
+          "ArrTime": "13:09",
+          "Price": 193
+        }
+      },
+      {
+        "node_key": "Flight::F2729735",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Charleston",
+          "DestCityName": "Nashville",
+          "DepTime": "20:58",
+          "ArrTime": "21:31",
+          "Price": 120
+        }
+      },
+      {
+        "node_key": "Flight::F0077687",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Charleston",
+          "DestCityName": "Nashville",
+          "DepTime": "21:03",
+          "ArrTime": "21:40",
+          "Price": 123
+        }
+      },
+      {
+        "node_key": "Flight::F2252583",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Charleston",
+          "DestCityName": "Nashville",
+          "DepTime": "20:53",
+          "ArrTime": "21:10",
+          "Price": 125
+        }
+      },
+      {
+        "node_key": "Flight::F1675566",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Charleston",
+          "DestCityName": "Nashville",
+          "DepTime": "21:20",
+          "ArrTime": "21:37",
+          "Price": 147
+        }
+      },
+      {
+        "node_key": "Flight::F4008990",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-24",
+          "OriginCityName": "Charleston",
+          "DestCityName": "Nashville",
+          "DepTime": "21:09",
+          "ArrTime": "21:35",
+          "Price": 185
+        }
+      },
+      {
+        "node_key": "Accommodation::45736481.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45736481.0",
+          "name": "Dianna Browns Place | Historic District",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$645 per night",
+            "originalPrice": null,
+            "price": "$645",
+            "qualifier": "night",
+            "total": "$3,223 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  107 reviews",
+            "localizedLabel": "4.93 (107)",
+            "average": 4.93,
+            "reviewsCount": 107
+          },
+          "coordinates": {
+            "latitude": 32.778313,
+            "longitude": -79.93053
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::21025670.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "21025670.0",
+          "name": "Charming and historic cottage South of Broad",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$434 per night",
+            "originalPrice": null,
+            "price": "$434",
+            "qualifier": "night",
+            "total": "$2,168 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  193 reviews",
+            "localizedLabel": "4.94 (193)",
+            "average": 4.94,
+            "reviewsCount": 193
+          },
+          "coordinates": {
+            "latitude": 32.77427,
+            "longitude": -79.93723
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::41956727.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "41956727.0",
+          "name": "Private Waterfront Apartment Among The Grand Oaks",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$157 per night",
+            "originalPrice": null,
+            "price": "$157",
+            "qualifier": "night",
+            "total": "$783 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  414 reviews",
+            "localizedLabel": "5.0 (414)",
+            "average": 5,
+            "reviewsCount": 414
+          },
+          "coordinates": {
+            "latitude": 32.74655,
+            "longitude": -79.92175
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::36909032.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "36909032.0",
+          "name": "86 Church Street kitchen house",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No pets & No visitors",
+          "pricing": {
+            "label": "$632 per night",
+            "originalPrice": null,
+            "price": "$632",
+            "qualifier": "night",
+            "total": "$3,160 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  100 reviews",
+            "localizedLabel": "4.92 (100)",
+            "average": 4.92,
+            "reviewsCount": 100
+          },
+          "coordinates": {
+            "latitude": 32.77638,
+            "longitude": -79.928
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::4138620.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "4138620.0",
+          "name": "Historic City Charm | Private Modern Luxe",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$342 per night",
+            "originalPrice": null,
+            "price": "$342",
+            "qualifier": "night",
+            "total": "$1,706 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  372 reviews",
+            "localizedLabel": "4.98 (372)",
+            "average": 4.98,
+            "reviewsCount": 372
+          },
+          "coordinates": {
+            "latitude": 32.777254262175084,
+            "longitude": -79.93807749570061
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::20266997.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "20266997.0",
+          "name": "Historic Kitchen House - South of Broad (Charming)",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$704 per night",
+            "originalPrice": null,
+            "price": "$704",
+            "qualifier": "night",
+            "total": "$3,518 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  151 reviews",
+            "localizedLabel": "4.95 (151)",
+            "average": 4.95,
+            "reviewsCount": 151
+          },
+          "coordinates": {
+            "latitude": 32.77068,
+            "longitude": -79.93271
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::49274418.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "49274418.0",
+          "name": "The Backpacker",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "7",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$66 per night",
+            "originalPrice": null,
+            "price": "$66",
+            "qualifier": "night",
+            "total": "$327 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  340 reviews",
+            "localizedLabel": "4.94 (340)",
+            "average": 4.94,
+            "reviewsCount": 340
+          },
+          "coordinates": {
+            "latitude": 32.74493,
+            "longitude": -79.90757
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::39889237.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "39889237.0",
+          "name": "Charleston Gem with parking! Close to King St!",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$393 per night",
+            "originalPrice": null,
+            "price": "$393",
+            "qualifier": "night",
+            "total": "$1,963 total"
+          },
+          "rating": {
+            "label": "4.96 out of 5 average rating,  139 reviews",
+            "localizedLabel": "4.96 (139)",
+            "average": 4.96,
+            "reviewsCount": 139
+          },
+          "coordinates": {
+            "latitude": 32.77632,
+            "longitude": -79.93362
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9136246.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9136246.0",
+          "name": "Private Lowcountry Cottage",
+          "City": "Charleston",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$121 per night",
+            "originalPrice": null,
+            "price": "$121",
+            "qualifier": "night",
+            "total": "$603 total"
+          },
+          "rating": {
+            "label": "4.92 out of 5 average rating,  918 reviews",
+            "localizedLabel": "4.92 (918)",
+            "average": 4.92,
+            "reviewsCount": 918
+          },
+          "coordinates": {
+            "latitude": 32.7467,
+            "longitude": -79.90884
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16646561.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16646561.0",
+          "name": "Charleston's Most Charming Historic Inn",
+          "City": "Charleston",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$388 per night",
+            "originalPrice": null,
+            "price": "$388",
+            "qualifier": "night",
+            "total": "$1,936 total"
+          },
+          "rating": {
+            "label": "4.69 out of 5 average rating,  305 reviews",
+            "localizedLabel": "4.69 (305)",
+            "average": 4.69,
+            "reviewsCount": 305
+          },
+          "coordinates": {
+            "latitude": 32.77731,
+            "longitude": -79.93154
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::104632",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104632",
+          "name": "Fort Sumter National Monument",
+          "City": "Charleston",
+          "subtype": [
+            "Military Bases & Facilities",
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#16 of 284 things to do in Charleston",
+          "address": "340 Concord Street, Charleston, SC 29482-9748",
+          "description": "Learn all about this storied spot of the first clash between the Union and Confederate armies in the Civil War, in which the Union forces finally surrendered after a 34-hour bombardment by the Rebels."
+        }
+      },
+      {
+        "node_key": "Attraction::144260",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144260",
+          "name": "Charleston Waterfront Park",
+          "City": "Charleston",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Parks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#10 of 284 things to do in Charleston",
+          "address": "Concord Street Vendue Range, Charleston, SC 29401-2129",
+          "description": "Overlooking Charleston Harbor and Cooper Park on the eastern coast of the peninsula, this expansive waterfront green space is perfect for laidback strolls and picnics."
+        }
+      },
+      {
+        "node_key": "Attraction::573722",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "573722",
+          "name": "Arthur Ravenel Jr. Bridge",
+          "City": "Charleston",
+          "subtype": [
+            "Bridges"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#9 of 284 things to do in Charleston",
+          "address": "Charleston, SC 29403",
+          "description": "With its twin diamond peaks, this cable-stay bridge spans the Cooper River and connects downtown Charleston to Mount Pleasant. It's become an icon."
+        }
+      },
+      {
+        "node_key": "Attraction::144683",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144683",
+          "name": "Middleton Place",
+          "City": "Charleston",
+          "subtype": [
+            "Historic Sites",
+            "Points of Interest & Landmarks",
+            "Gardens"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#12 of 284 things to do in Charleston",
+          "address": "4300 Ashley River Road, Charleston, SC 29414-7206",
+          "description": "Middleton Place National Historic Landmark is home to America’s oldest and most important landscaped gardens. Began in 1741, the historic site today encompasses 110 acres including the Gardens, House Museum, Stableyards, and Eliza’s House. Together they tell the inclusive history of all who lived, worked, and died here. The stories of the Middleton family including two Founding Fathers and generations of enslaved people are interwoven throughout the property. Visitors have opportunities to ex..."
+        }
+      },
+      {
+        "node_key": "Attraction::2172814",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2172814",
+          "name": "Battery & White Point Gardens",
+          "City": "Charleston",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#17 of 284 things to do in Charleston",
+          "address": "2 Murray Blvd., Charleston, SC 29401",
+          "description": "Discover historical Civil War monuments nestled among the greenery in these lush gardens on Charleston's south coast. Bonus: There's spectacular views of Fort Sumter and Charleston Harbor."
+        }
+      },
+      {
+        "node_key": "Attraction::104625",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104625",
+          "name": "Nathaniel Russell House",
+          "City": "Charleston",
+          "subtype": [
+            "Historic Sites",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#11 of 284 things to do in Charleston",
+          "address": "51 Meeting St, Charleston, SC 29401-2536",
+          "description": "A National Historic Landmark, the Nathaniel Russell House Museum was completed in 1808 by merchant Nathaniel Russell. The home’s graceful, free-flying, three-story staircase is an architectural marvel and the elegant interiors with elaborate plasterwork, geometrically shaped rooms, formal gardens and collection of 18th-century decorative and fine art speak to the wealth of Charleston’s elite in the early days of the American Republic. Restored to its original splendor using forensic analysis ..."
+        }
+      },
+      {
+        "node_key": "Attraction::105765",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105765",
+          "name": "Drayton Hall",
+          "City": "Charleston",
+          "subtype": [
+            "Historic Sites",
+            "Architectural Buildings",
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#26 of 284 things to do in Charleston",
+          "address": "3380 Ashley River Rd, Charleston, SC 29414-7126",
+          "description": "Circa 1738, Drayton Hall is the oldest unrestored plantation house in America still open to the public."
+        }
+      },
+      {
+        "node_key": "Attraction::104623",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104623",
+          "name": "Aiken-Rhett House",
+          "City": "Charleston",
+          "subtype": [
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#14 of 284 things to do in Charleston",
+          "address": "48 Elizabeth St, Charleston, SC 29403-6250",
+          "description": "The Aiken-Rhett House (c. 1820) is one of the best-preserved townhouse complexes in the nation. Vastly expanded by Governor and Mrs. William Aiken, Jr. in the 1830s and again in the 1850s, the house and its outbuildings include a kitchen, the original quarters of the enslaved, carriage block and back lot. When Historic Charleston Foundation assumed ownership in 1995, we adopted a preserved-as-found preservation approach, meaning the structure and contents are left in an “as-found” state, incl..."
+        }
+      },
+      {
+        "node_key": "Attraction::104630",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104630",
+          "name": "Old Exchange & Provost Dungeon",
+          "City": "Charleston",
+          "subtype": [
+            "History Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#25 of 284 things to do in Charleston",
+          "address": "122 E Bay St, Charleston, SC 29401-2103",
+          "description": "History comes alive as Colonial dressed guides talk about Pirates, Patriots and Presidents! Explore the location where pirates were once held and view a section of the 1698 fortification that once protected the Walled City. Completed in 1771 as the New Exchange and Customs House, recognized today as South Carolina's most historic building. Where Patriots were imprisoned, the Constitution was ratified and George Washington was entertained."
+        }
+      },
+      {
+        "node_key": "Attraction::8036493",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8036493",
+          "name": "McLeod Plantation Historic Site",
+          "City": "Charleston",
+          "subtype": [
+            "Points of Interest & Landmarks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#13 of 284 things to do in Charleston",
+          "address": "325 Country Club Dr, Charleston, SC 29412-2215",
+          "description": "Established in 1851, McLeod Plantation has borne witness to some of the most significant periods of Charleston's - and our nations - history. Today McLeod Plantation is an important 37-acre Gullah/Geechee heritage site that has been carefully preserved in recognition of its cultural and historical significance. The grounds include a riverside outdoor pavilion, a sweeping oak allée, and the McLeod Oak, which is thought to be more than 600 years old. It is a place like no other, not frozen in t..."
+        }
+      },
+      {
+        "node_key": "Restaurant::1389309.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1389309.0",
+          "name": "Halls Chophouse Charleston",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "96.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "434 King St, Charleston, SC 29403-6230",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::14763409.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "14763409.0",
+          "name": "Chubby Fish",
+          "City": "Charleston",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "60.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "252 Coming St, Charleston, SC 29403-5433",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::476125.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "476125.0",
+          "name": "Poogan's Porch",
+          "City": "Charleston",
+          "mealTypes": [
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "72 Queen St, Charleston, SC 29401-2220",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 990,
+                  "openHours": "16:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::463410.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "463410.0",
+          "name": "Magnolias",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "International",
+            "Contemporary",
+            "Soups"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "185 E Bay St, Charleston, SC 29401-2126",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::566804.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "566804.0",
+          "name": "Fleet Landing Restaurant",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "186 Concord St Intersection of Concord and Cumberland, Charleston, SC 29401-2642",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 930,
+                  "closeHours": "15:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::436710.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "436710.0",
+          "name": "82 Queen",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Soups"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "82 Queen St, Charleston, SC 29401-2220",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::1943833.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "1943833.0",
+          "name": "Husk Restaurant",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "76 Queen St, Charleston, SC 29401-2220",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::436492.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "436492.0",
+          "name": "Hank's Seafood Restaurant",
+          "City": "Charleston",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "10 Hayne St, Charleston, SC 29401-3106",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::461777.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "461777.0",
+          "name": "Slightly North of Broad",
+          "City": "Charleston",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "96.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "192 E Bay St, Charleston, SC 29401-2123",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2362390.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2362390.0",
+          "name": "Eli's Table",
+          "City": "Charleston",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "60.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "129 Meeting St, Charleston, SC 29401-2217",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 540,
+                  "openHours": "09:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKb0b7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKb0b7",
+          "name": "Blind Pig Comedy",
+          "city": "Charleston",
+          "dateTitle": "04-11-2024",
+          "segmentName": "Music",
+          "genreName": "Alternative",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/blind-pig-comedy-blind-pig-tickets/13624604",
+            "availabilityStarts": "2024-09-25T22:10:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7C4p8",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7C4p8",
+          "name": "Brett Young",
+          "city": "Charleston",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7C4p8",
+            "availabilityStarts": "2024-08-24T15:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uZFE",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uZFE",
+          "name": "Central Michigan Chippewas Football vs. Bowling Green Falcons Football",
+          "city": "Charleston",
+          "dateTitle": "05-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Football",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uZFE",
+            "availabilityStarts": "2024-07-29T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7AKGZ",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7AKGZ",
+          "name": "Daniel O'Donnell",
+          "city": "Charleston",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "World",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7AKGZ",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7upog",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7upog",
+          "name": "Deer Tick",
+          "city": "Charleston",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7upog",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7CZo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7CZo0",
+          "name": "Doom Flamingo w/ Lespecial",
+          "city": "Charleston",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7CZo0",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A71K1v",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A71K1v",
+          "name": "Godspeed You! Black Emperor - Fall 2024 North American Tour",
+          "city": "Charleston",
+          "dateTitle": "07-11-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A71K1v",
+            "availabilityStarts": "2024-06-07T14:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A78yeK",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A78yeK",
+          "name": "Godspell",
+          "city": "Charleston",
+          "dateTitle": "02-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Theatre",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A78yeK",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A78yef",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A78yef",
+          "name": "Godspell",
+          "city": "Charleston",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Theatre",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A78yef",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uNPd",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uNPd",
+          "name": "Grand Rapids Griffins vs. Rockford IceHogs",
+          "city": "Charleston",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Hockey",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uNPd",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 81.34
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 88.9
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 96.17
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 106.69
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 112.04
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 112.63
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 131.38
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 151.03
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 155.82
+      },
+      {
+        "source": "Restaurant::461777.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 155.82
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 162.48
+      },
+      {
+        "source": "Restaurant::566804.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 162.48
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 168.53
+      },
+      {
+        "source": "Restaurant::463410.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 168.53
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 188.06
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 202.76
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 236.82
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 250.73
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 286.33
+      },
+      {
+        "source": "Restaurant::463410.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 286.33
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 297.9
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 303.87
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 328.28
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 338.97
+      },
+      {
+        "source": "Restaurant::461777.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 338.97
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 343.76
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 358.18
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 368.27
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 371.07
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 372.98
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 381.47
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 383.9
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 386.98
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 390.95
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 405.2
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 406.84
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 409.18
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 425.8
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 430.56
+      },
+      {
+        "source": "Restaurant::566804.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 430.56
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 431.18
+      },
+      {
+        "source": "Restaurant::1389309.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 431.18
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 433.09
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 447.7
+      },
+      {
+        "source": "Restaurant::2362390.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 447.7
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 449.38
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 451.7
+      },
+      {
+        "source": "Restaurant::436710.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 451.7
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 457.92
+      },
+      {
+        "source": "Restaurant::476125.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 457.92
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 459.97
+      },
+      {
+        "source": "Restaurant::1943833.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 459.97
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 462.48
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 471.73
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 480.08
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 480.65
+      },
+      {
+        "source": "Restaurant::2362390.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 480.65
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 482.53
+      },
+      {
+        "source": "Restaurant::476125.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 482.53
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 500.84
+      },
+      {
+        "source": "Restaurant::1943833.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 500.84
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 509.7
+      },
+      {
+        "source": "Restaurant::436492.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 509.7
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 517.52
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 524.65
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 528.57
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 528.64
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 529.2
+      },
+      {
+        "source": "Restaurant::436710.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 529.2
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 552.19
+      },
+      {
+        "source": "Restaurant::2362390.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 552.19
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 564.53
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 567.68
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 584.27
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 587.85
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 590.08
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 598.27
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 602.87
+      },
+      {
+        "source": "Restaurant::476125.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 602.87
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 610.26
+      },
+      {
+        "source": "Restaurant::436492.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 610.26
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 622.45
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 622.59
+      },
+      {
+        "source": "Restaurant::1943833.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 622.59
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 627.3
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 635.34
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 635.56
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 651.91
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 658.95
+      },
+      {
+        "source": "Restaurant::436710.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 658.95
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 685.92
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 692.03
+      },
+      {
+        "source": "Restaurant::463410.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 692.03
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 697.72
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 701.7
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 706.75
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 751.75
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 757.75
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 761.04
+      },
+      {
+        "source": "Restaurant::461777.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 761.04
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 763.32
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 799.36
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 810.4
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 819.21
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 822.38
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 823.0
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 857.87
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 865.09
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 865.6
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 866.44
+      },
+      {
+        "source": "Restaurant::436492.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 866.44
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 872.76
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::14763409.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 890.92
+      },
+      {
+        "source": "Restaurant::14763409.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 890.92
+      },
+      {
+        "source": "Attraction::104625",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 899.99
+      },
+      {
+        "source": "Restaurant::566804.0",
+        "target": "Attraction::104625",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 899.99
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 915.0
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 925.14
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 945.38
+      },
+      {
+        "source": "Restaurant::436710.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 945.38
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 952.48
+      },
+      {
+        "source": "Restaurant::476125.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 952.48
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 954.64
+      },
+      {
+        "source": "Restaurant::1943833.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 954.64
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 963.11
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 972.94
+      },
+      {
+        "source": "Restaurant::2362390.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 972.94
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1003.9
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1038.43
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Attraction::104630",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1042.22
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1078.87
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1092.58
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1094.84
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1095.9
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1107.05
+      },
+      {
+        "source": "Restaurant::463410.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1107.05
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1139.5
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1146.9
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1158.84
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1164.42
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1169.62
+      },
+      {
+        "source": "Restaurant::461777.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1169.62
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1178.16
+      },
+      {
+        "source": "Restaurant::436492.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1178.16
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1187.09
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1211.02
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1248.36
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1259.04
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1268.35
+      },
+      {
+        "source": "Restaurant::566804.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1268.35
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1273.62
+      },
+      {
+        "source": "Accommodation::20266997.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1296.23
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1323.92
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1331.3
+      },
+      {
+        "source": "Attraction::2172814",
+        "target": "Restaurant::436492.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1342.62
+      },
+      {
+        "source": "Restaurant::436492.0",
+        "target": "Attraction::2172814",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1342.62
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1377.02
+      },
+      {
+        "source": "Accommodation::39889237.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1410.09
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::461777.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1493.76
+      },
+      {
+        "source": "Restaurant::461777.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1493.76
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::2362390.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1497.89
+      },
+      {
+        "source": "Restaurant::2362390.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1497.89
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::1943833.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1515.94
+      },
+      {
+        "source": "Restaurant::1943833.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1515.94
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::476125.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1517.31
+      },
+      {
+        "source": "Restaurant::476125.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1517.31
+      },
+      {
+        "source": "Accommodation::45736481.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1518.26
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::463410.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1519.09
+      },
+      {
+        "source": "Restaurant::463410.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1519.09
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::436710.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1528.46
+      },
+      {
+        "source": "Restaurant::436710.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1528.46
+      },
+      {
+        "source": "Attraction::104623",
+        "target": "Restaurant::566804.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1547.9
+      },
+      {
+        "source": "Restaurant::566804.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1547.9
+      },
+      {
+        "source": "Attraction::144260",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1565.96
+      },
+      {
+        "source": "Restaurant::1389309.0",
+        "target": "Attraction::144260",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1565.96
+      },
+      {
+        "source": "Accommodation::21025670.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1581.32
+      },
+      {
+        "source": "Accommodation::16646561.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1604.54
+      },
+      {
+        "source": "Accommodation::4138620.0",
+        "target": "Attraction::104623",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1605.95
+      },
+      {
+        "source": "Accommodation::36909032.0",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1633.04
+      },
+      {
+        "source": "Attraction::104630",
+        "target": "Restaurant::1389309.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1649.9
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-22",
+        "2024-11-23",
+        "2024-11-24"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F3104070",
+          "dep_time": "09:57",
+          "arr_time": "12:22",
+          "local_activity_start_after_arrival_buffer": "12:52",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F0656100",
+          "dep_time": "09:40",
+          "arr_time": "11:47",
+          "local_activity_start_after_arrival_buffer": "12:17",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F3981643",
+          "dep_time": "09:38",
+          "arr_time": "11:50",
+          "local_activity_start_after_arrival_buffer": "12:20",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F0051870",
+          "dep_time": "10:05",
+          "arr_time": "12:20",
+          "local_activity_start_after_arrival_buffer": "12:50",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        },
+        {
+          "flight_node_key": "Flight::F2222186",
+          "dep_time": "10:35",
+          "arr_time": "13:09",
+          "local_activity_start_after_arrival_buffer": "13:39",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "guidance": "Arrival leaves enough time for a light attraction and dinner."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F2729735",
+          "dep_time": "20:58",
+          "arr_time": "21:31",
+          "latest_local_activity_finish_before_airport_buffer": "18:58",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0077687",
+          "dep_time": "21:03",
+          "arr_time": "21:40",
+          "latest_local_activity_finish_before_airport_buffer": "19:03",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F2252583",
+          "dep_time": "20:53",
+          "arr_time": "21:10",
+          "latest_local_activity_finish_before_airport_buffer": "18:53",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F1675566",
+          "dep_time": "21:20",
+          "arr_time": "21:37",
+          "latest_local_activity_finish_before_airport_buffer": "19:20",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F4008990",
+          "dep_time": "21:09",
+          "arr_time": "21:35",
+          "latest_local_activity_finish_before_airport_buffer": "19:09",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::2362390.0"
+        ],
+        "lunch": [
+          "Restaurant::1389309.0",
+          "Restaurant::463410.0",
+          "Restaurant::566804.0",
+          "Restaurant::436710.0",
+          "Restaurant::1943833.0",
+          "Restaurant::461777.0",
+          "Restaurant::2362390.0"
+        ],
+        "dinner": [
+          "Restaurant::1389309.0",
+          "Restaurant::14763409.0",
+          "Restaurant::476125.0",
+          "Restaurant::463410.0",
+          "Restaurant::566804.0",
+          "Restaurant::436710.0",
+          "Restaurant::1943833.0",
+          "Restaurant::436492.0",
+          "Restaurant::461777.0",
+          "Restaurant::2362390.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::104632",
+          "Attraction::144260",
+          "Attraction::573722",
+          "Attraction::144683",
+          "Attraction::2172814",
+          "Attraction::104625",
+          "Attraction::105765",
+          "Attraction::104623",
+          "Attraction::104630",
+          "Attraction::8036493"
+        ],
+        "afternoon_attraction": [
+          "Attraction::104632",
+          "Attraction::144260",
+          "Attraction::573722",
+          "Attraction::144683",
+          "Attraction::2172814",
+          "Attraction::104625",
+          "Attraction::105765",
+          "Attraction::104623",
+          "Attraction::104630",
+          "Attraction::8036493"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::2362390.0",
+            "name": "Eli's Table"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::1389309.0",
+            "name": "Halls Chophouse Charleston"
+          },
+          {
+            "node_key": "Restaurant::463410.0",
+            "name": "Magnolias"
+          },
+          {
+            "node_key": "Restaurant::566804.0",
+            "name": "Fleet Landing Restaurant"
+          },
+          {
+            "node_key": "Restaurant::436710.0",
+            "name": "82 Queen"
+          },
+          {
+            "node_key": "Restaurant::1943833.0",
+            "name": "Husk Restaurant"
+          },
+          {
+            "node_key": "Restaurant::461777.0",
+            "name": "Slightly North of Broad"
+          },
+          {
+            "node_key": "Restaurant::2362390.0",
+            "name": "Eli's Table"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::1389309.0",
+            "name": "Halls Chophouse Charleston"
+          },
+          {
+            "node_key": "Restaurant::14763409.0",
+            "name": "Chubby Fish"
+          },
+          {
+            "node_key": "Restaurant::476125.0",
+            "name": "Poogan's Porch"
+          },
+          {
+            "node_key": "Restaurant::463410.0",
+            "name": "Magnolias"
+          },
+          {
+            "node_key": "Restaurant::566804.0",
+            "name": "Fleet Landing Restaurant"
+          },
+          {
+            "node_key": "Restaurant::436710.0",
+            "name": "82 Queen"
+          },
+          {
+            "node_key": "Restaurant::1943833.0",
+            "name": "Husk Restaurant"
+          },
+          {
+            "node_key": "Restaurant::436492.0",
+            "name": "Hank's Seafood Restaurant"
+          },
+          {
+            "node_key": "Restaurant::461777.0",
+            "name": "Slightly North of Broad"
+          },
+          {
+            "node_key": "Restaurant::2362390.0",
+            "name": "Eli's Table"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-22",
+          "required_slots": {
+            "Flight::F3104070": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0656100": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F3981643": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F0051870": [
+              "afternoon_attraction",
+              "dinner"
+            ],
+            "Flight::F2222186": [
+              "afternoon_attraction",
+              "dinner"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-23",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-24",
+          "required_slots": {
+            "Flight::F2729735": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0077687": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F2252583": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F1675566": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F4008990": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-22": [],
+      "2024-11-23": [],
+      "2024-11-24": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

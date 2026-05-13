@@ -1,0 +1,101 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This itinerary optimizes the use of available flights, accommodations, and attractions while respecting the budget and travel constraints. It prioritizes local activities based on flight timings and ensures a balanced schedule.\",\n  \"stay_node_key\": \"Accommodation::54296688.0\",\n  \"outbound_flight_node_key\": \"Flight::F3907173\",\n  \"return_flight_node_key\": \"Flight::F2446541\",\n  \"estimated_total_cost\": 4230.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-19\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": null,\n        \"morning_attraction\": null,\n        \"lunch\": null,\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Outbound flight arrival is too late for local planning. Day will be light with focus on arrival and check-in.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-20\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::438517.0\",\n        \"morning_attraction\": \"Attraction::2369117\",\n        \"lunch\": \"Restaurant::14011986.0\",\n        \"afternoon_attraction\": \"Attraction::269519\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::515776.0\"\n      },\n      \"notes\": \"Full non-travel day with balanced activities. Breakfast, morning attraction, lunch, afternoon attraction, and dinner are scheduled.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-21\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::438517.0\",\n        \"morning_attraction\": \"Attraction::143008\",\n        \"lunch\": \"Restaurant::14011986.0\",\n        \"afternoon_attraction\": \"Attraction::23599395\",\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Return flight is late enough for a productive day. Breakfast, morning attraction, lunch, and afternoon attraction are scheduled. Dinner is skipped due to return flight timing.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This itinerary optimizes the use of available flights, accommodations, and attractions while respecting the budget and travel constraints. It prioritizes local activities based on flight timings and ensures a balanced schedule.",
+    "stay_node_key": "Accommodation::54296688.0",
+    "outbound_flight_node_key": "Flight::F3907173",
+    "return_flight_node_key": "Flight::F2446541",
+    "estimated_total_cost": 4230.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-19",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": null,
+          "lunch": null,
+          "afternoon_attraction": null,
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Outbound flight arrival is too late for local planning. Day will be light with focus on arrival and check-in."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-20",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::438517.0",
+          "morning_attraction": "Attraction::2369117",
+          "lunch": "Restaurant::14011986.0",
+          "afternoon_attraction": "Attraction::269519",
+          "event": null,
+          "dinner": "Restaurant::515776.0"
+        },
+        "notes": "Full non-travel day with balanced activities. Breakfast, morning attraction, lunch, afternoon attraction, and dinner are scheduled."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-21",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::438517.0",
+          "morning_attraction": "Attraction::143008",
+          "lunch": "Restaurant::14011986.0",
+          "afternoon_attraction": "Attraction::23599395",
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Return flight is late enough for a productive day. Breakfast, morning attraction, lunch, and afternoon attraction are scheduled. Dinner is skipped due to return flight timing."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 1927.25,
+      "selected_node_keys": [
+        "Accommodation::54296688.0",
+        "Flight::F3907173",
+        "Flight::F2446541",
+        "Restaurant::438517.0",
+        "Attraction::2369117",
+        "Restaurant::14011986.0",
+        "Attraction::269519",
+        "Restaurant::515776.0",
+        "Restaurant::438517.0",
+        "Attraction::143008",
+        "Restaurant::14011986.0",
+        "Attraction::23599395"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 2,
+        "lunch": 5,
+        "dinner": 9
+      },
+      "day_1_local_activity_start": "22:49",
+      "last_day_latest_local_activity_finish": "21:55",
+      "day_1_expected_slots": [],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_25.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_25_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_25_graph.cypher"
+  }
+}

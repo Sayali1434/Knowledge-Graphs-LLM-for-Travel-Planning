@@ -1,0 +1,112 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This plan optimizes for a balanced itinerary with minimal backtracking, adhering to the traveler's preference for relaxation and economy. It selects flights that allow for light activities post-arrival and before departure, ensuring a laidback experience.\",\n  \"stay_node_key\": \"Accommodation::45736481.0\",\n  \"outbound_flight_node_key\": \"Flight::F3981643\",\n  \"return_flight_node_key\": \"Flight::F2729735\",\n  \"estimated_total_cost\": 2250.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-22\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::2362390.0\",\n        \"morning_attraction\": \"Attraction::144260\",\n        \"lunch\": \"Restaurant::1389309.0\",\n        \"afternoon_attraction\": \"Attraction::104630\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::1389309.0\"\n      },\n      \"notes\": \"Selected Flight::F3981643 with an arrival time of 11:50, allowing for a light morning attraction and lunch before dinner.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-23\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::2362390.0\",\n        \"morning_attraction\": \"Attraction::104625\",\n        \"lunch\": \"Restaurant::463410.0\",\n        \"afternoon_attraction\": \"Attraction::104632\",\n        \"dinner\": \"Restaurant::463410.0\"\n      },\n      \"notes\": \"Full non-travel day with a balanced schedule of attractions and meals.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-24\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::2362390.0\",\n        \"morning_attraction\": \"Attraction::2172814\",\n        \"lunch\": \"Restaurant::463410.0\",\n        \"afternoon_attraction\": null,\n        \"event\": null,\n        \"dinner\": null\n      },\n      \"notes\": \"Return flight with an early departure, focusing on a morning-only plan with a light attraction and lunch.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This plan optimizes for a balanced itinerary with minimal backtracking, adhering to the traveler's preference for relaxation and economy. It selects flights that allow for light activities post-arrival and before departure, ensuring a laidback experience.",
+    "stay_node_key": "Accommodation::45736481.0",
+    "outbound_flight_node_key": "Flight::F3981643",
+    "return_flight_node_key": "Flight::F2729735",
+    "estimated_total_cost": 2250.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-22",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::2362390.0",
+          "morning_attraction": "Attraction::144260",
+          "lunch": "Restaurant::1389309.0",
+          "afternoon_attraction": "Attraction::104630",
+          "event": null,
+          "dinner": "Restaurant::1389309.0"
+        },
+        "notes": "Selected Flight::F3981643 with an arrival time of 11:50, allowing for a light morning attraction and lunch before dinner."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-23",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::2362390.0",
+          "morning_attraction": "Attraction::104625",
+          "lunch": "Restaurant::463410.0",
+          "afternoon_attraction": "Attraction::104632",
+          "dinner": "Restaurant::463410.0",
+          "event": null
+        },
+        "notes": "Full non-travel day with a balanced schedule of attractions and meals."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-24",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": "Restaurant::2362390.0",
+          "morning_attraction": "Attraction::2172814",
+          "lunch": "Restaurant::463410.0",
+          "afternoon_attraction": "Attraction::573722",
+          "event": null,
+          "dinner": null
+        },
+        "notes": "Return flight with an early departure, focusing on a morning-only plan with a light attraction and lunch."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 2197.0,
+      "selected_node_keys": [
+        "Accommodation::45736481.0",
+        "Flight::F3981643",
+        "Flight::F2729735",
+        "Restaurant::2362390.0",
+        "Attraction::144260",
+        "Restaurant::1389309.0",
+        "Attraction::104630",
+        "Restaurant::1389309.0",
+        "Restaurant::2362390.0",
+        "Attraction::104625",
+        "Restaurant::463410.0",
+        "Attraction::104632",
+        "Restaurant::463410.0",
+        "Restaurant::2362390.0",
+        "Attraction::2172814",
+        "Restaurant::463410.0",
+        "Attraction::573722"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 1,
+        "lunch": 7,
+        "dinner": 10
+      },
+      "day_1_local_activity_start": "12:20",
+      "last_day_latest_local_activity_finish": "18:58",
+      "day_1_expected_slots": [
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch",
+        "afternoon_attraction"
+      ],
+      "auto_repairs": [
+        "day_3.afternoon_attraction: filled missing required slot with Attraction::573722"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_33.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_33_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_33_graph.cypher"
+  }
+}
