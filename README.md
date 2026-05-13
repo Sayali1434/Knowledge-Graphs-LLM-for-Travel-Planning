@@ -1,4 +1,4 @@
-# Trip Path Knowledge Graph Planner
+# Trip Knowledge Graph Planner
 
 This repository builds and uses a travel knowledge graph for itinerary planning. It contains scripts for importing travel datasets into Neo4j, creating semantic and geographic relationships between travel entities, extracting query-specific mini knowledge graphs, and generating travel plans from those mini KGs.
 
