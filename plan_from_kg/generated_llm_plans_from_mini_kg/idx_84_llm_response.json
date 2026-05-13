@@ -1,0 +1,110 @@
+{
+  "raw_response": "```json\n{\n  \"plan_option_id\": \"option_001\",\n  \"reasoning_summary\": \"This itinerary optimizes the use of available flights, accommodations, and attractions while respecting the budget and time constraints. It ensures a balanced distribution of activities across the three days, with a focus on local attractions and dining options that fit the specified cuisine preferences.\",\n  \"stay_node_key\": \"Accommodation::53014890.0\",\n  \"outbound_flight_node_key\": \"Flight::F3734901\",\n  \"return_flight_node_key\": \"Flight::F1507880\",\n  \"estimated_total_cost\": 1310.0,\n  \"constraint_audit\": {\n    \"budget_ok\": true,\n    \"flight_dates_ok\": true,\n    \"temporal_windows_ok\": true,\n    \"all_nodes_from_mini_kg\": true,\n    \"slot_fill_targets_satisfied\": true\n  },\n  \"days\": [\n    {\n      \"day_number\": 1,\n      \"date\": \"2024-11-06\",\n      \"day_type\": \"outbound_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::538873.0\",\n        \"morning_attraction\": \"Attraction::567810\",\n        \"lunch\": \"Restaurant::2452074.0\",\n        \"afternoon_attraction\": \"Attraction::2708325\",\n        \"event\": null,\n        \"dinner\": \"Restaurant::14131181.0\"\n      },\n      \"notes\": \"The first day includes the outbound flight, followed by a light breakfast, a visit to the Fort Wayne Children's Zoo, lunch at Wu's Fine Chinese Cuisine, and an evening at Han Dynasty. This plan respects the early arrival and allows for a balanced day.\"\n    },\n    {\n      \"day_number\": 2,\n      \"date\": \"2024-11-07\",\n      \"day_type\": \"non_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::538873.0\",\n        \"morning_attraction\": \"Attraction::633395\",\n        \"lunch\": \"Restaurant::2452074.0\",\n        \"afternoon_attraction\": \"Attraction::2060769\",\n        \"dinner\": \"Restaurant::14131181.0\",\n        \"event\": null\n      },\n      \"notes\": \"A full day in Fort Wayne with a morning visit to the Foellinger-Freimann Botanical Conservatory, lunch at Biaggi's Ristorante Italiano, an afternoon at the Embassy Theatre, and dinner at Han Dynasty. This plan ensures a diverse and engaging experience.\"\n    },\n    {\n      \"day_number\": 3,\n      \"date\": \"2024-11-08\",\n      \"day_type\": \"return_travel_day\",\n      \"slots\": {\n        \"breakfast\": \"Restaurant::538873.0\",\n        \"morning_attraction\": \"Attraction::8657475\",\n        \"lunch\": \"Restaurant::2452074.0\",\n        \"afternoon_attraction\": \"Attraction::2292596\",\n        \"dinner\": null,\n        \"event\": null\n      },\n      \"notes\": \"The final day starts with a light breakfast, a visit to DeBrand Fine Chocolates, lunch at Wu's Fine Chinese Cuisine, and ends with a return flight. Dinner is skipped as it would interfere with the return flight schedule.\"\n    }\n  ]\n}\n```",
+  "llm_plan": {
+    "plan_option_id": "option_001",
+    "reasoning_summary": "This itinerary optimizes the use of available flights, accommodations, and attractions while respecting the budget and time constraints. It ensures a balanced distribution of activities across the three days, with a focus on local attractions and dining options that fit the specified cuisine preferences.",
+    "stay_node_key": "Accommodation::53014890.0",
+    "outbound_flight_node_key": "Flight::F3734901",
+    "return_flight_node_key": "Flight::F1507880",
+    "estimated_total_cost": 1310.0,
+    "constraint_audit": {
+      "budget_ok": true,
+      "flight_dates_ok": true,
+      "temporal_windows_ok": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_fill_targets_satisfied": true
+    },
+    "days": [
+      {
+        "day_number": 1,
+        "date": "2024-11-06",
+        "day_type": "outbound_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": "Attraction::567810",
+          "lunch": "Restaurant::2452074.0",
+          "afternoon_attraction": "Attraction::2708325",
+          "event": null,
+          "dinner": "Restaurant::14131181.0"
+        },
+        "notes": "The first day includes the outbound flight, followed by a light breakfast, a visit to the Fort Wayne Children's Zoo, lunch at Wu's Fine Chinese Cuisine, and an evening at Han Dynasty. This plan respects the early arrival and allows for a balanced day."
+      },
+      {
+        "day_number": 2,
+        "date": "2024-11-07",
+        "day_type": "non_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": "Attraction::633395",
+          "lunch": "Restaurant::2452074.0",
+          "afternoon_attraction": "Attraction::2060769",
+          "dinner": "Restaurant::14131181.0",
+          "event": null
+        },
+        "notes": "A full day in Fort Wayne with a morning visit to the Foellinger-Freimann Botanical Conservatory, lunch at Biaggi's Ristorante Italiano, an afternoon at the Embassy Theatre, and dinner at Han Dynasty. This plan ensures a diverse and engaging experience."
+      },
+      {
+        "day_number": 3,
+        "date": "2024-11-08",
+        "day_type": "return_travel_day",
+        "slots": {
+          "breakfast": null,
+          "morning_attraction": "Attraction::8657475",
+          "lunch": "Restaurant::2452074.0",
+          "afternoon_attraction": "Attraction::2292596",
+          "dinner": null,
+          "event": null
+        },
+        "notes": "The final day starts with a light breakfast, a visit to DeBrand Fine Chocolates, lunch at Wu's Fine Chinese Cuisine, and ends with a return flight. Dinner is skipped as it would interfere with the return flight schedule."
+      }
+    ]
+  },
+  "validation": {
+    "issues": [],
+    "diagnostics": {
+      "estimated_total_cost": 611.75,
+      "selected_node_keys": [
+        "Accommodation::53014890.0",
+        "Flight::F3734901",
+        "Flight::F1507880",
+        "Attraction::567810",
+        "Restaurant::2452074.0",
+        "Attraction::2708325",
+        "Restaurant::14131181.0",
+        "Attraction::633395",
+        "Restaurant::2452074.0",
+        "Attraction::2060769",
+        "Restaurant::14131181.0",
+        "Attraction::8657475",
+        "Restaurant::2452074.0",
+        "Attraction::2292596"
+      ],
+      "meal_slot_candidate_counts": {
+        "breakfast": 0,
+        "lunch": 10,
+        "dinner": 10
+      },
+      "day_1_local_activity_start": "13:36",
+      "last_day_latest_local_activity_finish": "15:08",
+      "day_1_expected_slots": [
+        "afternoon_attraction",
+        "dinner"
+      ],
+      "last_day_expected_slots": [
+        "breakfast",
+        "morning_attraction",
+        "lunch"
+      ],
+      "auto_repairs": [
+        "day_1.breakfast: set Restaurant::538873.0 to null because no compatible breakfast restaurant exists",
+        "day_2.breakfast: set Restaurant::538873.0 to null because no compatible breakfast restaurant exists",
+        "day_3.breakfast: set Restaurant::538873.0 to null because no compatible breakfast restaurant exists"
+      ]
+    }
+  },
+  "saved_outputs": {
+    "json": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_84.json",
+    "summary": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_84_summary.txt",
+    "cypher": "/scratch/sg/Sayali/build_kg_final_without_flight_in_kg/plan_from_kg/generated_llm_plans_from_mini_kg/idx_84_graph.cypher"
+  }
+}

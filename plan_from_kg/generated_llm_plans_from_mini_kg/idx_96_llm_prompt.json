@@ -1,0 +1,3189 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_96\", \"query_text\": \"Plan a 3-day trip for 1 person from Charlotte to Martha's Vineyard from November 22nd to November 24th, 2024, with a budget of $1,950.\", \"request\": {\"org\": \"Charlotte\", \"dest\": \"Martha's Vineyard\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-22', '2024-11-23', '2024-11-24']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 1950, \"query\": \"Plan a 3-day trip for 1 person from Charlotte to Martha's Vineyard from November 22nd to November 24th, 2024, with a budget of $1,950.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Adventure Seeker; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Mountains\"}, \"dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"preferences\": {\"traveler_type\": \"Adventure Seeker\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Economical Traveler\", \"location_preference\": \"Mountains\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F1701162\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-02\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"16:56\", \"ArrTime\": \"19:16\", \"Price\": 219}}, {\"node_key\": \"Flight::F1695041\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-02\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Martha's Vineyard\", \"DepTime\": \"15:45\", \"ArrTime\": \"17:52\", \"Price\": 277}}, {\"node_key\": \"Flight::F1701163\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-09\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"16:55\", \"ArrTime\": \"19:47\", \"Price\": 269}}, {\"node_key\": \"Flight::F2757772\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"16:44\", \"ArrTime\": \"19:12\", \"Price\": 223}}, {\"node_key\": \"Flight::F2748108\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-11\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Martha's Vineyard\", \"DepTime\": \"14:47\", \"ArrTime\": \"16:57\", \"Price\": 293}}, {\"node_key\": \"Flight::F1695043\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-16\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Martha's Vineyard\", \"DepTime\": \"18:55\", \"ArrTime\": \"20:46\", \"Price\": 303}}, {\"node_key\": \"Flight::F1701164\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-16\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"17:01\", \"ArrTime\": \"20:45\", \"Price\": 309}}, {\"node_key\": \"Flight::F2757773\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-18\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"16:56\", \"ArrTime\": \"19:21\", \"Price\": 181}}, {\"node_key\": \"Flight::F2748109\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-18\", \"OriginCityName\": \"Charlotte\", \"DestCityName\": \"Martha's Vineyard\", \"DepTime\": \"16:46\", \"ArrTime\": \"18:57\", \"Price\": 203}}, {\"node_key\": \"Flight::F1701165\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-23\", \"OriginCityName\": \"Martha's Vineyard\", \"DestCityName\": \"Charlotte\", \"DepTime\": \"16:53\", \"ArrTime\": \"19:36\", \"Price\": 149}}, {\"node_key\": \"Accommodation::44847785.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"44847785.0\", \"name\": \"Brand new gorgeous 2 bedroom guest house.\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"11\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$231 per night\", \"originalPrice\": null, \"price\": \"$231\", \"qualifier\": \"night\", \"total\": \"$1,154 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  213 reviews\", \"localizedLabel\": \"4.97 (213)\", \"average\": 4.97, \"reviewsCount\": 213}, \"coordinates\": {\"latitude\": 41.38621, \"longitude\": -70.54829}}}, {\"node_key\": \"Accommodation::9.71e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.71e+17\", \"name\": \"Beautiful Edgartown / Katama House\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$357 per night\", \"originalPrice\": null, \"price\": \"$357\", \"qualifier\": \"night\", \"total\": \"$1,781 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  13 reviews\", \"localizedLabel\": \"5.0 (13)\", \"average\": 5, \"reviewsCount\": 13}, \"coordinates\": {\"latitude\": 41.37971, \"longitude\": -70.5308}}}, {\"node_key\": \"Accommodation::7429436.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"7429436.0\", \"name\": \"Sunny Studio Apartment on Martha's Vineyard\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$265 per night\", \"originalPrice\": null, \"price\": \"$265\", \"qualifier\": \"night\", \"total\": \"$1,324 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  195 reviews\", \"localizedLabel\": \"4.97 (195)\", \"average\": 4.97, \"reviewsCount\": 195}, \"coordinates\": {\"latitude\": 41.42526, \"longitude\": -70.61652}}}, {\"node_key\": \"Accommodation::12774896.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"12774896.0\", \"name\": \"\\\"Ferry's Landing\\\" Private Bed & Bath w/Harbor View\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$131 per night\", \"originalPrice\": null, \"price\": \"$131\", \"qualifier\": \"night\", \"total\": \"$652 total\"}, \"rating\": {\"label\": \"4.84 out of 5 average rating,  311 reviews\", \"localizedLabel\": \"4.84 (311)\", \"average\": 4.84, \"reviewsCount\": 311}, \"coordinates\": {\"latitude\": 41.45435, \"longitude\": -70.60252}}}, {\"node_key\": \"Accommodation::9.36e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"9.36e+17\", \"name\": \"Vineyard Meadow Artist Studio\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"9\", \"house_rules\": \"No children under 10\", \"pricing\": {\"label\": \"$155 per night\", \"originalPrice\": null, \"price\": \"$155\", \"qualifier\": \"night\", \"total\": \"$773 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  50 reviews\", \"localizedLabel\": \"4.94 (50)\", \"average\": 4.94, \"reviewsCount\": 50}, \"coordinates\": {\"latitude\": 41.37043, \"longitude\": -70.62944}}}, {\"node_key\": \"Accommodation::50331869.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"50331869.0\", \"name\": \"Loft Guest Suite in Modern Barn House\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$199 per night\", \"originalPrice\": null, \"price\": \"$199\", \"qualifier\": \"night\", \"total\": \"$991 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  136 reviews\", \"localizedLabel\": \"4.95 (136)\", \"average\": 4.95, \"reviewsCount\": 136}, \"coordinates\": {\"latitude\": 41.38106, \"longitude\": -70.67891}}}, {\"node_key\": \"Accommodation::25350837.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"25350837.0\", \"name\": \"Lovely 2 BR Oak Bluffs Apartment\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$166 per night\", \"originalPrice\": null, \"price\": \"$166\", \"qualifier\": \"night\", \"total\": \"$828 total\"}, \"rating\": {\"label\": \"4.94 out of 5 average rating,  343 reviews\", \"localizedLabel\": \"4.94 (343)\", \"average\": 4.94, \"reviewsCount\": 343}, \"coordinates\": {\"latitude\": 41.44533, \"longitude\": -70.57462}}}, {\"node_key\": \"Accommodation::18988494.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"18988494.0\", \"name\": \"Not Your Great Aunt's Island Cottage\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$385 per night\", \"originalPrice\": null, \"price\": \"$385\", \"qualifier\": \"night\", \"total\": \"$1,924 total\"}, \"rating\": {\"label\": \"4.95 out of 5 average rating,  242 reviews\", \"localizedLabel\": \"4.95 (242)\", \"average\": 4.95, \"reviewsCount\": 242}, \"coordinates\": {\"latitude\": 41.45399, \"longitude\": -70.60675}}}, {\"node_key\": \"Accommodation::26496542.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"26496542.0\", \"name\": \"Quiet Hide Away\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"8\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$229 per night\", \"originalPrice\": null, \"price\": \"$229\", \"qualifier\": \"night\", \"total\": \"$1,141 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  163 reviews\", \"localizedLabel\": \"4.99 (163)\", \"average\": 4.99, \"reviewsCount\": 163}, \"coordinates\": {\"latitude\": 41.43404, \"longitude\": -70.57715}}}, {\"node_key\": \"Accommodation::38824350.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"38824350.0\", \"name\": \"Stylish retreat | walk to town | fire pit\", \"City\": \"Martha's Vineyard\", \"roomType\": \"entire_home\", \"max_occupancy\": \"6\", \"house_rules\": \"No smoking\", \"pricing\": {\"label\": \"$282 per night\", \"originalPrice\": null, \"price\": \"$282\", \"qualifier\": \"night\", \"total\": \"$1,410 total\"}, \"rating\": {\"label\": \"5.0 out of 5 average rating,  100 reviews\", \"localizedLabel\": \"5.0 (100)\", \"average\": 5, \"reviewsCount\": 100}, \"coordinates\": {\"latitude\": 41.38919, \"longitude\": -70.52811}}}, {\"node_key\": \"Attraction::3576313\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3576313\", \"name\": \"Martha's Vineyard Tours and Excursions\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Sightseeing Tours\", \"Day Trips\", \"Cultural Tours\", \"Historical & Heritage Tours\", \"Private Tours\"], \"subcategories\": [\"Tours\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 11 Tours in Vineyard Haven\", \"address\": \"Vineyard Haven, Martha's Vineyard, MA 02557\", \"description\": \"Martha's Vineyard Excursions offers 1, 2, 3, and 4 hour Martha's Vineyard private tours and 3 hour group tours at 10:30am and 1:45pm. We also offer customized Martha's Vineyard tours. Join us in comfortable, 15 passenger, air-conditioned vans with knowledgeable drivers. We can pick up in Oak Bluffs, Vineyard Haven, and Edgartown. We would love to show you our beautiful island.\"}}, {\"node_key\": \"Attraction::8042382\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"8042382\", \"name\": \"Pirate Adventures: Martha's Vineyard\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Boat Tours\", \"Private Tours\"], \"subcategories\": [\"Tours\", \"Boat Tours & Water Sports\", \"Outdoor Activities\"], \"visit_duration\": \"3.5\", \"rating\": \"5.0\", \"rankingString\": \"#1 of 13 Tours in Oak Bluffs\", \"address\": \"12 Circuit Avenue Ext., Oak Bluffs, Martha's Vineyard, MA 02557\", \"description\": \"Ahoy mateys! Join us as we set sail on a pirate's treasure hunt along the shores of beautiful and historic Oak Bluffs on the legendary island of Martha's Vineyard. On our custom pirate ship your kids will dress and talk like a pirate, assemble a treasure map, battle rival pirates with water cannons and hoist sunken treasure from the ocean floor! Once aboard the Sea Gypsy, we must work together to build a treasure map and determine our course. Along the way, we find a message in a bottle and d...\"}}, {\"node_key\": \"Attraction::3344037\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"3344037\", \"name\": \"Edgartown Tour Company\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Historical & Heritage Tours\", \"Walking Tours\", \"Private Tours\", \"Sightseeing Tours\", \"Day Trips\"], \"subcategories\": [\"Tours\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#3 of 17 Tours in Edgartown\", \"address\": \"Edgartown, Martha's Vineyard, MA\", \"description\": \"The Edgartown Tour Company offers daily activities for you and your group to explore the island of Martha's Vineyard. Choose between 3 different walking tours in Edgartown, or an all island tour customized and private for your group. Options range from 1-1.5 hour long for walking tours, and half, full or multi-day island tours that allow you to see and experience all that Martha's Vineyard has to offer!\"}}, {\"node_key\": \"Attraction::21021965\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"21021965\", \"name\": \"Martha's Vineyard Private Tours\", \"City\": \"Martha's Vineyard\", \"subtype\": [], \"subcategories\": [], \"rating\": \"5.0\", \"address\": \"Martha's Vineyard, MA\", \"description\": \"Explore Martha’s Vineyard with this private, half-day tour. Get picked up at the location of your choice and set out on a tour that includes Oak Bluffs, Edgartown, and the Aquinnah Cliffs. See popular landmarks including the Flying Horses Carousel and check out local architecture from Victorian cottages to Greek Revival houses. Maximize time in Martha’s Vineyard with this private, customizable tour.\"}}, {\"node_key\": \"Attraction::2618649\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"2618649\", \"name\": \"Martha’s Vineyard Tours and Transportation\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Sightseeing Tours\", \"Day Trips\", \"Cultural Tours\", \"Private Tours\", \"Historical & Heritage Tours\"], \"subcategories\": [\"Tours\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 13 Tours in Oak Bluffs\", \"address\": \"12 Beetle Swamp Rd, Oak Bluffs, Martha's Vineyard, MA 02539-7504\", \"description\": \"Martha’s Vineyard Full Island Tour–MINIMUM 8 PEOPLE This 3 hr. tour includes Oak Bluffs: A Victorian seaside resort built around the Methodist campgrounds and the 300+ Victorian gingerbread cottages and the Flying Horse Carousel. Edgartown: stately white Greek Revival houses, The Old Whaling Church, the Edgartown Harbor Lighthouse & the historic Harborview Hotel. Vineyard Haven: entry port to Martha’s Vineyard since the mid 1600’s & our year-round port. Drive through the scenic up-Island coun...\"}}, {\"node_key\": \"Attraction::12880480\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"12880480\", \"name\": \"3-Hour Martha's Vineyard Island Tour from Oak Bluffs\", \"City\": \"Martha's Vineyard\", \"subtype\": [], \"subcategories\": [], \"rating\": \"4.5\", \"address\": \"Martha's Vineyard, MA\", \"description\": \"Visit Martha's Vineyard highlights on a 3 hour, small group tour from the Statute across Oak Bluffs Ferry Terminal. You’ll make the most of your time on the island as you check out Oak Bluffs, Edgartown, and the Aquinnah Cliffs, learning stories about island history and cultures along the way. This Martha’s Vineyard tour is limited to 14 people for personal service from the local guide, and it includes two 15 minute breaks to explore Menemsha and the Aquinnah Cliffs.\"}}, {\"node_key\": \"Attraction::313388\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"313388\", \"name\": \"Martha's Vineyard Camp meeting Association (MVCMA)\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Neighborhoods\"], \"subcategories\": [\"Sights & Landmarks\", \"Other\"], \"visit_duration\": \"2.5\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 34 things to do in Oak Bluffs\", \"address\": \"80 Trinity Park, Oak Bluffs, Martha's Vineyard, MA 02557\"}}, {\"node_key\": \"Attraction::313361\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"313361\", \"name\": \"Aquinnah Cliffs\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Geologic Formations\", \"Points of Interest & Landmarks\", \"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\", \"Nature & Parks\"], \"visit_duration\": \"3.75\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 6 things to do in Aquinnah\", \"address\": \"State Rd., Aquinnah, Martha's Vineyard, MA\", \"description\": \"Martha’s Vineyard’s westernmost tip features multicolored clay cliffs and the two-century-old Gay Head Light. Park at the overlook and take in the commanding views of the clay bluffs and the surroundings, then visit the historic lighthouse nearby. Browse the gift shops to bring a few souvenirs home. Afterward, you can hike through the green shrubs to Moshup Beach, where clothing is optional. Just make sure you keep your shoes on, as the shore is quite rocky. Swing by in the morning—it’s easie...\"}}, {\"node_key\": \"Attraction::313391\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"313391\", \"name\": \"South Beach\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Beaches\"], \"subcategories\": [\"Nature & Parks\", \"Outdoor Activities\"], \"visit_duration\": \"4.25\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 27 things to do in Edgartown\", \"address\": \"Herring Creek Rd, Edgartown, Martha's Vineyard, MA 02539\"}}, {\"node_key\": \"Attraction::104906\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104906\", \"name\": \"Flying Horses Carousel\", \"City\": \"Martha's Vineyard\", \"subtype\": [\"Points of Interest & Landmarks\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#2 of 34 things to do in Oak Bluffs\", \"address\": \"33 Lake Avenue, Oak Bluffs, Martha's Vineyard, MA 02557\", \"description\": \"Try your luck at catching the brass ring and winning a free ride on the oldest working carousel in the U.S., which has been enchanting children and adults for over a hundred years. The 20 hand-carved horses on this official historic landmark have real horsehair manes and tails.\"}}, {\"node_key\": \"Restaurant::8497480.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"8497480.0\", \"name\": \"The Barn Bowl & Bistro\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Dinner\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\"], \"avg_cost\": \"30.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"13 Uncas Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::26529002.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"26529002.0\", \"name\": \"The Attic\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\", \"American\", \"Bar\", \"Seafood\", \"Pub\", \"Wine Bar\"], \"avg_cost\": \"25.0\", \"rating\": \"5.0\", \"address\": \"82 Main St 2nd Floor, Vineyard Haven, Martha's Vineyard, MA 02568\", \"hours\": {\"weekRanges\": [[{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 720, \"openHours\": \"12:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2244512.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2244512.0\", \"name\": \"Marthas Vineyard Chowder Company\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Lunch\", \"Dinner\"], \"cuisines\": [\"Seafood\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"9 Oak Bluffs Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::527270.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"527270.0\", \"name\": \"Offshore Ale Company\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Brew Pub\", \"Bar\", \"Pub\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"30 Kennebec Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::422496.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"422496.0\", \"name\": \"Linda Jean's Restaurant\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"25 Circuit Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2313776.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2313776.0\", \"name\": \"Lookout Tavern\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"American\", \"Bar\", \"Seafood\", \"Sushi\", \"Pub\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"8 Seaview Ave., Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2252417.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2252417.0\", \"name\": \"The Red Cat Kitchen\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Seafood\", \"Contemporary\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"6 Circuit Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[], [], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::422524.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"422524.0\", \"name\": \"Among The Flowers Cafe\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\", \"Cafe\"], \"avg_cost\": \"30.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"17 Mayhew Ln, Edgartown, Martha's Vineyard, MA 02539-8123\", \"hours\": {\"weekRanges\": [[{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}], [{\"open\": 480, \"openHours\": \"08:00\", \"close\": 840, \"closeHours\": \"14:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::422478.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"422478.0\", \"name\": \"l'etoile restaurant\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"French\", \"Contemporary\"], \"avg_cost\": \"48.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"22 N Water St, Edgartown, Martha's Vineyard, MA 02539-8144\", \"hours\": {\"weekRanges\": [[{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [], [], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::2284979.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"2284979.0\", \"name\": \"Biscuits\", \"City\": \"Martha's Vineyard\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"20.0\", \"rating\": \"4.5\", \"priceLevel\": \"$\", \"address\": \"26 Lake Ave, Oak Bluffs, Martha's Vineyard, MA 02557\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 960, \"closeHours\": \"16:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::vvG1zZb49KDdSL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1zZb49KDdSL\", \"name\": \"A Beautiful Noise\", \"city\": \"Salisbury\", \"dateTitle\": \"01-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Lecture/Seminar\", \"offer\": {\"offerUrl\": \"https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147\", \"availabilityStarts\": \"2024-10-21T19:04:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AKQ_4S\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AKQ_4S\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Burbank\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573\", \"availabilityStarts\": \"2024-06-21T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::rZ7HnEZ1AK4IF0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK4IF0\", \"name\": \"Aimee Mann, Jonathan Coulton\", \"city\": \"Long Beach\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Rock\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224\", \"availabilityStarts\": \"2024-06-11T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7k4a7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7k4a7\", \"name\": \"AJ Croce\", \"city\": \"Long Beach\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Other\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::rZ7HnEZ1AK48rf\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"rZ7HnEZ1AK48rf\", \"name\": \"ALEX WARREN -  “You'll Be Alright, Kid” Tour\", \"city\": \"San Diego\", \"dateTitle\": \"30-10-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794\", \"availabilityStarts\": \"2024-06-05T17:00:00Z\", \"price\": 0, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::G5e0Z9zHPmSo0\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHPmSo0\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJOSIk\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJOSIk\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJdNQm\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJdNQm\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"White Plains\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHJcdtx\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHJcdtx\", \"name\": \"All Star Stand Up Comedy\", \"city\": \"Hartford\", \"dateTitle\": \"29-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed\", \"availabilityStarts\": \"2023-12-01T08:47:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::G5e0Z9zHEVdsi\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"G5e0Z9zHEVdsi\", \"name\": \"All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1\", \"city\": \"Newburgh\", \"dateTitle\": \"28-10-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...\", \"availabilityStarts\": \"2023-12-01T11:50:00Z\", \"price\": null, \"priceCurrency\": null}}}], \"edges\": [{\"source\": \"Attraction::104906\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 28.68}, {\"source\": \"Restaurant::2244512.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 28.68}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 55.04}, {\"source\": \"Restaurant::2252417.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 55.04}, {\"source\": \"Attraction::3344037\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 62.06}, {\"source\": \"Restaurant::422478.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 62.06}, {\"source\": \"Attraction::3344037\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 62.66}, {\"source\": \"Restaurant::422524.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 62.66}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 78.55}, {\"source\": \"Restaurant::2284979.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 78.55}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 91.88}, {\"source\": \"Restaurant::2284979.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 91.88}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 98.98}, {\"source\": \"Restaurant::2313776.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 98.98}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 105.27}, {\"source\": \"Restaurant::2244512.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 105.27}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 108.42}, {\"source\": \"Restaurant::2313776.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 108.42}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 123.09}, {\"source\": \"Restaurant::2244512.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 123.09}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 136.48}, {\"source\": \"Restaurant::2313776.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 136.48}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 140.63}, {\"source\": \"Restaurant::527270.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 140.63}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 144.45}, {\"source\": \"Restaurant::2252417.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 144.45}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 157.62}, {\"source\": \"Restaurant::422496.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 157.62}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 160.92}, {\"source\": \"Restaurant::2252417.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 160.92}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 188.46}, {\"source\": \"Restaurant::2284979.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 188.46}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 198.55}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 206.87}, {\"source\": \"Restaurant::422496.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 206.87}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 221.12}, {\"source\": \"Restaurant::527270.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 221.12}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 232.55}, {\"source\": \"Restaurant::527270.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 232.55}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 259.23}, {\"source\": \"Restaurant::422496.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 259.23}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 266.87}, {\"source\": \"Restaurant::422496.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 266.87}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 293.56}, {\"source\": \"Restaurant::8497480.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 293.56}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 319.87}, {\"source\": \"Restaurant::527270.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 319.87}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 359.03}, {\"source\": \"Restaurant::2284979.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 359.03}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 365.71}, {\"source\": \"Restaurant::2252417.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 365.71}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 378.16}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 422.08}, {\"source\": \"Restaurant::2244512.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 422.08}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 513.61}, {\"source\": \"Restaurant::2313776.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 513.61}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 652.88}, {\"source\": \"Restaurant::8497480.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 652.88}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 685.0}, {\"source\": \"Restaurant::8497480.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 685.0}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 742.05}, {\"source\": \"Restaurant::8497480.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 742.05}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1263.42}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1302.32}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1326.06}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1380.93}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1562.82}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1827.66}, {\"source\": \"Accommodation::9.71e+17\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1841.99}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1871.84}, {\"source\": \"Accommodation::9.71e+17\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1894.8}, {\"source\": \"Accommodation::9.71e+17\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1901.24}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1919.9}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1928.22}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1962.24}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1982.15}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1984.42}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2074.45}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2086.84}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2436.88}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2661.59}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2685.26}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2930.19}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2957.92}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2968.89}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3011.78}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3031.4}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3032.52}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3039.23}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3087.46}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3096.82}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3099.87}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3178.92}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3190.87}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3271.19}, {\"source\": \"Accommodation::9.71e+17\", \"target\": \"Attraction::313391\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3316.2}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3473.19}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3481.27}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3528.53}, {\"source\": \"Restaurant::26529002.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3528.53}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3602.37}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3697.06}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3702.11}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3721.17}, {\"source\": \"Attraction::8042382\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3738.62}, {\"source\": \"Restaurant::26529002.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3738.62}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3763.72}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3764.66}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3784.03}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3799.72}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3826.5}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3830.82}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3838.26}, {\"source\": \"Attraction::104906\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3840.75}, {\"source\": \"Restaurant::26529002.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3840.75}, {\"source\": \"Accommodation::12774896.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3906.93}, {\"source\": \"Attraction::2618649\", \"target\": \"Restaurant::26529002.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3946.24}, {\"source\": \"Restaurant::26529002.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3946.24}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4051.35}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4056.9}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4075.87}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4118.31}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4118.87}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4138.77}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4154.42}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4193.04}, {\"source\": \"Accommodation::18988494.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4261.68}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::313391\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4351.34}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::313391\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4366.29}, {\"source\": \"Attraction::313391\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4612.87}, {\"source\": \"Restaurant::422524.0\", \"target\": \"Attraction::313391\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4612.87}, {\"source\": \"Attraction::313391\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4649.85}, {\"source\": \"Restaurant::422478.0\", \"target\": \"Attraction::313391\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4649.85}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5525.69}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 5689.87}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 5956.74}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6006.0}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6038.82}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6054.37}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6068.48}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6105.39}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6106.65}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 6191.0}, {\"source\": \"Accommodation::7429436.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 6215.0}, {\"source\": \"Accommodation::50331869.0\", \"target\": \"Attraction::313361\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7059.55}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7286.77}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7293.59}, {\"source\": \"Accommodation::26496542.0\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7337.36}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7415.35}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7522.37}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7706.14}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7796.8}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7813.62}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7832.07}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7835.74}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::422496.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7868.29}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7907.71}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::2252417.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7927.15}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7948.79}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7948.92}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::104906\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7959.55}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7967.97}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7972.95}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::2284979.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7976.26}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::2618649\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 7981.0}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::2244512.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 7986.37}, {\"source\": \"Attraction::3344037\", \"target\": \"Restaurant::8497480.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8038.65}, {\"source\": \"Restaurant::8497480.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8038.65}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8038.73}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8046.98}, {\"source\": \"Accommodation::44847785.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8050.71}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Restaurant::2313776.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8051.04}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8061.91}, {\"source\": \"Accommodation::38824350.0\", \"target\": \"Attraction::8042382\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 8068.14}, {\"source\": \"Accommodation::25350837.0\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 8099.38}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::422478.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8268.91}, {\"source\": \"Restaurant::422478.0\", \"target\": \"Attraction::313388\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8268.91}, {\"source\": \"Attraction::3344037\", \"target\": \"Restaurant::527270.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8287.41}, {\"source\": \"Restaurant::527270.0\", \"target\": \"Attraction::3344037\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 8287.41}, {\"source\": \"Attraction::313388\", \"target\": \"Restaurant::422524.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 8322.3}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-22\", \"2024-11-23\", \"2024-11-24\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1695041\", \"dep_time\": \"15:45\", \"arr_time\": \"17:52\", \"local_activity_start_after_arrival_buffer\": \"18:22\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2748108\", \"dep_time\": \"14:47\", \"arr_time\": \"16:57\", \"local_activity_start_after_arrival_buffer\": \"17:27\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [\"dinner\"], \"guidance\": \"Arrival is late, but dinner should still be scheduled.\"}, {\"flight_node_key\": \"Flight::F1695043\", \"dep_time\": \"18:55\", \"arr_time\": \"20:46\", \"local_activity_start_after_arrival_buffer\": \"21:16\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2748109\", \"dep_time\": \"16:46\", \"arr_time\": \"18:57\", \"local_activity_start_after_arrival_buffer\": \"19:27\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F1701162\", \"dep_time\": \"16:56\", \"arr_time\": \"19:16\", \"latest_local_activity_finish_before_airport_buffer\": \"14:56\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1701163\", \"dep_time\": \"16:55\", \"arr_time\": \"19:47\", \"latest_local_activity_finish_before_airport_buffer\": \"14:55\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F2757772\", \"dep_time\": \"16:44\", \"arr_time\": \"19:12\", \"latest_local_activity_finish_before_airport_buffer\": \"14:44\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1701164\", \"dep_time\": \"17:01\", \"arr_time\": \"20:45\", \"latest_local_activity_finish_before_airport_buffer\": \"15:01\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F2757773\", \"dep_time\": \"16:56\", \"arr_time\": \"19:21\", \"latest_local_activity_finish_before_airport_buffer\": \"14:56\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}, {\"flight_node_key\": \"Flight::F1701165\", \"dep_time\": \"16:53\", \"arr_time\": \"19:36\", \"latest_local_activity_finish_before_airport_buffer\": \"14:53\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"guidance\": \"Departure allows breakfast, one attraction, and lunch.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::422496.0\", \"Restaurant::422524.0\", \"Restaurant::2284979.0\"], \"lunch\": [\"Restaurant::26529002.0\", \"Restaurant::2244512.0\", \"Restaurant::527270.0\", \"Restaurant::422496.0\", \"Restaurant::2313776.0\", \"Restaurant::422524.0\", \"Restaurant::2284979.0\"], \"dinner\": [\"Restaurant::8497480.0\", \"Restaurant::26529002.0\", \"Restaurant::2244512.0\", \"Restaurant::527270.0\", \"Restaurant::2313776.0\", \"Restaurant::2252417.0\", \"Restaurant::422478.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::3576313\", \"Attraction::8042382\", \"Attraction::3344037\", \"Attraction::21021965\", \"Attraction::2618649\", \"Attraction::12880480\", \"Attraction::313388\", \"Attraction::313361\", \"Attraction::313391\", \"Attraction::104906\"], \"afternoon_attraction\": [\"Attraction::3576313\", \"Attraction::8042382\", \"Attraction::3344037\", \"Attraction::21021965\", \"Attraction::2618649\", \"Attraction::12880480\", \"Attraction::313388\", \"Attraction::313361\", \"Attraction::313391\", \"Attraction::104906\"]}, \"event_slots_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::422496.0\", \"name\": \"Linda Jean's Restaurant\"}, {\"node_key\": \"Restaurant::422524.0\", \"name\": \"Among The Flowers Cafe\"}, {\"node_key\": \"Restaurant::2284979.0\", \"name\": \"Biscuits\"}], \"lunch\": [{\"node_key\": \"Restaurant::26529002.0\", \"name\": \"The Attic\"}, {\"node_key\": \"Restaurant::2244512.0\", \"name\": \"Marthas Vineyard Chowder Company\"}, {\"node_key\": \"Restaurant::527270.0\", \"name\": \"Offshore Ale Company\"}, {\"node_key\": \"Restaurant::422496.0\", \"name\": \"Linda Jean's Restaurant\"}, {\"node_key\": \"Restaurant::2313776.0\", \"name\": \"Lookout Tavern\"}, {\"node_key\": \"Restaurant::422524.0\", \"name\": \"Among The Flowers Cafe\"}, {\"node_key\": \"Restaurant::2284979.0\", \"name\": \"Biscuits\"}], \"dinner\": [{\"node_key\": \"Restaurant::8497480.0\", \"name\": \"The Barn Bowl & Bistro\"}, {\"node_key\": \"Restaurant::26529002.0\", \"name\": \"The Attic\"}, {\"node_key\": \"Restaurant::2244512.0\", \"name\": \"Marthas Vineyard Chowder Company\"}, {\"node_key\": \"Restaurant::527270.0\", \"name\": \"Offshore Ale Company\"}, {\"node_key\": \"Restaurant::2313776.0\", \"name\": \"Lookout Tavern\"}, {\"node_key\": \"Restaurant::2252417.0\", \"name\": \"The Red Cat Kitchen\"}, {\"node_key\": \"Restaurant::422478.0\", \"name\": \"l'etoile restaurant\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-22\", \"required_slots\": {\"Flight::F1695041\": [], \"Flight::F2748108\": [\"dinner\"], \"Flight::F1695043\": [], \"Flight::F2748109\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-23\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-24\", \"required_slots\": {\"Flight::F1701162\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1701163\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F2757772\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1701164\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F2757773\": [\"breakfast\", \"morning_attraction\", \"lunch\"], \"Flight::F1701165\": [\"breakfast\", \"morning_attraction\", \"lunch\"]}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-22\": [], \"2024-11-23\": [], \"2024-11-24\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_96",
+    "query_text": "Plan a 3-day trip for 1 person from Charlotte to Martha's Vineyard from November 22nd to November 24th, 2024, with a budget of $1,950.",
+    "request": {
+      "org": "Charlotte",
+      "dest": "Martha's Vineyard",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-22', '2024-11-23', '2024-11-24']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 1950,
+      "query": "Plan a 3-day trip for 1 person from Charlotte to Martha's Vineyard from November 22nd to November 24th, 2024, with a budget of $1,950.",
+      "level": "easy",
+      "persona": "Traveler Type: Adventure Seeker; Purpose of Travel: Nature; Spending Preference: Economical Traveler; Location Preference: Mountains"
+    },
+    "dates": [
+      "2024-11-22",
+      "2024-11-23",
+      "2024-11-24"
+    ],
+    "preferences": {
+      "traveler_type": "Adventure Seeker",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Economical Traveler",
+      "location_preference": "Mountains"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1701162",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-02",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "16:56",
+          "ArrTime": "19:16",
+          "Price": 219
+        }
+      },
+      {
+        "node_key": "Flight::F1695041",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-02",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Martha's Vineyard",
+          "DepTime": "15:45",
+          "ArrTime": "17:52",
+          "Price": 277
+        }
+      },
+      {
+        "node_key": "Flight::F1701163",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-09",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "16:55",
+          "ArrTime": "19:47",
+          "Price": 269
+        }
+      },
+      {
+        "node_key": "Flight::F2757772",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "16:44",
+          "ArrTime": "19:12",
+          "Price": 223
+        }
+      },
+      {
+        "node_key": "Flight::F2748108",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-11",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Martha's Vineyard",
+          "DepTime": "14:47",
+          "ArrTime": "16:57",
+          "Price": 293
+        }
+      },
+      {
+        "node_key": "Flight::F1695043",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-16",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Martha's Vineyard",
+          "DepTime": "18:55",
+          "ArrTime": "20:46",
+          "Price": 303
+        }
+      },
+      {
+        "node_key": "Flight::F1701164",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-16",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "17:01",
+          "ArrTime": "20:45",
+          "Price": 309
+        }
+      },
+      {
+        "node_key": "Flight::F2757773",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-18",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "16:56",
+          "ArrTime": "19:21",
+          "Price": 181
+        }
+      },
+      {
+        "node_key": "Flight::F2748109",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-18",
+          "OriginCityName": "Charlotte",
+          "DestCityName": "Martha's Vineyard",
+          "DepTime": "16:46",
+          "ArrTime": "18:57",
+          "Price": 203
+        }
+      },
+      {
+        "node_key": "Flight::F1701165",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-23",
+          "OriginCityName": "Martha's Vineyard",
+          "DestCityName": "Charlotte",
+          "DepTime": "16:53",
+          "ArrTime": "19:36",
+          "Price": 149
+        }
+      },
+      {
+        "node_key": "Accommodation::44847785.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "44847785.0",
+          "name": "Brand new gorgeous 2 bedroom guest house.",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "11",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$231 per night",
+            "originalPrice": null,
+            "price": "$231",
+            "qualifier": "night",
+            "total": "$1,154 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  213 reviews",
+            "localizedLabel": "4.97 (213)",
+            "average": 4.97,
+            "reviewsCount": 213
+          },
+          "coordinates": {
+            "latitude": 41.38621,
+            "longitude": -70.54829
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.71e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.71e+17",
+          "name": "Beautiful Edgartown / Katama House",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$357 per night",
+            "originalPrice": null,
+            "price": "$357",
+            "qualifier": "night",
+            "total": "$1,781 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  13 reviews",
+            "localizedLabel": "5.0 (13)",
+            "average": 5,
+            "reviewsCount": 13
+          },
+          "coordinates": {
+            "latitude": 41.37971,
+            "longitude": -70.5308
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::7429436.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "7429436.0",
+          "name": "Sunny Studio Apartment on Martha's Vineyard",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$265 per night",
+            "originalPrice": null,
+            "price": "$265",
+            "qualifier": "night",
+            "total": "$1,324 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  195 reviews",
+            "localizedLabel": "4.97 (195)",
+            "average": 4.97,
+            "reviewsCount": 195
+          },
+          "coordinates": {
+            "latitude": 41.42526,
+            "longitude": -70.61652
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::12774896.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "12774896.0",
+          "name": "\"Ferry's Landing\" Private Bed & Bath w/Harbor View",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$131 per night",
+            "originalPrice": null,
+            "price": "$131",
+            "qualifier": "night",
+            "total": "$652 total"
+          },
+          "rating": {
+            "label": "4.84 out of 5 average rating,  311 reviews",
+            "localizedLabel": "4.84 (311)",
+            "average": 4.84,
+            "reviewsCount": 311
+          },
+          "coordinates": {
+            "latitude": 41.45435,
+            "longitude": -70.60252
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::9.36e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "9.36e+17",
+          "name": "Vineyard Meadow Artist Studio",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "9",
+          "house_rules": "No children under 10",
+          "pricing": {
+            "label": "$155 per night",
+            "originalPrice": null,
+            "price": "$155",
+            "qualifier": "night",
+            "total": "$773 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  50 reviews",
+            "localizedLabel": "4.94 (50)",
+            "average": 4.94,
+            "reviewsCount": 50
+          },
+          "coordinates": {
+            "latitude": 41.37043,
+            "longitude": -70.62944
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::50331869.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "50331869.0",
+          "name": "Loft Guest Suite in Modern Barn House",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$199 per night",
+            "originalPrice": null,
+            "price": "$199",
+            "qualifier": "night",
+            "total": "$991 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  136 reviews",
+            "localizedLabel": "4.95 (136)",
+            "average": 4.95,
+            "reviewsCount": 136
+          },
+          "coordinates": {
+            "latitude": 41.38106,
+            "longitude": -70.67891
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::25350837.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "25350837.0",
+          "name": "Lovely 2 BR Oak Bluffs Apartment",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$166 per night",
+            "originalPrice": null,
+            "price": "$166",
+            "qualifier": "night",
+            "total": "$828 total"
+          },
+          "rating": {
+            "label": "4.94 out of 5 average rating,  343 reviews",
+            "localizedLabel": "4.94 (343)",
+            "average": 4.94,
+            "reviewsCount": 343
+          },
+          "coordinates": {
+            "latitude": 41.44533,
+            "longitude": -70.57462
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::18988494.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "18988494.0",
+          "name": "Not Your Great Aunt's Island Cottage",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$385 per night",
+            "originalPrice": null,
+            "price": "$385",
+            "qualifier": "night",
+            "total": "$1,924 total"
+          },
+          "rating": {
+            "label": "4.95 out of 5 average rating,  242 reviews",
+            "localizedLabel": "4.95 (242)",
+            "average": 4.95,
+            "reviewsCount": 242
+          },
+          "coordinates": {
+            "latitude": 41.45399,
+            "longitude": -70.60675
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::26496542.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "26496542.0",
+          "name": "Quiet Hide Away",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "8",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$229 per night",
+            "originalPrice": null,
+            "price": "$229",
+            "qualifier": "night",
+            "total": "$1,141 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  163 reviews",
+            "localizedLabel": "4.99 (163)",
+            "average": 4.99,
+            "reviewsCount": 163
+          },
+          "coordinates": {
+            "latitude": 41.43404,
+            "longitude": -70.57715
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::38824350.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "38824350.0",
+          "name": "Stylish retreat | walk to town | fire pit",
+          "City": "Martha's Vineyard",
+          "roomType": "entire_home",
+          "max_occupancy": "6",
+          "house_rules": "No smoking",
+          "pricing": {
+            "label": "$282 per night",
+            "originalPrice": null,
+            "price": "$282",
+            "qualifier": "night",
+            "total": "$1,410 total"
+          },
+          "rating": {
+            "label": "5.0 out of 5 average rating,  100 reviews",
+            "localizedLabel": "5.0 (100)",
+            "average": 5,
+            "reviewsCount": 100
+          },
+          "coordinates": {
+            "latitude": 41.38919,
+            "longitude": -70.52811
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::3576313",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3576313",
+          "name": "Martha's Vineyard Tours and Excursions",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Sightseeing Tours",
+            "Day Trips",
+            "Cultural Tours",
+            "Historical & Heritage Tours",
+            "Private Tours"
+          ],
+          "subcategories": [
+            "Tours"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#2 of 11 Tours in Vineyard Haven",
+          "address": "Vineyard Haven, Martha's Vineyard, MA 02557",
+          "description": "Martha's Vineyard Excursions offers 1, 2, 3, and 4 hour Martha's Vineyard private tours and 3 hour group tours at 10:30am and 1:45pm. We also offer customized Martha's Vineyard tours. Join us in comfortable, 15 passenger, air-conditioned vans with knowledgeable drivers. We can pick up in Oak Bluffs, Vineyard Haven, and Edgartown. We would love to show you our beautiful island."
+        }
+      },
+      {
+        "node_key": "Attraction::8042382",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "8042382",
+          "name": "Pirate Adventures: Martha's Vineyard",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Boat Tours",
+            "Private Tours"
+          ],
+          "subcategories": [
+            "Tours",
+            "Boat Tours & Water Sports",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "3.5",
+          "rating": "5.0",
+          "rankingString": "#1 of 13 Tours in Oak Bluffs",
+          "address": "12 Circuit Avenue Ext., Oak Bluffs, Martha's Vineyard, MA 02557",
+          "description": "Ahoy mateys! Join us as we set sail on a pirate's treasure hunt along the shores of beautiful and historic Oak Bluffs on the legendary island of Martha's Vineyard. On our custom pirate ship your kids will dress and talk like a pirate, assemble a treasure map, battle rival pirates with water cannons and hoist sunken treasure from the ocean floor! Once aboard the Sea Gypsy, we must work together to build a treasure map and determine our course. Along the way, we find a message in a bottle and d..."
+        }
+      },
+      {
+        "node_key": "Attraction::3344037",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "3344037",
+          "name": "Edgartown Tour Company",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Historical & Heritage Tours",
+            "Walking Tours",
+            "Private Tours",
+            "Sightseeing Tours",
+            "Day Trips"
+          ],
+          "subcategories": [
+            "Tours"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#3 of 17 Tours in Edgartown",
+          "address": "Edgartown, Martha's Vineyard, MA",
+          "description": "The Edgartown Tour Company offers daily activities for you and your group to explore the island of Martha's Vineyard. Choose between 3 different walking tours in Edgartown, or an all island tour customized and private for your group. Options range from 1-1.5 hour long for walking tours, and half, full or multi-day island tours that allow you to see and experience all that Martha's Vineyard has to offer!"
+        }
+      },
+      {
+        "node_key": "Attraction::21021965",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "21021965",
+          "name": "Martha's Vineyard Private Tours",
+          "City": "Martha's Vineyard",
+          "subtype": [],
+          "subcategories": [],
+          "rating": "5.0",
+          "address": "Martha's Vineyard, MA",
+          "description": "Explore Martha’s Vineyard with this private, half-day tour. Get picked up at the location of your choice and set out on a tour that includes Oak Bluffs, Edgartown, and the Aquinnah Cliffs. See popular landmarks including the Flying Horses Carousel and check out local architecture from Victorian cottages to Greek Revival houses. Maximize time in Martha’s Vineyard with this private, customizable tour."
+        }
+      },
+      {
+        "node_key": "Attraction::2618649",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "2618649",
+          "name": "Martha’s Vineyard Tours and Transportation",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Sightseeing Tours",
+            "Day Trips",
+            "Cultural Tours",
+            "Private Tours",
+            "Historical & Heritage Tours"
+          ],
+          "subcategories": [
+            "Tours"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 13 Tours in Oak Bluffs",
+          "address": "12 Beetle Swamp Rd, Oak Bluffs, Martha's Vineyard, MA 02539-7504",
+          "description": "Martha’s Vineyard Full Island Tour–MINIMUM 8 PEOPLE This 3 hr. tour includes Oak Bluffs: A Victorian seaside resort built around the Methodist campgrounds and the 300+ Victorian gingerbread cottages and the Flying Horse Carousel. Edgartown: stately white Greek Revival houses, The Old Whaling Church, the Edgartown Harbor Lighthouse & the historic Harborview Hotel. Vineyard Haven: entry port to Martha’s Vineyard since the mid 1600’s & our year-round port. Drive through the scenic up-Island coun..."
+        }
+      },
+      {
+        "node_key": "Attraction::12880480",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "12880480",
+          "name": "3-Hour Martha's Vineyard Island Tour from Oak Bluffs",
+          "City": "Martha's Vineyard",
+          "subtype": [],
+          "subcategories": [],
+          "rating": "4.5",
+          "address": "Martha's Vineyard, MA",
+          "description": "Visit Martha's Vineyard highlights on a 3 hour, small group tour from the Statute across Oak Bluffs Ferry Terminal. You’ll make the most of your time on the island as you check out Oak Bluffs, Edgartown, and the Aquinnah Cliffs, learning stories about island history and cultures along the way. This Martha’s Vineyard tour is limited to 14 people for personal service from the local guide, and it includes two 15 minute breaks to explore Menemsha and the Aquinnah Cliffs."
+        }
+      },
+      {
+        "node_key": "Attraction::313388",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "313388",
+          "name": "Martha's Vineyard Camp meeting Association (MVCMA)",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Neighborhoods"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Other"
+          ],
+          "visit_duration": "2.5",
+          "rating": "4.5",
+          "rankingString": "#1 of 34 things to do in Oak Bluffs",
+          "address": "80 Trinity Park, Oak Bluffs, Martha's Vineyard, MA 02557"
+        }
+      },
+      {
+        "node_key": "Attraction::313361",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "313361",
+          "name": "Aquinnah Cliffs",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Geologic Formations",
+            "Points of Interest & Landmarks",
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.75",
+          "rating": "4.5",
+          "rankingString": "#1 of 6 things to do in Aquinnah",
+          "address": "State Rd., Aquinnah, Martha's Vineyard, MA",
+          "description": "Martha’s Vineyard’s westernmost tip features multicolored clay cliffs and the two-century-old Gay Head Light. Park at the overlook and take in the commanding views of the clay bluffs and the surroundings, then visit the historic lighthouse nearby. Browse the gift shops to bring a few souvenirs home. Afterward, you can hike through the green shrubs to Moshup Beach, where clothing is optional. Just make sure you keep your shoes on, as the shore is quite rocky. Swing by in the morning—it’s easie..."
+        }
+      },
+      {
+        "node_key": "Attraction::313391",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "313391",
+          "name": "South Beach",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Beaches"
+          ],
+          "subcategories": [
+            "Nature & Parks",
+            "Outdoor Activities"
+          ],
+          "visit_duration": "4.25",
+          "rating": "4.5",
+          "rankingString": "#1 of 27 things to do in Edgartown",
+          "address": "Herring Creek Rd, Edgartown, Martha's Vineyard, MA 02539"
+        }
+      },
+      {
+        "node_key": "Attraction::104906",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104906",
+          "name": "Flying Horses Carousel",
+          "City": "Martha's Vineyard",
+          "subtype": [
+            "Points of Interest & Landmarks"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#2 of 34 things to do in Oak Bluffs",
+          "address": "33 Lake Avenue, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "description": "Try your luck at catching the brass ring and winning a free ride on the oldest working carousel in the U.S., which has been enchanting children and adults for over a hundred years. The 20 hand-carved horses on this official historic landmark have real horsehair manes and tails."
+        }
+      },
+      {
+        "node_key": "Restaurant::8497480.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "8497480.0",
+          "name": "The Barn Bowl & Bistro",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar"
+          ],
+          "avg_cost": "30.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "13 Uncas Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::26529002.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "26529002.0",
+          "name": "The Attic",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "American",
+            "Bar",
+            "Seafood",
+            "Pub",
+            "Wine Bar"
+          ],
+          "avg_cost": "25.0",
+          "rating": "5.0",
+          "address": "82 Main St 2nd Floor, Vineyard Haven, Martha's Vineyard, MA 02568",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 720,
+                  "openHours": "12:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2244512.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2244512.0",
+          "name": "Marthas Vineyard Chowder Company",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Lunch",
+            "Dinner"
+          ],
+          "cuisines": [
+            "Seafood"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "9 Oak Bluffs Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::527270.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "527270.0",
+          "name": "Offshore Ale Company",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Brew Pub",
+            "Bar",
+            "Pub"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "30 Kennebec Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::422496.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "422496.0",
+          "name": "Linda Jean's Restaurant",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "25 Circuit Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2313776.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2313776.0",
+          "name": "Lookout Tavern",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Seafood",
+            "Sushi",
+            "Pub"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "8 Seaview Ave., Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2252417.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2252417.0",
+          "name": "The Red Cat Kitchen",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Seafood",
+            "Contemporary"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "6 Circuit Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [],
+              [],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::422524.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "422524.0",
+          "name": "Among The Flowers Cafe",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American",
+            "Cafe"
+          ],
+          "avg_cost": "30.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "17 Mayhew Ln, Edgartown, Martha's Vineyard, MA 02539-8123",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ],
+              [
+                {
+                  "open": 480,
+                  "openHours": "08:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::422478.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "422478.0",
+          "name": "l'etoile restaurant",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "French",
+            "Contemporary"
+          ],
+          "avg_cost": "48.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "22 N Water St, Edgartown, Martha's Vineyard, MA 02539-8144",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [],
+              [],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::2284979.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "2284979.0",
+          "name": "Biscuits",
+          "City": "Martha's Vineyard",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "20.0",
+          "rating": "4.5",
+          "priceLevel": "$",
+          "address": "26 Lake Ave, Oak Bluffs, Martha's Vineyard, MA 02557",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 960,
+                  "closeHours": "16:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1zZb49KDdSL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1zZb49KDdSL",
+          "name": "A Beautiful Noise",
+          "city": "Salisbury",
+          "dateTitle": "01-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Lecture/Seminar",
+          "offer": {
+            "offerUrl": "https://www.eventbrite.com/e/atlanta-one-day-choir-a-beautiful-noise-tickets-1045166169147",
+            "availabilityStarts": "2024-10-21T19:04:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AKQ_4S",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AKQ_4S",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Burbank",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13699573",
+            "availabilityStarts": "2024-06-21T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK4IF0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK4IF0",
+          "name": "Aimee Mann, Jonathan Coulton",
+          "city": "Long Beach",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Music",
+          "genreName": "Rock",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/aimee-mann-jonathan-coulton-belly-up-tickets/13568224",
+            "availabilityStarts": "2024-06-11T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7k4a7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7k4a7",
+          "name": "AJ Croce",
+          "city": "Long Beach",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Other",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7k4a7",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::rZ7HnEZ1AK48rf",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "rZ7HnEZ1AK48rf",
+          "name": "ALEX WARREN -  “You'll Be Alright, Kid” Tour",
+          "city": "San Diego",
+          "dateTitle": "30-10-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/alex-warren-soma-sidestage-tickets/13550794",
+            "availabilityStarts": "2024-06-05T17:00:00Z",
+            "price": 0,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHPmSo0",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHPmSo0",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352833?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJOSIk",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJOSIk",
+          "name": "All Star Stand Up Comedy",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352683?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJdNQm",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJdNQm",
+          "name": "All Star Stand Up Comedy",
+          "city": "White Plains",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352613?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHJcdtx",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHJcdtx",
+          "name": "All Star Stand Up Comedy",
+          "city": "Hartford",
+          "dateTitle": "29-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-broadway-comedy-club-tickets/13352723?REFERRAL_ID=tmfeed",
+            "availabilityStarts": "2023-12-01T08:47:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::G5e0Z9zHEVdsi",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "G5e0Z9zHEVdsi",
+          "name": "All Star Stand Up Comedy - Sunday To Thursday and Friday Saturday At 1",
+          "city": "Newburgh",
+          "dateTitle": "28-10-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketweb.com/event/all-star-stand-up-comedy-greenwich-village-comedy-club-tickets/13357913?REFERRAL_ID=t...",
+            "availabilityStarts": "2023-12-01T11:50:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 28.68
+      },
+      {
+        "source": "Restaurant::2244512.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 28.68
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 55.04
+      },
+      {
+        "source": "Restaurant::2252417.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 55.04
+      },
+      {
+        "source": "Attraction::3344037",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 62.06
+      },
+      {
+        "source": "Restaurant::422478.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 62.06
+      },
+      {
+        "source": "Attraction::3344037",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 62.66
+      },
+      {
+        "source": "Restaurant::422524.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 62.66
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 78.55
+      },
+      {
+        "source": "Restaurant::2284979.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 78.55
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 91.88
+      },
+      {
+        "source": "Restaurant::2284979.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 91.88
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 98.98
+      },
+      {
+        "source": "Restaurant::2313776.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 98.98
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 105.27
+      },
+      {
+        "source": "Restaurant::2244512.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 105.27
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 108.42
+      },
+      {
+        "source": "Restaurant::2313776.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 108.42
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 123.09
+      },
+      {
+        "source": "Restaurant::2244512.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 123.09
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 136.48
+      },
+      {
+        "source": "Restaurant::2313776.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 136.48
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 140.63
+      },
+      {
+        "source": "Restaurant::527270.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 140.63
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 144.45
+      },
+      {
+        "source": "Restaurant::2252417.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 144.45
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 157.62
+      },
+      {
+        "source": "Restaurant::422496.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 157.62
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 160.92
+      },
+      {
+        "source": "Restaurant::2252417.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 160.92
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 188.46
+      },
+      {
+        "source": "Restaurant::2284979.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 188.46
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 198.55
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 206.87
+      },
+      {
+        "source": "Restaurant::422496.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 206.87
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 221.12
+      },
+      {
+        "source": "Restaurant::527270.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 221.12
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 232.55
+      },
+      {
+        "source": "Restaurant::527270.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 232.55
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 259.23
+      },
+      {
+        "source": "Restaurant::422496.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 259.23
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 266.87
+      },
+      {
+        "source": "Restaurant::422496.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 266.87
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 293.56
+      },
+      {
+        "source": "Restaurant::8497480.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 293.56
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 319.87
+      },
+      {
+        "source": "Restaurant::527270.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 319.87
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 359.03
+      },
+      {
+        "source": "Restaurant::2284979.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 359.03
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 365.71
+      },
+      {
+        "source": "Restaurant::2252417.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 365.71
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 378.16
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 422.08
+      },
+      {
+        "source": "Restaurant::2244512.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 422.08
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 513.61
+      },
+      {
+        "source": "Restaurant::2313776.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 513.61
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 652.88
+      },
+      {
+        "source": "Restaurant::8497480.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 652.88
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 685.0
+      },
+      {
+        "source": "Restaurant::8497480.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 685.0
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 742.05
+      },
+      {
+        "source": "Restaurant::8497480.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 742.05
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1263.42
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1302.32
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1326.06
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1380.93
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1562.82
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1827.66
+      },
+      {
+        "source": "Accommodation::9.71e+17",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1841.99
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1871.84
+      },
+      {
+        "source": "Accommodation::9.71e+17",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1894.8
+      },
+      {
+        "source": "Accommodation::9.71e+17",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1901.24
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1919.9
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1928.22
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1962.24
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1982.15
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1984.42
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2074.45
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2086.84
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2436.88
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2661.59
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2685.26
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2930.19
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2957.92
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2968.89
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3011.78
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3031.4
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3032.52
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3039.23
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3087.46
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3096.82
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3099.87
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3178.92
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3190.87
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3271.19
+      },
+      {
+        "source": "Accommodation::9.71e+17",
+        "target": "Attraction::313391",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3316.2
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3473.19
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3481.27
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3528.53
+      },
+      {
+        "source": "Restaurant::26529002.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3528.53
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3602.37
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3697.06
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3702.11
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3721.17
+      },
+      {
+        "source": "Attraction::8042382",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3738.62
+      },
+      {
+        "source": "Restaurant::26529002.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3738.62
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3763.72
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3764.66
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3784.03
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3799.72
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3826.5
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3830.82
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3838.26
+      },
+      {
+        "source": "Attraction::104906",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3840.75
+      },
+      {
+        "source": "Restaurant::26529002.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3840.75
+      },
+      {
+        "source": "Accommodation::12774896.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3906.93
+      },
+      {
+        "source": "Attraction::2618649",
+        "target": "Restaurant::26529002.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3946.24
+      },
+      {
+        "source": "Restaurant::26529002.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3946.24
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4051.35
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4056.9
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4075.87
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4118.31
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4118.87
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4138.77
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4154.42
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4193.04
+      },
+      {
+        "source": "Accommodation::18988494.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4261.68
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::313391",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4351.34
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::313391",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4366.29
+      },
+      {
+        "source": "Attraction::313391",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4612.87
+      },
+      {
+        "source": "Restaurant::422524.0",
+        "target": "Attraction::313391",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4612.87
+      },
+      {
+        "source": "Attraction::313391",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4649.85
+      },
+      {
+        "source": "Restaurant::422478.0",
+        "target": "Attraction::313391",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4649.85
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5525.69
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 5689.87
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 5956.74
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6006.0
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6038.82
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6054.37
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6068.48
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6105.39
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6106.65
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 6191.0
+      },
+      {
+        "source": "Accommodation::7429436.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 6215.0
+      },
+      {
+        "source": "Accommodation::50331869.0",
+        "target": "Attraction::313361",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7059.55
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7286.77
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7293.59
+      },
+      {
+        "source": "Accommodation::26496542.0",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7337.36
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7415.35
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7522.37
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7706.14
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7796.8
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7813.62
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7832.07
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7835.74
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::422496.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7868.29
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7907.71
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::2252417.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7927.15
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7948.79
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7948.92
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::104906",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7959.55
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7967.97
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7972.95
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::2284979.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7976.26
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::2618649",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 7981.0
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::2244512.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 7986.37
+      },
+      {
+        "source": "Attraction::3344037",
+        "target": "Restaurant::8497480.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8038.65
+      },
+      {
+        "source": "Restaurant::8497480.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8038.65
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8038.73
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8046.98
+      },
+      {
+        "source": "Accommodation::44847785.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8050.71
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Restaurant::2313776.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8051.04
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8061.91
+      },
+      {
+        "source": "Accommodation::38824350.0",
+        "target": "Attraction::8042382",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 8068.14
+      },
+      {
+        "source": "Accommodation::25350837.0",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 8099.38
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::422478.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8268.91
+      },
+      {
+        "source": "Restaurant::422478.0",
+        "target": "Attraction::313388",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8268.91
+      },
+      {
+        "source": "Attraction::3344037",
+        "target": "Restaurant::527270.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8287.41
+      },
+      {
+        "source": "Restaurant::527270.0",
+        "target": "Attraction::3344037",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 8287.41
+      },
+      {
+        "source": "Attraction::313388",
+        "target": "Restaurant::422524.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 8322.3
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-22",
+        "2024-11-23",
+        "2024-11-24"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1695041",
+          "dep_time": "15:45",
+          "arr_time": "17:52",
+          "local_activity_start_after_arrival_buffer": "18:22",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2748108",
+          "dep_time": "14:47",
+          "arr_time": "16:57",
+          "local_activity_start_after_arrival_buffer": "17:27",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [
+            "dinner"
+          ],
+          "guidance": "Arrival is late, but dinner should still be scheduled."
+        },
+        {
+          "flight_node_key": "Flight::F1695043",
+          "dep_time": "18:55",
+          "arr_time": "20:46",
+          "local_activity_start_after_arrival_buffer": "21:16",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2748109",
+          "dep_time": "16:46",
+          "arr_time": "18:57",
+          "local_activity_start_after_arrival_buffer": "19:27",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F1701162",
+          "dep_time": "16:56",
+          "arr_time": "19:16",
+          "latest_local_activity_finish_before_airport_buffer": "14:56",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1701163",
+          "dep_time": "16:55",
+          "arr_time": "19:47",
+          "latest_local_activity_finish_before_airport_buffer": "14:55",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F2757772",
+          "dep_time": "16:44",
+          "arr_time": "19:12",
+          "latest_local_activity_finish_before_airport_buffer": "14:44",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1701164",
+          "dep_time": "17:01",
+          "arr_time": "20:45",
+          "latest_local_activity_finish_before_airport_buffer": "15:01",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F2757773",
+          "dep_time": "16:56",
+          "arr_time": "19:21",
+          "latest_local_activity_finish_before_airport_buffer": "14:56",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        },
+        {
+          "flight_node_key": "Flight::F1701165",
+          "dep_time": "16:53",
+          "arr_time": "19:36",
+          "latest_local_activity_finish_before_airport_buffer": "14:53",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch"
+          ],
+          "guidance": "Departure allows breakfast, one attraction, and lunch."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::422496.0",
+          "Restaurant::422524.0",
+          "Restaurant::2284979.0"
+        ],
+        "lunch": [
+          "Restaurant::26529002.0",
+          "Restaurant::2244512.0",
+          "Restaurant::527270.0",
+          "Restaurant::422496.0",
+          "Restaurant::2313776.0",
+          "Restaurant::422524.0",
+          "Restaurant::2284979.0"
+        ],
+        "dinner": [
+          "Restaurant::8497480.0",
+          "Restaurant::26529002.0",
+          "Restaurant::2244512.0",
+          "Restaurant::527270.0",
+          "Restaurant::2313776.0",
+          "Restaurant::2252417.0",
+          "Restaurant::422478.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::3576313",
+          "Attraction::8042382",
+          "Attraction::3344037",
+          "Attraction::21021965",
+          "Attraction::2618649",
+          "Attraction::12880480",
+          "Attraction::313388",
+          "Attraction::313361",
+          "Attraction::313391",
+          "Attraction::104906"
+        ],
+        "afternoon_attraction": [
+          "Attraction::3576313",
+          "Attraction::8042382",
+          "Attraction::3344037",
+          "Attraction::21021965",
+          "Attraction::2618649",
+          "Attraction::12880480",
+          "Attraction::313388",
+          "Attraction::313361",
+          "Attraction::313391",
+          "Attraction::104906"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::422496.0",
+            "name": "Linda Jean's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::422524.0",
+            "name": "Among The Flowers Cafe"
+          },
+          {
+            "node_key": "Restaurant::2284979.0",
+            "name": "Biscuits"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::26529002.0",
+            "name": "The Attic"
+          },
+          {
+            "node_key": "Restaurant::2244512.0",
+            "name": "Marthas Vineyard Chowder Company"
+          },
+          {
+            "node_key": "Restaurant::527270.0",
+            "name": "Offshore Ale Company"
+          },
+          {
+            "node_key": "Restaurant::422496.0",
+            "name": "Linda Jean's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::2313776.0",
+            "name": "Lookout Tavern"
+          },
+          {
+            "node_key": "Restaurant::422524.0",
+            "name": "Among The Flowers Cafe"
+          },
+          {
+            "node_key": "Restaurant::2284979.0",
+            "name": "Biscuits"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::8497480.0",
+            "name": "The Barn Bowl & Bistro"
+          },
+          {
+            "node_key": "Restaurant::26529002.0",
+            "name": "The Attic"
+          },
+          {
+            "node_key": "Restaurant::2244512.0",
+            "name": "Marthas Vineyard Chowder Company"
+          },
+          {
+            "node_key": "Restaurant::527270.0",
+            "name": "Offshore Ale Company"
+          },
+          {
+            "node_key": "Restaurant::2313776.0",
+            "name": "Lookout Tavern"
+          },
+          {
+            "node_key": "Restaurant::2252417.0",
+            "name": "The Red Cat Kitchen"
+          },
+          {
+            "node_key": "Restaurant::422478.0",
+            "name": "l'etoile restaurant"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-22": [],
+        "2024-11-23": [],
+        "2024-11-24": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-22",
+          "required_slots": {
+            "Flight::F1695041": [],
+            "Flight::F2748108": [
+              "dinner"
+            ],
+            "Flight::F1695043": [],
+            "Flight::F2748109": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-23",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-24",
+          "required_slots": {
+            "Flight::F1701162": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1701163": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F2757772": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1701164": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F2757773": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ],
+            "Flight::F1701165": [
+              "breakfast",
+              "morning_attraction",
+              "lunch"
+            ]
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-22": [],
+      "2024-11-23": [],
+      "2024-11-24": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

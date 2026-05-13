@@ -1,0 +1,3392 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a travel-planning optimizer operating over a query-specific knowledge graph. Return JSON only. You must choose node_key values only from the provided mini KG. Your job is to choose the best feasible path, not to invent new places, times, prices, or entities. Treat the user request, budget, dates, people count, persona, local constraints, flight timings, meal compatibility, attraction visit_duration, event dates, and graph proximity as planning constraints. Decision order is mandatory: first choose the outbound and return flights from candidate_packet.temporal_planning, then derive the day-1 and last-day feasible slot windows from those flight times, then choose one accommodation, then choose restaurants, attractions, and events for the remaining feasible slots. Do not choose POIs first and then force flights around them. Use candidate_packet.planning_slot_guide as the main checklist. It is simpler and more important than the full node list. Use candidate_packet.edges as the mini knowledge graph route evidence. Prefer nodes connected by ACCOMMODATION/RESTAURANT/ATTRACTION proximity edges, especially smaller distance_m values, while still respecting time windows, slot compatibility, dates, budget, and user constraints. A suitable plan is a connected, low-backtracking path through the mini KG: flight -> accommodation -> nearby valid meal/attraction/event choices -> accommodation or return flight. Meal compatibility is strict. Before assigning any restaurant, inspect its mealTypes through candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys. A breakfast slot may only use restaurants listed under breakfast; lunch may only use restaurants listed under lunch; dinner may only use restaurants listed under dinner. For meal slots, do not infer compatibility from restaurant names, cuisines, ratings, proximity, or notes. Use only candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast for breakfast, candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch for lunch, and candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner for dinner. If a restaurant is absent from a meal-slot list, it is invalid for that slot even if it is valid for another meal or is connected by a good edge. For event slots, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; if that date's list is empty, output null. Before choosing any day slots, inspect candidate_packet.temporal_planning. For the selected outbound flight, obey expected_slots_if_selected on day 1. For the selected return flight, obey expected_slots_if_selected on the last day. These temporal expectations are derived from DepTime, ArrTime, airport/city buffer, and return airport buffer, so they override vague assumptions about travel days. Classify each day before planning it: day 1 is outbound_travel_day, the last day is return_travel_day, and any day between them is non_travel_day. For outbound_travel_day, include the outbound flight, avoid activities before arrival, begin local planning after an airport/city transfer buffer, and keep the day lighter than a full non-travel day, but never leave it empty if a meal or attraction can fit. For non_travel_day, use the accommodation as start/end anchor and prefer breakfast, morning attraction, nearby lunch, afternoon attraction, date-compatible event, dinner, and return to accommodation. For return_travel_day, include the return flight, end all activities before departure minus airport buffer, skip dinner unless it clearly happens before departure, and when time allows choose attraction before event before return_flight. For the final attraction on return_travel_day, use visit_duration fit as the main selection factor; distance/proximity is secondary. Use null only as a last resort. For every null slot, the notes must explain the timing, budget, date, or compatibility reason. A good plan should use most meal slots, at least one attraction on each day when time allows, two attractions on full days, and date-compatible events when available. Prefer feasible temporal flow, budget compliance, explicit user constraints, graph-supported proximity, high ratings, meal coverage, and diverse non-repeated attractions/events."
+    },
+    {
+      "role": "user",
+      "content": "{\"task\": \"Choose the best itinerary path through this mini KG.\", \"output_schema\": {\"plan_option_id\": \"option_001\", \"reasoning_summary\": \"short explanation of why this path is best\", \"stay_node_key\": \"Accommodation::<id>\", \"outbound_flight_node_key\": \"Flight::<id>\", \"return_flight_node_key\": \"Flight::<id>\", \"estimated_total_cost\": 0.0, \"constraint_audit\": {\"budget_ok\": true, \"flight_dates_ok\": true, \"temporal_windows_ok\": true, \"all_nodes_from_mini_kg\": true, \"slot_fill_targets_satisfied\": true}, \"days\": [{\"day_number\": 1, \"date\": \"YYYY-MM-DD\", \"day_type\": \"outbound_travel_day | non_travel_day | return_travel_day\", \"slots\": {\"breakfast\": \"Restaurant::<id> or null only if timing makes breakfast infeasible\", \"morning_attraction\": \"Attraction::<id> or null only on arrival day if timing makes it infeasible\", \"lunch\": \"Restaurant::<id> or null only if timing makes lunch infeasible\", \"afternoon_attraction\": \"Attraction::<id> or null only if timing makes a second attraction infeasible\", \"event\": \"Event::<id> or null only if no date-compatible event fits\", \"dinner\": \"Restaurant::<id> or null only on return day or if timing makes dinner infeasible\"}, \"notes\": \"brief schedule rationale, including why any null slot is infeasible\"}]}, \"planning_contract\": {\"decision_procedure\": [\"Step 1: Choose outbound_flight_node_key and return_flight_node_key first from candidate_packet.temporal_planning.\", \"Step 2: Read expected_slots_if_selected for those selected flights and use them as minimum required slots on day 1 and the last day.\", \"Step 3: Choose one stay_node_key that satisfies occupancy/room/house-rule constraints and works as the route anchor.\", \"Step 4: For each day, fill only slots feasible under the selected flight windows and day type.\", \"Step 5: For every meal slot, check mealTypes compatibility by choosing only from the exact matching meal list in candidate_packet.planning_slot_guide.\", \"Step 6: For events, choose only from candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that date.\", \"Step 7: Among valid candidates, prefer the POI path best supported by candidate_packet.edges and smaller distance_m values.\"], \"hard_requirements\": [\"Use only node_key values from candidate_packet.nodes.\", \"Select exactly one stay_node_key from Accommodation nodes.\", \"Select one outbound flight from origin to destination on the first travel date.\", \"Select one return flight from destination to origin on the last travel date.\", \"Every scheduled day must match candidate_packet.dates and include day_type.\", \"Breakfast must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.breakfast.\", \"Lunch must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.lunch.\", \"Dinner must use a node_key from candidate_packet.planning_slot_guide.meal_slots_use_only_these_keys.dinner.\", \"A restaurant compatible with one meal type is not compatible with another unless it appears in that other meal type's allowed list.\", \"Do not reuse the same restaurant for multiple meal slots on the same day when another compatible restaurant is available.\", \"Attraction slots must use Attraction nodes and must not repeat across the trip.\", \"Event slots must use only event node_keys listed under candidate_packet.planning_slot_guide.events_use_only_these_keys_by_date for that exact date; use null when the list is empty.\", \"Estimated total cost must stay within budget whenever possible.\", \"Use null only when a slot is infeasible because of flight timing, date mismatch, meal compatibility, budget, or lack of candidate nodes.\", \"Every null slot must be justified in that day's notes.\", \"For the selected outbound flight, day 1 must include every slot listed in candidate_packet.temporal_planning.outbound_flight_options[*].expected_slots_if_selected for that flight.\", \"For the selected return flight, the final day must include every slot listed in candidate_packet.temporal_planning.return_flight_options[*].expected_slots_if_selected for that flight.\", \"Do not claim there is no time for day-1 local activities when local_activity_start_after_arrival_buffer is before 15:00.\"], \"slot_fill_targets\": {\"outbound_travel_day\": [\"If flight arrives before lunch or afternoon, fill lunch, one attraction, and dinner.\", \"If flight arrives late afternoon or evening, fill dinner and one short attraction only if feasible.\", \"Do not output all-null local slots unless arrival timing makes every local activity infeasible.\"], \"non_travel_day\": [\"Fill breakfast, morning_attraction, lunch, afternoon_attraction, and dinner.\", \"Fill event when a date-compatible event exists and fits after the afternoon attraction.\"], \"return_travel_day\": [\"Fill breakfast, morning_attraction, and lunch if departure time allows.\", \"Fill afternoon_attraction and event only if they fit before the airport buffer.\", \"Set dinner to null if the return flight prevents dinner in the destination city.\"]}, \"null_usage_policy\": [\"Null is acceptable for optional slots only after checking timing, date, budget, and candidate availability.\", \"Prefer a nearby, lower-rated feasible node over null when the slot can be scheduled.\", \"Do not skip events on non-travel days if a date-compatible event is available and the day is not overloaded.\", \"Do not skip day-1 dinner when arrival timing allows it.\"], \"day_type_contract\": {\"outbound_travel_day\": {\"required\": [\"outbound_flight_node_key\", \"stay_node_key\"], \"avoid\": [\"activities before flight arrival\", \"overloaded day\", \"empty local itinerary after an early enough arrival\"], \"preferred_sequence\": [\"outbound_flight\", \"accommodation\", \"lunch if arrival timing allows\", \"morning_attraction or afternoon_attraction if time allows\", \"dinner if arrival timing allows\", \"night_accommodation\"]}, \"non_travel_day\": {\"required\": [\"stay_node_key as start/end anchor\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch near attraction\", \"afternoon_attraction\", \"date-compatible event if available\", \"dinner\", \"night_accommodation\"]}, \"return_travel_day\": {\"required\": [\"return_flight_node_key\", \"all activities before return departure buffer\"], \"preferred_sequence\": [\"accommodation\", \"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction chosen by visit_duration fit if time allows\", \"optional event if it fits after attraction\", \"return_flight\"], \"avoid\": [\"dinner after return flight\", \"choosing final attraction only because it is closest\"]}}, \"optimization_preferences\": [\"Satisfy hard constraints before optimizing ratings/cost/proximity.\", \"Flights determine feasible POI slots; POIs must never determine or contradict the selected flight timing.\", \"Maximize feasible slot coverage after satisfying hard constraints: filled slots are better than null slots.\", \"Use the computed temporal_planning expected_slots_if_selected as minimum coverage targets, not suggestions.\", \"Use graph proximity edges to reduce unnecessary travel and prefer connected mini-KG paths over isolated high-rated nodes.\", \"When several valid nodes exist for a slot, prefer one connected by an edge to the previous or next itinerary node.\", \"MealTypes compatibility has priority over proximity edges; a nearby restaurant is still invalid if it is absent from the exact meal-slot list.\", \"Use visit_duration and available time windows to avoid impossible attractions.\", \"Prefer a coherent route over simply picking highest-rated entities.\"]}, \"candidate_packet\": {\"query_id\": \"idx_94\", \"query_text\": \"Plan a 3-day trip for 1 person from Boise to Atlanta from November 26th to November 28th, 2024, with a budget of $2,400.\", \"request\": {\"org\": \"Boise\", \"dest\": \"Atlanta\", \"days\": 3, \"visiting_city_number\": 1, \"date\": \"['2024-11-26', '2024-11-27', '2024-11-28']\", \"people_number\": 1, \"local_constraint\": \"{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}\", \"budget\": 2400, \"query\": \"Plan a 3-day trip for 1 person from Boise to Atlanta from November 26th to November 28th, 2024, with a budget of $2,400.\", \"level\": \"easy\", \"persona\": \"Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife\"}, \"dates\": [\"2024-11-26\", \"2024-11-27\", \"2024-11-28\"], \"preferences\": {\"traveler_type\": \"Laidback Traveler\", \"purpose_of_travel\": \"Nature\", \"spending_preference\": \"Luxury Traveler\", \"location_preference\": \"Forests/Wildlife\"}, \"constraints\": {\"house rule\": null, \"cuisine\": null, \"room type\": null, \"transportation\": null, \"event\": null, \"attraction\": null}, \"nodes\": [{\"node_key\": \"Flight::F1310993\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Boise\", \"DestCityName\": \"Atlanta\", \"DepTime\": \"13:45\", \"ArrTime\": \"19:36\", \"Price\": 389}}, {\"node_key\": \"Flight::F0331867\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Boise\", \"DestCityName\": \"Atlanta\", \"DepTime\": \"14:00\", \"ArrTime\": \"19:45\", \"Price\": 552}}, {\"node_key\": \"Flight::F3533726\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Boise\", \"DestCityName\": \"Atlanta\", \"DepTime\": \"14:25\", \"ArrTime\": \"20:05\", \"Price\": 562}}, {\"node_key\": \"Flight::F2516719\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Boise\", \"DestCityName\": \"Atlanta\", \"DepTime\": \"13:38\", \"ArrTime\": \"19:23\", \"Price\": 731}}, {\"node_key\": \"Flight::F2042596\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-26\", \"OriginCityName\": \"Boise\", \"DestCityName\": \"Atlanta\", \"DepTime\": \"13:58\", \"ArrTime\": \"19:59\", \"Price\": 786}}, {\"node_key\": \"Flight::F1295674\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"Atlanta\", \"DestCityName\": \"Boise\", \"DepTime\": \"20:21\", \"ArrTime\": \"22:34\", \"Price\": 466}}, {\"node_key\": \"Flight::F0858533\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"Atlanta\", \"DestCityName\": \"Boise\", \"DepTime\": \"10:08\", \"ArrTime\": \"12:51\", \"Price\": 477}}, {\"node_key\": \"Flight::F3533729\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"Atlanta\", \"DestCityName\": \"Boise\", \"DepTime\": \"10:09\", \"ArrTime\": \"12:37\", \"Price\": 511}}, {\"node_key\": \"Flight::F2986793\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"Atlanta\", \"DestCityName\": \"Boise\", \"DepTime\": \"10:09\", \"ArrTime\": \"12:50\", \"Price\": 610}}, {\"node_key\": \"Flight::F2516722\", \"domain\": \"flight\", \"label\": \"Flight\", \"properties\": {\"FlightDate\": \"2024-11-28\", \"OriginCityName\": \"Atlanta\", \"DestCityName\": \"Boise\", \"DepTime\": \"10:10\", \"ArrTime\": \"12:30\", \"Price\": 714}}, {\"node_key\": \"Accommodation::10635379.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"10635379.0\", \"name\": \"Hampton Guest House\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"10\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$109 per night\", \"originalPrice\": null, \"price\": \"$109\", \"qualifier\": \"night\", \"total\": \"$545 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  1067 reviews\", \"localizedLabel\": \"4.99 (1067)\", \"average\": 4.99, \"reviewsCount\": 1067}, \"coordinates\": {\"latitude\": 33.38407, \"longitude\": -84.26885}}}, {\"node_key\": \"Accommodation::16268972.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"16268972.0\", \"name\": \"Designer Suite Piedmont Park/Beltline & Parking\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No parties\", \"pricing\": {\"label\": \"$149 per night\", \"originalPrice\": null, \"price\": \"$149\", \"qualifier\": \"night\", \"total\": \"$745 total\"}, \"rating\": {\"label\": \"4.99 out of 5 average rating,  947 reviews\", \"localizedLabel\": \"4.99 (947)\", \"average\": 4.99, \"reviewsCount\": 947}, \"coordinates\": {\"latitude\": 33.78401, \"longitude\": -84.37015}}}, {\"node_key\": \"Accommodation::5.7e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"5.7e+17\", \"name\": \"First-Class Flats | * From 1 to 10 Guests *\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No visitors & No smoking\", \"pricing\": {\"label\": \"$114 per night\", \"originalPrice\": null, \"price\": \"$114\", \"qualifier\": \"night\", \"total\": \"$569 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  317 reviews\", \"localizedLabel\": \"4.93 (317)\", \"average\": 4.93, \"reviewsCount\": 317}, \"coordinates\": {\"latitude\": 33.78982, \"longitude\": -84.25572}}}, {\"node_key\": \"Accommodation::42111286.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"42111286.0\", \"name\": \"Tiny House Retreat * Stock Tank Pool\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"5\", \"house_rules\": \"No children under 10 & No parties\", \"pricing\": {\"label\": \"$141 per night\", \"originalPrice\": null, \"price\": \"$141\", \"qualifier\": \"night\", \"total\": \"$703 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  626 reviews\", \"localizedLabel\": \"4.98 (626)\", \"average\": 4.98, \"reviewsCount\": 626}, \"coordinates\": {\"latitude\": 33.7569265847832, \"longitude\": -84.34110215124629}}}, {\"node_key\": \"Accommodation::35279146.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"35279146.0\", \"name\": \"Birds-n-Bees bnb -  Intown ATL - 1 Gig Internet\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"4\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$102 per night\", \"originalPrice\": null, \"price\": \"$102\", \"qualifier\": \"night\", \"total\": \"$507 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  623 reviews\", \"localizedLabel\": \"4.93 (623)\", \"average\": 4.93, \"reviewsCount\": 623}, \"coordinates\": {\"latitude\": 33.72578, \"longitude\": -84.44739}}}, {\"node_key\": \"Accommodation::24120415.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"24120415.0\", \"name\": \"Grant Park Guest House | Charming Tiny House\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$134 per night\", \"originalPrice\": null, \"price\": \"$134\", \"qualifier\": \"night\", \"total\": \"$668 total\"}, \"rating\": {\"label\": \"4.98 out of 5 average rating,  368 reviews\", \"localizedLabel\": \"4.98 (368)\", \"average\": 4.98, \"reviewsCount\": 368}, \"coordinates\": {\"latitude\": 33.7462, \"longitude\": -84.37446}}}, {\"node_key\": \"Accommodation::6.75e+17\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"6.75e+17\", \"name\": \"Midtown Hidden Gem @Piedmont Park/Private+Parking\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"3\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$134 per night\", \"originalPrice\": null, \"price\": \"$134\", \"qualifier\": \"night\", \"total\": \"$666 total\"}, \"rating\": {\"label\": \"4.93 out of 5 average rating,  219 reviews\", \"localizedLabel\": \"4.93 (219)\", \"average\": 4.93, \"reviewsCount\": 219}, \"coordinates\": {\"latitude\": 33.7846685, \"longitude\": -84.36814679999999}}}, {\"node_key\": \"Accommodation::28314488.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"28314488.0\", \"name\": \"Downtown Beach Room **FREE PARKING** Private Room\", \"City\": \"Atlanta\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets\", \"pricing\": {\"label\": \"$56 per night\", \"originalPrice\": null, \"price\": \"$56\", \"qualifier\": \"night\", \"total\": \"$277 total\"}, \"rating\": {\"label\": \"4.84 out of 5 average rating,  578 reviews\", \"localizedLabel\": \"4.84 (578)\", \"average\": 4.84, \"reviewsCount\": 578}, \"coordinates\": {\"latitude\": 33.72058, \"longitude\": -84.41615}}}, {\"node_key\": \"Accommodation::45347293.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"45347293.0\", \"name\": \"Historic Lounge - Private BR in the Heart of ATL#2\", \"City\": \"Atlanta\", \"roomType\": \"private_room\", \"max_occupancy\": \"2\", \"house_rules\": \"No visitors\", \"pricing\": {\"label\": \"$91 per night\", \"originalPrice\": null, \"price\": \"$91\", \"qualifier\": \"night\", \"total\": \"$451 total\"}, \"rating\": {\"label\": \"4.84 out of 5 average rating,  383 reviews\", \"localizedLabel\": \"4.84 (383)\", \"average\": 4.84, \"reviewsCount\": 383}, \"coordinates\": {\"latitude\": 33.76685, \"longitude\": -84.37705}}}, {\"node_key\": \"Accommodation::17907884.0\", \"domain\": \"accommodation\", \"label\": \"Accommodation\", \"properties\": {\"id\": \"17907884.0\", \"name\": \"Urban Oasis in Historic Inman Park\", \"City\": \"Atlanta\", \"roomType\": \"entire_home\", \"max_occupancy\": \"2\", \"house_rules\": \"No pets & No children under 10\", \"pricing\": {\"label\": \"$153 per night\", \"originalPrice\": null, \"price\": \"$153\", \"qualifier\": \"night\", \"total\": \"$762 total\"}, \"rating\": {\"label\": \"4.97 out of 5 average rating,  895 reviews\", \"localizedLabel\": \"4.97 (895)\", \"average\": 4.97, \"reviewsCount\": 895}, \"coordinates\": {\"latitude\": 33.75832, \"longitude\": -84.36155}}}, {\"node_key\": \"Attraction::6781793\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"6781793\", \"name\": \"National Center for Civil and Human Rights\", \"City\": \"Atlanta\", \"subtype\": [\"Art Museums\", \"Points of Interest & Landmarks\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"5.0\", \"rankingString\": \"#2 of 586 things to do in Atlanta\", \"address\": \"100 Ivan Allen Jr Blvd, Atlanta, GA 30313\", \"description\": \"The National Center for Civil and Human Rights in downtown Atlanta is an engaging cultural attraction that connects The American Civil Rights Movement to today's Global Human Rights Movements. The Center features four immersive and thought-provoking exhibit spaces, including a continually rotating gallery of items from The Morehouse College Martin Luther King, Jr. Collection, where visitors can view the personal papers and items of Dr. King. The Center also provides designated event spaces an...\"}}, {\"node_key\": \"Attraction::588792\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"588792\", \"name\": \"Georgia Aquarium\", \"City\": \"Atlanta\", \"subtype\": [\"Aquariums\"], \"subcategories\": [\"Zoos & Aquariums\", \"Nature & Parks\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#1 of 586 things to do in Atlanta\", \"address\": \"225 Baker St, Atlanta, GA 30313-1809\", \"description\": \"Georgia Aquarium contains more than 70 amazing habitats, with thousands of marine animals such as whale sharks, manta rays, beluga whales, and more. Don’t miss out on the animal encounter programs, where you can get up close and personal with dolphins, penguins, and sea lions. Combine your visit to the aquarium with other top attractions and enjoy additional discounts with the Atlanta CityPASS. You might also want to visit around Halloween or the holidays for special themed activities or pres...\"}}, {\"node_key\": \"Attraction::104713\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"104713\", \"name\": \"Atlanta Botanical Garden\", \"City\": \"Atlanta\", \"subtype\": [\"Gardens\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#10 of 586 things to do in Atlanta\", \"address\": \"1345 Piedmont Ave, Atlanta, GA 30309-3366\", \"description\": \"Step into a world of magic and serenity at the Atlanta Botanical Garden, where features like the Fuqua Orchid Center treat visitors to a rare collection of high-elevation orchids never before grown in the southeast.\"}}, {\"node_key\": \"Attraction::105199\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"105199\", \"name\": \"Fox Theatre\", \"City\": \"Atlanta\", \"subtype\": [\"Theaters\", \"Architectural Buildings\"], \"subcategories\": [\"Sights & Landmarks\", \"Concerts & Shows\"], \"visit_duration\": \"2.75\", \"rating\": \"4.5\", \"rankingString\": \"#5 of 586 things to do in Atlanta\", \"address\": \"660 Peachtree St NE, Atlanta, GA 30308-1969\", \"description\": \"Recently restored to its original gilded look of the 1920s, the Fox Theatre features \\\"Mighty Mo,\\\" a classic Moller organ with over 3,600 pipes. The lavish theatre currently hosts Broadway musicals, comedy shows and dance companies throughout the year.\"}}, {\"node_key\": \"Attraction::103496\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103496\", \"name\": \"Martin Luther King Jr. National Historic Site\", \"City\": \"Atlanta\", \"subtype\": [\"Historic Sites\"], \"subcategories\": [\"Sights & Landmarks\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#3 of 586 things to do in Atlanta\", \"address\": \"450 Auburn Ave NE, Atlanta, GA 30312-1504\", \"description\": \"Start at the visitor center and then work your way around the three main sites in this historic park: the home in which the leader of the Civil Rights movement in America was born, the church where he preached and the memorial site where he is buried. A major Atlanta attraction, the park draws some 500,000 visitors each year.\"}}, {\"node_key\": \"Attraction::126944\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126944\", \"name\": \"Piedmont Park\", \"City\": \"Atlanta\", \"subtype\": [\"Parks\"], \"subcategories\": [\"Nature & Parks\"], \"visit_duration\": \"4.5\", \"rating\": \"4.5\", \"rankingString\": \"#15 of 586 things to do in Atlanta\", \"address\": \"1322 Monroe Drive, Atlanta, GA 30306-3440\", \"description\": \"This 185-acre park, home to the Atlanta Botanical Gardens and to summer festivals, is also popular with joggers.\"}}, {\"node_key\": \"Attraction::144319\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"144319\", \"name\": \"High Museum of Art\", \"City\": \"Atlanta\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#18 of 586 things to do in Atlanta\", \"address\": \"1280 Peachtree St NE, Atlanta, GA 30309-3502\", \"description\": \"This stunning, porcelain-enameled building was designed by famed architect Richard Meier and is rivaled only by the art inside. Featuring American, European and African art, as well as decorative art and photography, the High Museum boasts a permanent collection of over 11,000 pieces, many of which can be viewed from different levels of the four-story, glass atrium.\"}}, {\"node_key\": \"Attraction::7092286\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"7092286\", \"name\": \"College Football Hall of Fame\", \"City\": \"Atlanta\", \"subtype\": [\"Specialty Museums\"], \"subcategories\": [\"Museums\"], \"visit_duration\": \"3.0\", \"rating\": \"4.5\", \"rankingString\": \"#19 of 586 things to do in Atlanta\", \"address\": \"250 Marietta St NW, Atlanta, GA 30313-1602\", \"description\": \"Located in Downtown Atlanta, the College Football Hall of Fame and Chick-fil-A Fan Experience puts you closer to the game than ever before. From the huge helmet wall featuring over 760 schools in The Quad to the giant Indoor Playing Field and Chick-fil-A Peach Bowl Skill Zone, the College Football Hall of Fame provides fans of all ages with memorable things to do. Named one of the top 10 things to do in Atlanta, GA, the College Football Hall of Fame is the perfect spot to host an event. Wheth...\"}}, {\"node_key\": \"Attraction::103493\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"103493\", \"name\": \"Atlanta History Center\", \"City\": \"Atlanta\", \"subtype\": [\"Historic Sites\", \"Gardens\", \"History Museums\"], \"subcategories\": [\"Sights & Landmarks\", \"Museums\", \"Nature & Parks\"], \"visit_duration\": \"3.5\", \"rating\": \"4.5\", \"rankingString\": \"#11 of 586 things to do in Atlanta\", \"address\": \"130 W Paces Ferry Rd NW, Atlanta, GA 30305\", \"description\": \"Founded in 1926, the Atlanta History Center is an all-inclusive thirty-three-acre destination featuring the Atlanta History Museum, one of the Southeast's largest history museums; three historic houses, including the 1928 Swan House; the Kenan Research Center; the Grand Overlook event space; a museum shop and acres of historic gardens and trails. In addition, the History Center operates the Margaret Mitchell House. Located in Midtown Atlanta, the two-acre campus features tours of the house an...\"}}, {\"node_key\": \"Attraction::126907\", \"domain\": \"attraction\", \"label\": \"Attraction\", \"properties\": {\"id\": \"126907\", \"name\": \"Jimmy Carter Presidential Library & Museum\", \"City\": \"Atlanta\", \"subtype\": [\"History Museums\", \"Libraries\"], \"subcategories\": [\"Museums\", \"Traveler Resources\"], \"visit_duration\": \"2.0\", \"rating\": \"4.5\", \"rankingString\": \"#4 of 586 things to do in Atlanta\", \"address\": \"441 John Lewis Freedom Pkwy NE Freedom Park, Atlanta, GA 30307-1496\", \"description\": \"The Carter Presidential Library and Museum is a state-of-the-art museum tracing the life and work of President Jimmy Carter, from his childhood in Plains to the work he and Mrs. Carter do around the world to promote peace and health. The Museum sits in a beautifully landscaped 35 acre park with two small lakes, a Japanese garden and a spectacular view of the Atlanta skyline. The whole family will enjoy visiting. Online ticketing information at www.jimmycarterlibrary.gov\"}}, {\"node_key\": \"Restaurant::3749141.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3749141.0\", \"name\": \"Aviva by Kameel\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\"], \"cuisines\": [\"Lebanese\", \"Mediterranean\", \"Healthy\", \"Middle Eastern\"], \"avg_cost\": \"21.0\", \"rating\": \"5.0\", \"priceLevel\": \"$\", \"address\": \"225 Peachtree St NE Inside the Mall of Peachtree Center, Atlanta, GA 30303\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1290, \"closeHours\": \"21:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::19797463.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"19797463.0\", \"name\": \"By George restaurant and bar\", \"City\": \"Atlanta\", \"mealTypes\": [\"Breakfast\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"French\", \"American\", \"Healthy\"], \"avg_cost\": \"45.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$ - $$$\", \"address\": \"127 Peachtree St NE The Candler Hotel Atlanta, Curio Collection by Hilton, Atlanta, GA 30303\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 660, \"closeHours\": \"11:00\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 660, \"closeHours\": \"11:00\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 660, \"closeHours\": \"11:00\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 660, \"closeHours\": \"11:00\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 660, \"closeHours\": \"11:00\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::24071158.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"24071158.0\", \"name\": \"The Americano Atlanta\", \"City\": \"Atlanta\", \"mealTypes\": [\"Breakfast\", \"Lunch\", \"Dinner\", \"Drinks\"], \"cuisines\": [\"Italian\", \"Steakhouse\", \"Seafood\"], \"avg_cost\": \"72.0\", \"rating\": \"5.0\", \"priceLevel\": \"$$$$\", \"address\": \"3315 Peachtree Rd NE, Atlanta, GA 30326-1007\", \"hours\": {\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 630, \"closeHours\": \"10:30\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 630, \"closeHours\": \"10:30\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 630, \"closeHours\": \"10:30\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 630, \"closeHours\": \"10:30\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 630, \"closeHours\": \"10:30\"}, {\"open\": 690, \"openHours\": \"11:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::444232.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"444232.0\", \"name\": \"Canoe\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Fusion\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"4199 Paces Ferry Rd SE, Atlanta, GA 30339-5750\", \"hours\": {\"weekRanges\": [[{\"open\": 630, \"openHours\": \"10:30\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 840, \"closeHours\": \"14:00\"}, {\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::435880.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"435880.0\", \"name\": \"Bone's Restaurant\", \"City\": \"Atlanta\", \"mealTypes\": [\"Dinner\"], \"cuisines\": [\"American\", \"Steakhouse\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"3130 Piedmont Rd NE, Atlanta, GA 30305-2508\", \"hours\": {\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1050, \"openHours\": \"17:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::478153.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"478153.0\", \"name\": \"South City Kitchen Midtown\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\"], \"cuisines\": [\"American\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1144 Crescent Ave NE, Atlanta, GA 30309-3649\", \"hours\": {\"weekRanges\": [[{\"open\": 600, \"openHours\": \"10:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1290, \"closeHours\": \"21:30\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 870, \"closeHours\": \"14:30\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 600, \"openHours\": \"10:00\", \"close\": 900, \"closeHours\": \"15:00\"}, {\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::950845.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"950845.0\", \"name\": \"Fox Bros. Bar-B-Q\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"American\", \"Bar\", \"Barbecue\"], \"avg_cost\": \"45.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$ - $$$\", \"address\": \"1238 Dekalb Ave NE, Atlanta, GA 30307-2026\", \"hours\": {\"weekRanges\": [[{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 660, \"openHours\": \"11:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::435864.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"435864.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\"], \"cuisines\": [\"Steakhouse\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"3101 Piedmont Rd NE, Atlanta, GA 30305-2507\", \"hours\": {\"weekRanges\": [[{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1350, \"closeHours\": \"22:30\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1350, \"closeHours\": \"22:30\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::435285.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"435285.0\", \"name\": \"Ray's in the City\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Late Night\", \"Drinks\"], \"cuisines\": [\"Steakhouse\", \"Seafood\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"240 Peachtree St Nw, Atlanta, GA 30303-1340\", \"hours\": {\"weekRanges\": [[{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1260, \"closeHours\": \"21:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 690, \"openHours\": \"11:30\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 960, \"openHours\": \"16:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Restaurant::3165297.0\", \"domain\": \"restaurant\", \"label\": \"Restaurant\", \"properties\": {\"id\": \"3165297.0\", \"name\": \"The Optimist\", \"City\": \"Atlanta\", \"mealTypes\": [\"Lunch\", \"Dinner\", \"Brunch\", \"Late Night\"], \"cuisines\": [\"Seafood\"], \"avg_cost\": \"72.0\", \"rating\": \"4.5\", \"priceLevel\": \"$$$$\", \"address\": \"914 Howell Mill Rd NW, Atlanta, GA 30318-0518\", \"hours\": {\"weekRanges\": [[{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 900, \"openHours\": \"15:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/New_York\"}}}, {\"node_key\": \"Event::Z7r9jZ1A7a30e\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7a30e\", \"name\": \"Air Supply\", \"city\": \"Atlanta\", \"dateTitle\": \"15-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Pop\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7a30e\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7C6_x\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7C6_x\", \"name\": \"Blackberry Smoke\", \"city\": \"Atlanta\", \"dateTitle\": \"09-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Country\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7C6_x\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7Gk7E\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7Gk7E\", \"name\": \"Here Come the Mummies w/ The Toxhards\", \"city\": \"Atlanta\", \"dateTitle\": \"08-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"R&B\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7Gk7E\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::Z7r9jZ1A7uIv4\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"Z7r9jZ1A7uIv4\", \"name\": \"Mannheim Steamroller\", \"city\": \"Atlanta\", \"dateTitle\": \"13-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Classical\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/event/Z7r9jZ1A7uIv4\", \"availabilityStarts\": \"1900-01-01T06:00:00Z\", \"price\": null, \"priceCurrency\": null}}}, {\"node_key\": \"Event::vvG1VZb3ChEs6R\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1VZb3ChEs6R\", \"name\": \"Florida Everblades vs. Orlando Solar Bears\", \"city\": \"Atlanta\", \"dateTitle\": \"08-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Hockey\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/florida-everblades-vs-orlando-solar-bears-estero-florida-11-08-2024/event/0D0061239B9F11EF\", \"availabilityStarts\": \"2024-10-01T14:00:00Z\", \"price\": 19, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::vvG1VZb3ChIoFK\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1VZb3ChIoFK\", \"name\": \"Florida Everblades vs. Orlando Solar Bears\", \"city\": \"Atlanta\", \"dateTitle\": \"09-11-2024\", \"segmentName\": \"Sports\", \"genreName\": \"Hockey\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/florida-everblades-vs-orlando-solar-bears-estero-florida-11-09-2024/event/0D0061239BA11213\", \"availabilityStarts\": \"2024-10-01T14:00:00Z\", \"price\": 20, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::vvG1VZbkrIv3iL\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1VZbkrIv3iL\", \"name\": \"Christian Nodal - Pa'l Cora Tour\", \"city\": \"Atlanta\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Music\", \"genreName\": \"Latin\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/christian-nodal-pal-cora-tour-estero-florida-11-03-2024/event/0D006067A8052B1F\", \"availabilityStarts\": \"2024-05-16T14:00:00Z\", \"price\": 41, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::vvG1VZb6wNMep7\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1VZb6wNMep7\", \"name\": \"Gabriel Iglesias: Don't Worry Be Fluffy\", \"city\": \"Atlanta\", \"dateTitle\": \"10-11-2024\", \"segmentName\": \"Arts & Theatre\", \"genreName\": \"Comedy\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/gabriel-iglesias-dont-worry-be-fluffy-estero-florida-11-10-2024/event/0D00607CA3DC2584\", \"availabilityStarts\": \"2024-04-11T16:00:00Z\", \"price\": 49.5, \"priceCurrency\": \"USD\"}}}, {\"node_key\": \"Event::vvG1VZb1Tn6Nd6\", \"domain\": \"event\", \"label\": \"Event\", \"properties\": {\"id\": \"vvG1VZb1Tn6Nd6\", \"name\": \"Christian Nodal VIP Upgrades (No Ticket Included)\", \"city\": \"Atlanta\", \"dateTitle\": \"03-11-2024\", \"segmentName\": \"Miscellaneous\", \"genreName\": \"Undefined\", \"offer\": {\"offerUrl\": \"https://www.ticketmaster.com/christian-nodal-vip-upgrades-no-ticket-estero-florida-11-03-2024/event/0D0060AFEA1E30C7\", \"availabilityStarts\": \"2024-05-16T14:00:00Z\", \"price\": 99, \"priceCurrency\": \"USD\"}}}], \"edges\": [{\"source\": \"Attraction::144319\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 466.16}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 466.16}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 480.98}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 523.96}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 625.81}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 625.81}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 696.09}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 696.09}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 698.75}, {\"source\": \"Attraction::7092286\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 703.72}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 703.72}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 717.57}, {\"source\": \"Accommodation::42111286.0\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 747.26}, {\"source\": \"Attraction::588792\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 747.65}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 747.65}, {\"source\": \"Attraction::7092286\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 765.46}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 765.46}, {\"source\": \"Attraction::7092286\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 791.71}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 791.71}, {\"source\": \"Attraction::588792\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 818.68}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 818.68}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 918.81}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 918.81}, {\"source\": \"Attraction::588792\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 980.08}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 980.08}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 999.77}, {\"source\": \"Attraction::126907\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1008.52}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1008.52}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1022.79}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1090.59}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1158.03}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1158.03}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1170.87}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1181.17}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1181.17}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1184.79}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1186.52}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1214.01}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1336.96}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1338.22}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1345.18}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1345.18}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1345.79}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1345.79}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1362.78}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1362.78}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1388.05}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1388.05}, {\"source\": \"Attraction::103493\", \"target\": \"Restaurant::435880.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1391.55}, {\"source\": \"Restaurant::435880.0\", \"target\": \"Attraction::103493\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1391.55}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1414.9}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1414.9}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1469.62}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1484.45}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1484.45}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1512.54}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1514.13}, {\"source\": \"Attraction::103493\", \"target\": \"Restaurant::435864.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1555.1}, {\"source\": \"Restaurant::435864.0\", \"target\": \"Attraction::103493\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1555.1}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1578.62}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1708.85}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1721.32}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1721.46}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1744.79}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1744.79}, {\"source\": \"Accommodation::42111286.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1755.54}, {\"source\": \"Attraction::103493\", \"target\": \"Restaurant::24071158.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 1770.09}, {\"source\": \"Restaurant::24071158.0\", \"target\": \"Attraction::103493\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 1770.09}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1844.5}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1890.41}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 1920.08}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 1948.38}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2013.45}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2078.11}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2231.38}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2307.36}, {\"source\": \"Attraction::588792\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2319.55}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2319.55}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2339.28}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2370.55}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2387.28}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2387.28}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2395.13}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2424.31}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2426.39}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2426.39}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2435.85}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2462.36}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2462.36}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2487.42}, {\"source\": \"Attraction::144319\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2564.14}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2564.14}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2565.45}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2565.45}, {\"source\": \"Attraction::7092286\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2588.76}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2588.76}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2601.87}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2625.02}, {\"source\": \"Attraction::588792\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2691.41}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2691.41}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2696.46}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2701.28}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2714.08}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2805.95}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2809.0}, {\"source\": \"Attraction::126907\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2929.46}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2929.46}, {\"source\": \"Accommodation::42111286.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2965.66}, {\"source\": \"Attraction::126907\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 2982.34}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 2982.34}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 2982.47}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 2993.13}, {\"source\": \"Attraction::7092286\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3028.62}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3028.62}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3052.28}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3070.32}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3073.33}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3076.32}, {\"source\": \"Attraction::126907\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3087.19}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3087.19}, {\"source\": \"Accommodation::24120415.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3105.7}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3134.06}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3147.2}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3150.17}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3232.97}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3238.6}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3246.61}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3247.65}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3252.15}, {\"source\": \"Attraction::144319\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3285.56}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3285.56}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3302.05}, {\"source\": \"Attraction::144319\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3316.73}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3316.73}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3377.74}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3377.74}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3382.94}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3382.94}, {\"source\": \"Attraction::126907\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3390.37}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::126907\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3390.37}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3408.92}, {\"source\": \"Accommodation::45347293.0\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3415.07}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3417.89}, {\"source\": \"Restaurant::478153.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3417.89}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::588792\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3431.48}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3442.95}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3521.13}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::435285.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3558.86}, {\"source\": \"Restaurant::435285.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3558.86}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3563.85}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3566.61}, {\"source\": \"Restaurant::3749141.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3566.61}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3659.55}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3659.55}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3662.92}, {\"source\": \"Attraction::144319\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3671.28}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3671.28}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3679.93}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3679.93}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Attraction::7092286\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 3699.69}, {\"source\": \"Attraction::105199\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3729.09}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::105199\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3729.09}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3729.67}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3729.67}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Restaurant::478153.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3730.72}, {\"source\": \"Accommodation::16268972.0\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3759.48}, {\"source\": \"Attraction::126944\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3765.13}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::126944\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3765.13}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3915.98}, {\"source\": \"Restaurant::19797463.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3915.98}, {\"source\": \"Accommodation::6.75e+17\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 3952.51}, {\"source\": \"Attraction::104713\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 3964.08}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::104713\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 3964.08}, {\"source\": \"Accommodation::17907884.0\", \"target\": \"Attraction::144319\", \"type\": \"ATTRACTION_NEAR_ACCOMMODATION\", \"distance_m\": 4169.2}, {\"source\": \"Attraction::6781793\", \"target\": \"Restaurant::950845.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4228.55}, {\"source\": \"Restaurant::950845.0\", \"target\": \"Attraction::6781793\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4228.55}, {\"source\": \"Accommodation::42111286.0\", \"target\": \"Restaurant::3749141.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4267.2}, {\"source\": \"Attraction::103496\", \"target\": \"Restaurant::3165297.0\", \"type\": \"RESTAURANT_NEAR_ATTRACTION\", \"distance_m\": 4307.87}, {\"source\": \"Restaurant::3165297.0\", \"target\": \"Attraction::103496\", \"type\": \"ATTRACTION_NEAR_RESTAURANT\", \"distance_m\": 4307.87}, {\"source\": \"Accommodation::42111286.0\", \"target\": \"Restaurant::19797463.0\", \"type\": \"RESTAURANT_NEAR_ACCOMMODATION\", \"distance_m\": 4310.66}], \"temporal_planning\": {\"trip_dates\": [\"2024-11-26\", \"2024-11-27\", \"2024-11-28\"], \"daily_default_targets\": {\"breakfast\": \"08:00-09:00\", \"morning_attraction\": \"09:30-12:30\", \"lunch\": \"13:00-14:00\", \"afternoon_attraction\": \"14:30-18:30\", \"dinner\": \"19:00-21:00\"}, \"minimum_visit_duration_minutes\": {\"short_activity\": 60, \"normal_attraction\": 120}, \"outbound_flight_options\": [{\"flight_node_key\": \"Flight::F1310993\", \"dep_time\": \"13:45\", \"arr_time\": \"19:36\", \"local_activity_start_after_arrival_buffer\": \"20:06\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F0331867\", \"dep_time\": \"14:00\", \"arr_time\": \"19:45\", \"local_activity_start_after_arrival_buffer\": \"20:15\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F3533726\", \"dep_time\": \"14:25\", \"arr_time\": \"20:05\", \"local_activity_start_after_arrival_buffer\": \"20:35\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2516719\", \"dep_time\": \"13:38\", \"arr_time\": \"19:23\", \"local_activity_start_after_arrival_buffer\": \"19:53\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}, {\"flight_node_key\": \"Flight::F2042596\", \"dep_time\": \"13:58\", \"arr_time\": \"19:59\", \"local_activity_start_after_arrival_buffer\": \"20:29\", \"arrival_buffer_minutes\": 30, \"expected_slots_if_selected\": [], \"guidance\": \"Arrival is too late for local planning except possibly accommodation.\"}], \"return_flight_options\": [{\"flight_node_key\": \"Flight::F1295674\", \"dep_time\": \"20:21\", \"arr_time\": \"22:34\", \"latest_local_activity_finish_before_airport_buffer\": \"18:21\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"guidance\": \"Departure is late enough for a productive return day.\"}, {\"flight_node_key\": \"Flight::F0858533\", \"dep_time\": \"10:08\", \"arr_time\": \"12:51\", \"latest_local_activity_finish_before_airport_buffer\": \"08:08\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F3533729\", \"dep_time\": \"10:09\", \"arr_time\": \"12:37\", \"latest_local_activity_finish_before_airport_buffer\": \"08:09\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F2986793\", \"dep_time\": \"10:09\", \"arr_time\": \"12:50\", \"latest_local_activity_finish_before_airport_buffer\": \"08:09\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}, {\"flight_node_key\": \"Flight::F2516722\", \"dep_time\": \"10:10\", \"arr_time\": \"12:30\", \"latest_local_activity_finish_before_airport_buffer\": \"08:10\", \"airport_buffer_minutes\": 120, \"expected_slots_if_selected\": [], \"guidance\": \"Departure is too early for local planning.\"}]}, \"slot_candidate_node_keys\": {\"meal_slots\": {\"breakfast\": [\"Restaurant::19797463.0\", \"Restaurant::24071158.0\"], \"lunch\": [\"Restaurant::3749141.0\", \"Restaurant::24071158.0\", \"Restaurant::444232.0\", \"Restaurant::478153.0\", \"Restaurant::950845.0\", \"Restaurant::435864.0\", \"Restaurant::435285.0\", \"Restaurant::3165297.0\"], \"dinner\": [\"Restaurant::19797463.0\", \"Restaurant::24071158.0\", \"Restaurant::444232.0\", \"Restaurant::435880.0\", \"Restaurant::478153.0\", \"Restaurant::950845.0\", \"Restaurant::435864.0\", \"Restaurant::435285.0\", \"Restaurant::3165297.0\"]}, \"attraction_slots\": {\"morning_attraction\": [\"Attraction::6781793\", \"Attraction::588792\", \"Attraction::104713\", \"Attraction::105199\", \"Attraction::103496\", \"Attraction::126944\", \"Attraction::144319\", \"Attraction::7092286\", \"Attraction::103493\", \"Attraction::126907\"], \"afternoon_attraction\": [\"Attraction::6781793\", \"Attraction::588792\", \"Attraction::104713\", \"Attraction::105199\", \"Attraction::103496\", \"Attraction::126944\", \"Attraction::144319\", \"Attraction::7092286\", \"Attraction::103493\", \"Attraction::126907\"]}, \"event_slots_by_date\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}}, \"planning_slot_guide\": {\"decision_order\": [\"Choose outbound and return flights first.\", \"Use selected flight times to determine day_1 and last_day required slots.\", \"Choose accommodation as the route anchor.\", \"Choose restaurants, attractions, and events only for feasible slots.\", \"Prefer choices connected by candidate_packet.edges with smaller distance_m.\"], \"meal_slots_use_only_these_keys\": {\"breakfast\": [{\"node_key\": \"Restaurant::19797463.0\", \"name\": \"By George restaurant and bar\"}, {\"node_key\": \"Restaurant::24071158.0\", \"name\": \"The Americano Atlanta\"}], \"lunch\": [{\"node_key\": \"Restaurant::3749141.0\", \"name\": \"Aviva by Kameel\"}, {\"node_key\": \"Restaurant::24071158.0\", \"name\": \"The Americano Atlanta\"}, {\"node_key\": \"Restaurant::444232.0\", \"name\": \"Canoe\"}, {\"node_key\": \"Restaurant::478153.0\", \"name\": \"South City Kitchen Midtown\"}, {\"node_key\": \"Restaurant::950845.0\", \"name\": \"Fox Bros. Bar-B-Q\"}, {\"node_key\": \"Restaurant::435864.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\"}, {\"node_key\": \"Restaurant::435285.0\", \"name\": \"Ray's in the City\"}, {\"node_key\": \"Restaurant::3165297.0\", \"name\": \"The Optimist\"}], \"dinner\": [{\"node_key\": \"Restaurant::19797463.0\", \"name\": \"By George restaurant and bar\"}, {\"node_key\": \"Restaurant::24071158.0\", \"name\": \"The Americano Atlanta\"}, {\"node_key\": \"Restaurant::444232.0\", \"name\": \"Canoe\"}, {\"node_key\": \"Restaurant::435880.0\", \"name\": \"Bone's Restaurant\"}, {\"node_key\": \"Restaurant::478153.0\", \"name\": \"South City Kitchen Midtown\"}, {\"node_key\": \"Restaurant::950845.0\", \"name\": \"Fox Bros. Bar-B-Q\"}, {\"node_key\": \"Restaurant::435864.0\", \"name\": \"Fogo de Chao Brazilian Steakhouse\"}, {\"node_key\": \"Restaurant::435285.0\", \"name\": \"Ray's in the City\"}, {\"node_key\": \"Restaurant::3165297.0\", \"name\": \"The Optimist\"}]}, \"events_use_only_these_keys_by_date\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}, \"required_slots_by_day\": [{\"day_number\": 1, \"date\": \"2024-11-26\", \"required_slots\": {\"Flight::F1310993\": [], \"Flight::F0331867\": [], \"Flight::F3533726\": [], \"Flight::F2516719\": [], \"Flight::F2042596\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected outbound flight's expected slots as the minimum required local slots.\"}, {\"day_number\": 2, \"date\": \"2024-11-27\", \"required_slots\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\", \"dinner\"], \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Full non-travel day.\"}, {\"day_number\": 3, \"date\": \"2024-11-28\", \"required_slots\": {\"Flight::F1295674\": [\"breakfast\", \"morning_attraction\", \"lunch\", \"afternoon_attraction\"], \"Flight::F0858533\": [], \"Flight::F3533729\": [], \"Flight::F2986793\": [], \"Flight::F2516722\": []}, \"event_allowed_node_keys\": [], \"event_rule\": \"Use null for event if event_allowed_node_keys is empty.\", \"note\": \"Use the selected return flight's expected slots as the minimum required local slots.\"}], \"restaurant_rule\": \"For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.\", \"event_rule\": \"For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null.\"}, \"date_compatible_event_node_keys\": {\"2024-11-26\": [], \"2024-11-27\": [], \"2024-11-28\": []}, \"rules\": {\"choose_only_node_keys_from_nodes\": true, \"one_accommodation_for_all_nights\": true, \"outbound_flight_origin_to_destination_on_first_date\": true, \"return_flight_destination_to_origin_on_last_date\": true, \"meals_must_use_restaurant_nodes\": true, \"attractions_must_use_attraction_nodes\": true, \"events_must_use_event_nodes_matching_day_date_when_available\": true, \"do_not_repeat_attractions_or_events\": true, \"respect_total_budget\": true, \"fill_feasible_slots\": true, \"null_is_last_resort\": true, \"day_type_constraints\": {\"outbound_travel_day\": [\"This is day 1. It must include the outbound flight.\", \"Do not schedule anything before outbound flight arrival.\", \"Start city activities only after arrival plus airport/city transfer buffer.\", \"Use the accommodation as the first local anchor after arrival.\", \"Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.\", \"After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.\", \"If arrival is late, schedule dinner near the accommodation when feasible.\", \"Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded.\"], \"non_travel_day\": [\"This is a full day in the destination city.\", \"Start and end at the accommodation.\", \"Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.\", \"Do not set event to null if there is a date-compatible event that fits the day.\", \"Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.\", \"Prefer diverse attractions and do not repeat attractions or events.\", \"Respect meal slot compatibility for breakfast/lunch/dinner restaurants.\"], \"return_travel_day\": [\"This is the last day. It must include the return flight.\", \"All local activities must end before return flight departure minus a safe airport buffer.\", \"Do not schedule dinner after the return flight.\", \"Choose the final attraction according to visit_duration fit in the remaining time, not only distance.\", \"When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.\", \"If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible.\"]}, \"last_day_departure\": \"Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time.\"}}}"
+    }
+  ],
+  "candidate_packet": {
+    "query_id": "idx_94",
+    "query_text": "Plan a 3-day trip for 1 person from Boise to Atlanta from November 26th to November 28th, 2024, with a budget of $2,400.",
+    "request": {
+      "org": "Boise",
+      "dest": "Atlanta",
+      "days": 3,
+      "visiting_city_number": 1,
+      "date": "['2024-11-26', '2024-11-27', '2024-11-28']",
+      "people_number": 1,
+      "local_constraint": "{'house rule': None, 'cuisine': None, 'room type': None, 'transportation': None, 'event': None, 'attraction': None}",
+      "budget": 2400,
+      "query": "Plan a 3-day trip for 1 person from Boise to Atlanta from November 26th to November 28th, 2024, with a budget of $2,400.",
+      "level": "easy",
+      "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Nature; Spending Preference: Luxury Traveler; Location Preference: Forests/Wildlife"
+    },
+    "dates": [
+      "2024-11-26",
+      "2024-11-27",
+      "2024-11-28"
+    ],
+    "preferences": {
+      "traveler_type": "Laidback Traveler",
+      "purpose_of_travel": "Nature",
+      "spending_preference": "Luxury Traveler",
+      "location_preference": "Forests/Wildlife"
+    },
+    "constraints": {
+      "house rule": null,
+      "cuisine": null,
+      "room type": null,
+      "transportation": null,
+      "event": null,
+      "attraction": null
+    },
+    "nodes": [
+      {
+        "node_key": "Flight::F1310993",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Boise",
+          "DestCityName": "Atlanta",
+          "DepTime": "13:45",
+          "ArrTime": "19:36",
+          "Price": 389
+        }
+      },
+      {
+        "node_key": "Flight::F0331867",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Boise",
+          "DestCityName": "Atlanta",
+          "DepTime": "14:00",
+          "ArrTime": "19:45",
+          "Price": 552
+        }
+      },
+      {
+        "node_key": "Flight::F3533726",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Boise",
+          "DestCityName": "Atlanta",
+          "DepTime": "14:25",
+          "ArrTime": "20:05",
+          "Price": 562
+        }
+      },
+      {
+        "node_key": "Flight::F2516719",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Boise",
+          "DestCityName": "Atlanta",
+          "DepTime": "13:38",
+          "ArrTime": "19:23",
+          "Price": 731
+        }
+      },
+      {
+        "node_key": "Flight::F2042596",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-26",
+          "OriginCityName": "Boise",
+          "DestCityName": "Atlanta",
+          "DepTime": "13:58",
+          "ArrTime": "19:59",
+          "Price": 786
+        }
+      },
+      {
+        "node_key": "Flight::F1295674",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "Atlanta",
+          "DestCityName": "Boise",
+          "DepTime": "20:21",
+          "ArrTime": "22:34",
+          "Price": 466
+        }
+      },
+      {
+        "node_key": "Flight::F0858533",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "Atlanta",
+          "DestCityName": "Boise",
+          "DepTime": "10:08",
+          "ArrTime": "12:51",
+          "Price": 477
+        }
+      },
+      {
+        "node_key": "Flight::F3533729",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "Atlanta",
+          "DestCityName": "Boise",
+          "DepTime": "10:09",
+          "ArrTime": "12:37",
+          "Price": 511
+        }
+      },
+      {
+        "node_key": "Flight::F2986793",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "Atlanta",
+          "DestCityName": "Boise",
+          "DepTime": "10:09",
+          "ArrTime": "12:50",
+          "Price": 610
+        }
+      },
+      {
+        "node_key": "Flight::F2516722",
+        "domain": "flight",
+        "label": "Flight",
+        "properties": {
+          "FlightDate": "2024-11-28",
+          "OriginCityName": "Atlanta",
+          "DestCityName": "Boise",
+          "DepTime": "10:10",
+          "ArrTime": "12:30",
+          "Price": 714
+        }
+      },
+      {
+        "node_key": "Accommodation::10635379.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "10635379.0",
+          "name": "Hampton Guest House",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "10",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$109 per night",
+            "originalPrice": null,
+            "price": "$109",
+            "qualifier": "night",
+            "total": "$545 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  1067 reviews",
+            "localizedLabel": "4.99 (1067)",
+            "average": 4.99,
+            "reviewsCount": 1067
+          },
+          "coordinates": {
+            "latitude": 33.38407,
+            "longitude": -84.26885
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::16268972.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "16268972.0",
+          "name": "Designer Suite Piedmont Park/Beltline & Parking",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No parties",
+          "pricing": {
+            "label": "$149 per night",
+            "originalPrice": null,
+            "price": "$149",
+            "qualifier": "night",
+            "total": "$745 total"
+          },
+          "rating": {
+            "label": "4.99 out of 5 average rating,  947 reviews",
+            "localizedLabel": "4.99 (947)",
+            "average": 4.99,
+            "reviewsCount": 947
+          },
+          "coordinates": {
+            "latitude": 33.78401,
+            "longitude": -84.37015
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::5.7e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "5.7e+17",
+          "name": "First-Class Flats | * From 1 to 10 Guests *",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No visitors & No smoking",
+          "pricing": {
+            "label": "$114 per night",
+            "originalPrice": null,
+            "price": "$114",
+            "qualifier": "night",
+            "total": "$569 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  317 reviews",
+            "localizedLabel": "4.93 (317)",
+            "average": 4.93,
+            "reviewsCount": 317
+          },
+          "coordinates": {
+            "latitude": 33.78982,
+            "longitude": -84.25572
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::42111286.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "42111286.0",
+          "name": "Tiny House Retreat * Stock Tank Pool",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "5",
+          "house_rules": "No children under 10 & No parties",
+          "pricing": {
+            "label": "$141 per night",
+            "originalPrice": null,
+            "price": "$141",
+            "qualifier": "night",
+            "total": "$703 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  626 reviews",
+            "localizedLabel": "4.98 (626)",
+            "average": 4.98,
+            "reviewsCount": 626
+          },
+          "coordinates": {
+            "latitude": 33.7569265847832,
+            "longitude": -84.34110215124629
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::35279146.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "35279146.0",
+          "name": "Birds-n-Bees bnb -  Intown ATL - 1 Gig Internet",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "4",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$102 per night",
+            "originalPrice": null,
+            "price": "$102",
+            "qualifier": "night",
+            "total": "$507 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  623 reviews",
+            "localizedLabel": "4.93 (623)",
+            "average": 4.93,
+            "reviewsCount": 623
+          },
+          "coordinates": {
+            "latitude": 33.72578,
+            "longitude": -84.44739
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::24120415.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "24120415.0",
+          "name": "Grant Park Guest House | Charming Tiny House",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$134 per night",
+            "originalPrice": null,
+            "price": "$134",
+            "qualifier": "night",
+            "total": "$668 total"
+          },
+          "rating": {
+            "label": "4.98 out of 5 average rating,  368 reviews",
+            "localizedLabel": "4.98 (368)",
+            "average": 4.98,
+            "reviewsCount": 368
+          },
+          "coordinates": {
+            "latitude": 33.7462,
+            "longitude": -84.37446
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::6.75e+17",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "6.75e+17",
+          "name": "Midtown Hidden Gem @Piedmont Park/Private+Parking",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "3",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$134 per night",
+            "originalPrice": null,
+            "price": "$134",
+            "qualifier": "night",
+            "total": "$666 total"
+          },
+          "rating": {
+            "label": "4.93 out of 5 average rating,  219 reviews",
+            "localizedLabel": "4.93 (219)",
+            "average": 4.93,
+            "reviewsCount": 219
+          },
+          "coordinates": {
+            "latitude": 33.7846685,
+            "longitude": -84.36814679999999
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::28314488.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "28314488.0",
+          "name": "Downtown Beach Room **FREE PARKING** Private Room",
+          "City": "Atlanta",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No pets",
+          "pricing": {
+            "label": "$56 per night",
+            "originalPrice": null,
+            "price": "$56",
+            "qualifier": "night",
+            "total": "$277 total"
+          },
+          "rating": {
+            "label": "4.84 out of 5 average rating,  578 reviews",
+            "localizedLabel": "4.84 (578)",
+            "average": 4.84,
+            "reviewsCount": 578
+          },
+          "coordinates": {
+            "latitude": 33.72058,
+            "longitude": -84.41615
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::45347293.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "45347293.0",
+          "name": "Historic Lounge - Private BR in the Heart of ATL#2",
+          "City": "Atlanta",
+          "roomType": "private_room",
+          "max_occupancy": "2",
+          "house_rules": "No visitors",
+          "pricing": {
+            "label": "$91 per night",
+            "originalPrice": null,
+            "price": "$91",
+            "qualifier": "night",
+            "total": "$451 total"
+          },
+          "rating": {
+            "label": "4.84 out of 5 average rating,  383 reviews",
+            "localizedLabel": "4.84 (383)",
+            "average": 4.84,
+            "reviewsCount": 383
+          },
+          "coordinates": {
+            "latitude": 33.76685,
+            "longitude": -84.37705
+          }
+        }
+      },
+      {
+        "node_key": "Accommodation::17907884.0",
+        "domain": "accommodation",
+        "label": "Accommodation",
+        "properties": {
+          "id": "17907884.0",
+          "name": "Urban Oasis in Historic Inman Park",
+          "City": "Atlanta",
+          "roomType": "entire_home",
+          "max_occupancy": "2",
+          "house_rules": "No pets & No children under 10",
+          "pricing": {
+            "label": "$153 per night",
+            "originalPrice": null,
+            "price": "$153",
+            "qualifier": "night",
+            "total": "$762 total"
+          },
+          "rating": {
+            "label": "4.97 out of 5 average rating,  895 reviews",
+            "localizedLabel": "4.97 (895)",
+            "average": 4.97,
+            "reviewsCount": 895
+          },
+          "coordinates": {
+            "latitude": 33.75832,
+            "longitude": -84.36155
+          }
+        }
+      },
+      {
+        "node_key": "Attraction::6781793",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "6781793",
+          "name": "National Center for Civil and Human Rights",
+          "City": "Atlanta",
+          "subtype": [
+            "Art Museums",
+            "Points of Interest & Landmarks",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "5.0",
+          "rankingString": "#2 of 586 things to do in Atlanta",
+          "address": "100 Ivan Allen Jr Blvd, Atlanta, GA 30313",
+          "description": "The National Center for Civil and Human Rights in downtown Atlanta is an engaging cultural attraction that connects The American Civil Rights Movement to today's Global Human Rights Movements. The Center features four immersive and thought-provoking exhibit spaces, including a continually rotating gallery of items from The Morehouse College Martin Luther King, Jr. Collection, where visitors can view the personal papers and items of Dr. King. The Center also provides designated event spaces an..."
+        }
+      },
+      {
+        "node_key": "Attraction::588792",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "588792",
+          "name": "Georgia Aquarium",
+          "City": "Atlanta",
+          "subtype": [
+            "Aquariums"
+          ],
+          "subcategories": [
+            "Zoos & Aquariums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#1 of 586 things to do in Atlanta",
+          "address": "225 Baker St, Atlanta, GA 30313-1809",
+          "description": "Georgia Aquarium contains more than 70 amazing habitats, with thousands of marine animals such as whale sharks, manta rays, beluga whales, and more. Don’t miss out on the animal encounter programs, where you can get up close and personal with dolphins, penguins, and sea lions. Combine your visit to the aquarium with other top attractions and enjoy additional discounts with the Atlanta CityPASS. You might also want to visit around Halloween or the holidays for special themed activities or pres..."
+        }
+      },
+      {
+        "node_key": "Attraction::104713",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "104713",
+          "name": "Atlanta Botanical Garden",
+          "City": "Atlanta",
+          "subtype": [
+            "Gardens"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#10 of 586 things to do in Atlanta",
+          "address": "1345 Piedmont Ave, Atlanta, GA 30309-3366",
+          "description": "Step into a world of magic and serenity at the Atlanta Botanical Garden, where features like the Fuqua Orchid Center treat visitors to a rare collection of high-elevation orchids never before grown in the southeast."
+        }
+      },
+      {
+        "node_key": "Attraction::105199",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "105199",
+          "name": "Fox Theatre",
+          "City": "Atlanta",
+          "subtype": [
+            "Theaters",
+            "Architectural Buildings"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Concerts & Shows"
+          ],
+          "visit_duration": "2.75",
+          "rating": "4.5",
+          "rankingString": "#5 of 586 things to do in Atlanta",
+          "address": "660 Peachtree St NE, Atlanta, GA 30308-1969",
+          "description": "Recently restored to its original gilded look of the 1920s, the Fox Theatre features \"Mighty Mo,\" a classic Moller organ with over 3,600 pipes. The lavish theatre currently hosts Broadway musicals, comedy shows and dance companies throughout the year."
+        }
+      },
+      {
+        "node_key": "Attraction::103496",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103496",
+          "name": "Martin Luther King Jr. National Historic Site",
+          "City": "Atlanta",
+          "subtype": [
+            "Historic Sites"
+          ],
+          "subcategories": [
+            "Sights & Landmarks"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#3 of 586 things to do in Atlanta",
+          "address": "450 Auburn Ave NE, Atlanta, GA 30312-1504",
+          "description": "Start at the visitor center and then work your way around the three main sites in this historic park: the home in which the leader of the Civil Rights movement in America was born, the church where he preached and the memorial site where he is buried. A major Atlanta attraction, the park draws some 500,000 visitors each year."
+        }
+      },
+      {
+        "node_key": "Attraction::126944",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126944",
+          "name": "Piedmont Park",
+          "City": "Atlanta",
+          "subtype": [
+            "Parks"
+          ],
+          "subcategories": [
+            "Nature & Parks"
+          ],
+          "visit_duration": "4.5",
+          "rating": "4.5",
+          "rankingString": "#15 of 586 things to do in Atlanta",
+          "address": "1322 Monroe Drive, Atlanta, GA 30306-3440",
+          "description": "This 185-acre park, home to the Atlanta Botanical Gardens and to summer festivals, is also popular with joggers."
+        }
+      },
+      {
+        "node_key": "Attraction::144319",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "144319",
+          "name": "High Museum of Art",
+          "City": "Atlanta",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#18 of 586 things to do in Atlanta",
+          "address": "1280 Peachtree St NE, Atlanta, GA 30309-3502",
+          "description": "This stunning, porcelain-enameled building was designed by famed architect Richard Meier and is rivaled only by the art inside. Featuring American, European and African art, as well as decorative art and photography, the High Museum boasts a permanent collection of over 11,000 pieces, many of which can be viewed from different levels of the four-story, glass atrium."
+        }
+      },
+      {
+        "node_key": "Attraction::7092286",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "7092286",
+          "name": "College Football Hall of Fame",
+          "City": "Atlanta",
+          "subtype": [
+            "Specialty Museums"
+          ],
+          "subcategories": [
+            "Museums"
+          ],
+          "visit_duration": "3.0",
+          "rating": "4.5",
+          "rankingString": "#19 of 586 things to do in Atlanta",
+          "address": "250 Marietta St NW, Atlanta, GA 30313-1602",
+          "description": "Located in Downtown Atlanta, the College Football Hall of Fame and Chick-fil-A Fan Experience puts you closer to the game than ever before. From the huge helmet wall featuring over 760 schools in The Quad to the giant Indoor Playing Field and Chick-fil-A Peach Bowl Skill Zone, the College Football Hall of Fame provides fans of all ages with memorable things to do. Named one of the top 10 things to do in Atlanta, GA, the College Football Hall of Fame is the perfect spot to host an event. Wheth..."
+        }
+      },
+      {
+        "node_key": "Attraction::103493",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "103493",
+          "name": "Atlanta History Center",
+          "City": "Atlanta",
+          "subtype": [
+            "Historic Sites",
+            "Gardens",
+            "History Museums"
+          ],
+          "subcategories": [
+            "Sights & Landmarks",
+            "Museums",
+            "Nature & Parks"
+          ],
+          "visit_duration": "3.5",
+          "rating": "4.5",
+          "rankingString": "#11 of 586 things to do in Atlanta",
+          "address": "130 W Paces Ferry Rd NW, Atlanta, GA 30305",
+          "description": "Founded in 1926, the Atlanta History Center is an all-inclusive thirty-three-acre destination featuring the Atlanta History Museum, one of the Southeast's largest history museums; three historic houses, including the 1928 Swan House; the Kenan Research Center; the Grand Overlook event space; a museum shop and acres of historic gardens and trails. In addition, the History Center operates the Margaret Mitchell House. Located in Midtown Atlanta, the two-acre campus features tours of the house an..."
+        }
+      },
+      {
+        "node_key": "Attraction::126907",
+        "domain": "attraction",
+        "label": "Attraction",
+        "properties": {
+          "id": "126907",
+          "name": "Jimmy Carter Presidential Library & Museum",
+          "City": "Atlanta",
+          "subtype": [
+            "History Museums",
+            "Libraries"
+          ],
+          "subcategories": [
+            "Museums",
+            "Traveler Resources"
+          ],
+          "visit_duration": "2.0",
+          "rating": "4.5",
+          "rankingString": "#4 of 586 things to do in Atlanta",
+          "address": "441 John Lewis Freedom Pkwy NE Freedom Park, Atlanta, GA 30307-1496",
+          "description": "The Carter Presidential Library and Museum is a state-of-the-art museum tracing the life and work of President Jimmy Carter, from his childhood in Plains to the work he and Mrs. Carter do around the world to promote peace and health. The Museum sits in a beautifully landscaped 35 acre park with two small lakes, a Japanese garden and a spectacular view of the Atlanta skyline. The whole family will enjoy visiting. Online ticketing information at www.jimmycarterlibrary.gov"
+        }
+      },
+      {
+        "node_key": "Restaurant::3749141.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3749141.0",
+          "name": "Aviva by Kameel",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch"
+          ],
+          "cuisines": [
+            "Lebanese",
+            "Mediterranean",
+            "Healthy",
+            "Middle Eastern"
+          ],
+          "avg_cost": "21.0",
+          "rating": "5.0",
+          "priceLevel": "$",
+          "address": "225 Peachtree St NE Inside the Mall of Peachtree Center, Atlanta, GA 30303",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::19797463.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "19797463.0",
+          "name": "By George restaurant and bar",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Breakfast",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "French",
+            "American",
+            "Healthy"
+          ],
+          "avg_cost": "45.0",
+          "rating": "5.0",
+          "priceLevel": "$$ - $$$",
+          "address": "127 Peachtree St NE The Candler Hotel Atlanta, Curio Collection by Hilton, Atlanta, GA 30303",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 660,
+                  "closeHours": "11:00"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 660,
+                  "closeHours": "11:00"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 660,
+                  "closeHours": "11:00"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 660,
+                  "closeHours": "11:00"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 660,
+                  "closeHours": "11:00"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::24071158.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "24071158.0",
+          "name": "The Americano Atlanta",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Breakfast",
+            "Lunch",
+            "Dinner",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Italian",
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "72.0",
+          "rating": "5.0",
+          "priceLevel": "$$$$",
+          "address": "3315 Peachtree Rd NE, Atlanta, GA 30326-1007",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 630,
+                  "closeHours": "10:30"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 630,
+                  "closeHours": "10:30"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 630,
+                  "closeHours": "10:30"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 630,
+                  "closeHours": "10:30"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 630,
+                  "closeHours": "10:30"
+                },
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 420,
+                  "openHours": "07:00",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::444232.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "444232.0",
+          "name": "Canoe",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Fusion"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "4199 Paces Ferry Rd SE, Atlanta, GA 30339-5750",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 630,
+                  "openHours": "10:30",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 840,
+                  "closeHours": "14:00"
+                },
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::435880.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "435880.0",
+          "name": "Bone's Restaurant",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Dinner"
+          ],
+          "cuisines": [
+            "American",
+            "Steakhouse"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "3130 Piedmont Rd NE, Atlanta, GA 30305-2508",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1050,
+                  "openHours": "17:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::478153.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "478153.0",
+          "name": "South City Kitchen Midtown",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch"
+          ],
+          "cuisines": [
+            "American"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1144 Crescent Ave NE, Atlanta, GA 30309-3649",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1290,
+                  "closeHours": "21:30"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 870,
+                  "closeHours": "14:30"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 600,
+                  "openHours": "10:00",
+                  "close": 900,
+                  "closeHours": "15:00"
+                },
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::950845.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "950845.0",
+          "name": "Fox Bros. Bar-B-Q",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "American",
+            "Bar",
+            "Barbecue"
+          ],
+          "avg_cost": "45.0",
+          "rating": "4.5",
+          "priceLevel": "$$ - $$$",
+          "address": "1238 Dekalb Ave NE, Atlanta, GA 30307-2026",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 660,
+                  "openHours": "11:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::435864.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "435864.0",
+          "name": "Fogo de Chao Brazilian Steakhouse",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Steakhouse"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "3101 Piedmont Rd NE, Atlanta, GA 30305-2507",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1350,
+                  "closeHours": "22:30"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::435285.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "435285.0",
+          "name": "Ray's in the City",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Late Night",
+            "Drinks"
+          ],
+          "cuisines": [
+            "Steakhouse",
+            "Seafood"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "240 Peachtree St Nw, Atlanta, GA 30303-1340",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1260,
+                  "closeHours": "21:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 690,
+                  "openHours": "11:30",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 960,
+                  "openHours": "16:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Restaurant::3165297.0",
+        "domain": "restaurant",
+        "label": "Restaurant",
+        "properties": {
+          "id": "3165297.0",
+          "name": "The Optimist",
+          "City": "Atlanta",
+          "mealTypes": [
+            "Lunch",
+            "Dinner",
+            "Brunch",
+            "Late Night"
+          ],
+          "cuisines": [
+            "Seafood"
+          ],
+          "avg_cost": "72.0",
+          "rating": "4.5",
+          "priceLevel": "$$$$",
+          "address": "914 Howell Mill Rd NW, Atlanta, GA 30318-0518",
+          "hours": {
+            "weekRanges": [
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1320,
+                  "closeHours": "22:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 1020,
+                  "openHours": "17:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ],
+              [
+                {
+                  "open": 900,
+                  "openHours": "15:00",
+                  "close": 1380,
+                  "closeHours": "23:00"
+                }
+              ]
+            ],
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7a30e",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7a30e",
+          "name": "Air Supply",
+          "city": "Atlanta",
+          "dateTitle": "15-11-2024",
+          "segmentName": "Music",
+          "genreName": "Pop",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7a30e",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7C6_x",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7C6_x",
+          "name": "Blackberry Smoke",
+          "city": "Atlanta",
+          "dateTitle": "09-11-2024",
+          "segmentName": "Music",
+          "genreName": "Country",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7C6_x",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7Gk7E",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7Gk7E",
+          "name": "Here Come the Mummies w/ The Toxhards",
+          "city": "Atlanta",
+          "dateTitle": "08-11-2024",
+          "segmentName": "Music",
+          "genreName": "R&B",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7Gk7E",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::Z7r9jZ1A7uIv4",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "Z7r9jZ1A7uIv4",
+          "name": "Mannheim Steamroller",
+          "city": "Atlanta",
+          "dateTitle": "13-11-2024",
+          "segmentName": "Music",
+          "genreName": "Classical",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/event/Z7r9jZ1A7uIv4",
+            "availabilityStarts": "1900-01-01T06:00:00Z",
+            "price": null,
+            "priceCurrency": null
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1VZb3ChEs6R",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1VZb3ChEs6R",
+          "name": "Florida Everblades vs. Orlando Solar Bears",
+          "city": "Atlanta",
+          "dateTitle": "08-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Hockey",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/florida-everblades-vs-orlando-solar-bears-estero-florida-11-08-2024/event/0D0061239B9F11EF",
+            "availabilityStarts": "2024-10-01T14:00:00Z",
+            "price": 19,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1VZb3ChIoFK",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1VZb3ChIoFK",
+          "name": "Florida Everblades vs. Orlando Solar Bears",
+          "city": "Atlanta",
+          "dateTitle": "09-11-2024",
+          "segmentName": "Sports",
+          "genreName": "Hockey",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/florida-everblades-vs-orlando-solar-bears-estero-florida-11-09-2024/event/0D0061239BA11213",
+            "availabilityStarts": "2024-10-01T14:00:00Z",
+            "price": 20,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1VZbkrIv3iL",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1VZbkrIv3iL",
+          "name": "Christian Nodal - Pa'l Cora Tour",
+          "city": "Atlanta",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Music",
+          "genreName": "Latin",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/christian-nodal-pal-cora-tour-estero-florida-11-03-2024/event/0D006067A8052B1F",
+            "availabilityStarts": "2024-05-16T14:00:00Z",
+            "price": 41,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1VZb6wNMep7",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1VZb6wNMep7",
+          "name": "Gabriel Iglesias: Don't Worry Be Fluffy",
+          "city": "Atlanta",
+          "dateTitle": "10-11-2024",
+          "segmentName": "Arts & Theatre",
+          "genreName": "Comedy",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/gabriel-iglesias-dont-worry-be-fluffy-estero-florida-11-10-2024/event/0D00607CA3DC2584",
+            "availabilityStarts": "2024-04-11T16:00:00Z",
+            "price": 49.5,
+            "priceCurrency": "USD"
+          }
+        }
+      },
+      {
+        "node_key": "Event::vvG1VZb1Tn6Nd6",
+        "domain": "event",
+        "label": "Event",
+        "properties": {
+          "id": "vvG1VZb1Tn6Nd6",
+          "name": "Christian Nodal VIP Upgrades (No Ticket Included)",
+          "city": "Atlanta",
+          "dateTitle": "03-11-2024",
+          "segmentName": "Miscellaneous",
+          "genreName": "Undefined",
+          "offer": {
+            "offerUrl": "https://www.ticketmaster.com/christian-nodal-vip-upgrades-no-ticket-estero-florida-11-03-2024/event/0D0060AFEA1E30C7",
+            "availabilityStarts": "2024-05-16T14:00:00Z",
+            "price": 99,
+            "priceCurrency": "USD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "Attraction::144319",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 466.16
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 466.16
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 480.98
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 523.96
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 625.81
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 625.81
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 696.09
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 696.09
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 698.75
+      },
+      {
+        "source": "Attraction::7092286",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 703.72
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 703.72
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 717.57
+      },
+      {
+        "source": "Accommodation::42111286.0",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 747.26
+      },
+      {
+        "source": "Attraction::588792",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 747.65
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 747.65
+      },
+      {
+        "source": "Attraction::7092286",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 765.46
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 765.46
+      },
+      {
+        "source": "Attraction::7092286",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 791.71
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 791.71
+      },
+      {
+        "source": "Attraction::588792",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 818.68
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 818.68
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 918.81
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 918.81
+      },
+      {
+        "source": "Attraction::588792",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 980.08
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 980.08
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 999.77
+      },
+      {
+        "source": "Attraction::126907",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1008.52
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1008.52
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1022.79
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1090.59
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1158.03
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1158.03
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1170.87
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1181.17
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1181.17
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1184.79
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1186.52
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1214.01
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1336.96
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1338.22
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1345.18
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1345.18
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1345.79
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1345.79
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1362.78
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1362.78
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1388.05
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1388.05
+      },
+      {
+        "source": "Attraction::103493",
+        "target": "Restaurant::435880.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1391.55
+      },
+      {
+        "source": "Restaurant::435880.0",
+        "target": "Attraction::103493",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1391.55
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1414.9
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1414.9
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1469.62
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1484.45
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1484.45
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1512.54
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1514.13
+      },
+      {
+        "source": "Attraction::103493",
+        "target": "Restaurant::435864.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1555.1
+      },
+      {
+        "source": "Restaurant::435864.0",
+        "target": "Attraction::103493",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1555.1
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1578.62
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1708.85
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1721.32
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1721.46
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1744.79
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1744.79
+      },
+      {
+        "source": "Accommodation::42111286.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1755.54
+      },
+      {
+        "source": "Attraction::103493",
+        "target": "Restaurant::24071158.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 1770.09
+      },
+      {
+        "source": "Restaurant::24071158.0",
+        "target": "Attraction::103493",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 1770.09
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1844.5
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1890.41
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 1920.08
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 1948.38
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2013.45
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2078.11
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2231.38
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2307.36
+      },
+      {
+        "source": "Attraction::588792",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2319.55
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2319.55
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2339.28
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2370.55
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2387.28
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2387.28
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2395.13
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2424.31
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2426.39
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2426.39
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2435.85
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2462.36
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2462.36
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2487.42
+      },
+      {
+        "source": "Attraction::144319",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2564.14
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2564.14
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2565.45
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2565.45
+      },
+      {
+        "source": "Attraction::7092286",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2588.76
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2588.76
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2601.87
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2625.02
+      },
+      {
+        "source": "Attraction::588792",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2691.41
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2691.41
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2696.46
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2701.28
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2714.08
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2805.95
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2809.0
+      },
+      {
+        "source": "Attraction::126907",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2929.46
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2929.46
+      },
+      {
+        "source": "Accommodation::42111286.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2965.66
+      },
+      {
+        "source": "Attraction::126907",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 2982.34
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 2982.34
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 2982.47
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 2993.13
+      },
+      {
+        "source": "Attraction::7092286",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3028.62
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3028.62
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3052.28
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3070.32
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3073.33
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3076.32
+      },
+      {
+        "source": "Attraction::126907",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3087.19
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3087.19
+      },
+      {
+        "source": "Accommodation::24120415.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3105.7
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3134.06
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3147.2
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3150.17
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3232.97
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3238.6
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3246.61
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3247.65
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3252.15
+      },
+      {
+        "source": "Attraction::144319",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3285.56
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3285.56
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3302.05
+      },
+      {
+        "source": "Attraction::144319",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3316.73
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3316.73
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3377.74
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3377.74
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3382.94
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3382.94
+      },
+      {
+        "source": "Attraction::126907",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3390.37
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::126907",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3390.37
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3408.92
+      },
+      {
+        "source": "Accommodation::45347293.0",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3415.07
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3417.89
+      },
+      {
+        "source": "Restaurant::478153.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3417.89
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::588792",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3431.48
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3442.95
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3521.13
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::435285.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3558.86
+      },
+      {
+        "source": "Restaurant::435285.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3558.86
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3563.85
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3566.61
+      },
+      {
+        "source": "Restaurant::3749141.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3566.61
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3659.55
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3659.55
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3662.92
+      },
+      {
+        "source": "Attraction::144319",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3671.28
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3671.28
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3679.93
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3679.93
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Attraction::7092286",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 3699.69
+      },
+      {
+        "source": "Attraction::105199",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3729.09
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::105199",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3729.09
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3729.67
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3729.67
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Restaurant::478153.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3730.72
+      },
+      {
+        "source": "Accommodation::16268972.0",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3759.48
+      },
+      {
+        "source": "Attraction::126944",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3765.13
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::126944",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3765.13
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3915.98
+      },
+      {
+        "source": "Restaurant::19797463.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3915.98
+      },
+      {
+        "source": "Accommodation::6.75e+17",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 3952.51
+      },
+      {
+        "source": "Attraction::104713",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 3964.08
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::104713",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 3964.08
+      },
+      {
+        "source": "Accommodation::17907884.0",
+        "target": "Attraction::144319",
+        "type": "ATTRACTION_NEAR_ACCOMMODATION",
+        "distance_m": 4169.2
+      },
+      {
+        "source": "Attraction::6781793",
+        "target": "Restaurant::950845.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4228.55
+      },
+      {
+        "source": "Restaurant::950845.0",
+        "target": "Attraction::6781793",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4228.55
+      },
+      {
+        "source": "Accommodation::42111286.0",
+        "target": "Restaurant::3749141.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4267.2
+      },
+      {
+        "source": "Attraction::103496",
+        "target": "Restaurant::3165297.0",
+        "type": "RESTAURANT_NEAR_ATTRACTION",
+        "distance_m": 4307.87
+      },
+      {
+        "source": "Restaurant::3165297.0",
+        "target": "Attraction::103496",
+        "type": "ATTRACTION_NEAR_RESTAURANT",
+        "distance_m": 4307.87
+      },
+      {
+        "source": "Accommodation::42111286.0",
+        "target": "Restaurant::19797463.0",
+        "type": "RESTAURANT_NEAR_ACCOMMODATION",
+        "distance_m": 4310.66
+      }
+    ],
+    "temporal_planning": {
+      "trip_dates": [
+        "2024-11-26",
+        "2024-11-27",
+        "2024-11-28"
+      ],
+      "daily_default_targets": {
+        "breakfast": "08:00-09:00",
+        "morning_attraction": "09:30-12:30",
+        "lunch": "13:00-14:00",
+        "afternoon_attraction": "14:30-18:30",
+        "dinner": "19:00-21:00"
+      },
+      "minimum_visit_duration_minutes": {
+        "short_activity": 60,
+        "normal_attraction": 120
+      },
+      "outbound_flight_options": [
+        {
+          "flight_node_key": "Flight::F1310993",
+          "dep_time": "13:45",
+          "arr_time": "19:36",
+          "local_activity_start_after_arrival_buffer": "20:06",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F0331867",
+          "dep_time": "14:00",
+          "arr_time": "19:45",
+          "local_activity_start_after_arrival_buffer": "20:15",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F3533726",
+          "dep_time": "14:25",
+          "arr_time": "20:05",
+          "local_activity_start_after_arrival_buffer": "20:35",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2516719",
+          "dep_time": "13:38",
+          "arr_time": "19:23",
+          "local_activity_start_after_arrival_buffer": "19:53",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        },
+        {
+          "flight_node_key": "Flight::F2042596",
+          "dep_time": "13:58",
+          "arr_time": "19:59",
+          "local_activity_start_after_arrival_buffer": "20:29",
+          "arrival_buffer_minutes": 30,
+          "expected_slots_if_selected": [],
+          "guidance": "Arrival is too late for local planning except possibly accommodation."
+        }
+      ],
+      "return_flight_options": [
+        {
+          "flight_node_key": "Flight::F1295674",
+          "dep_time": "20:21",
+          "arr_time": "22:34",
+          "latest_local_activity_finish_before_airport_buffer": "18:21",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction"
+          ],
+          "guidance": "Departure is late enough for a productive return day."
+        },
+        {
+          "flight_node_key": "Flight::F0858533",
+          "dep_time": "10:08",
+          "arr_time": "12:51",
+          "latest_local_activity_finish_before_airport_buffer": "08:08",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F3533729",
+          "dep_time": "10:09",
+          "arr_time": "12:37",
+          "latest_local_activity_finish_before_airport_buffer": "08:09",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F2986793",
+          "dep_time": "10:09",
+          "arr_time": "12:50",
+          "latest_local_activity_finish_before_airport_buffer": "08:09",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        },
+        {
+          "flight_node_key": "Flight::F2516722",
+          "dep_time": "10:10",
+          "arr_time": "12:30",
+          "latest_local_activity_finish_before_airport_buffer": "08:10",
+          "airport_buffer_minutes": 120,
+          "expected_slots_if_selected": [],
+          "guidance": "Departure is too early for local planning."
+        }
+      ]
+    },
+    "slot_candidate_node_keys": {
+      "meal_slots": {
+        "breakfast": [
+          "Restaurant::19797463.0",
+          "Restaurant::24071158.0"
+        ],
+        "lunch": [
+          "Restaurant::3749141.0",
+          "Restaurant::24071158.0",
+          "Restaurant::444232.0",
+          "Restaurant::478153.0",
+          "Restaurant::950845.0",
+          "Restaurant::435864.0",
+          "Restaurant::435285.0",
+          "Restaurant::3165297.0"
+        ],
+        "dinner": [
+          "Restaurant::19797463.0",
+          "Restaurant::24071158.0",
+          "Restaurant::444232.0",
+          "Restaurant::435880.0",
+          "Restaurant::478153.0",
+          "Restaurant::950845.0",
+          "Restaurant::435864.0",
+          "Restaurant::435285.0",
+          "Restaurant::3165297.0"
+        ]
+      },
+      "attraction_slots": {
+        "morning_attraction": [
+          "Attraction::6781793",
+          "Attraction::588792",
+          "Attraction::104713",
+          "Attraction::105199",
+          "Attraction::103496",
+          "Attraction::126944",
+          "Attraction::144319",
+          "Attraction::7092286",
+          "Attraction::103493",
+          "Attraction::126907"
+        ],
+        "afternoon_attraction": [
+          "Attraction::6781793",
+          "Attraction::588792",
+          "Attraction::104713",
+          "Attraction::105199",
+          "Attraction::103496",
+          "Attraction::126944",
+          "Attraction::144319",
+          "Attraction::7092286",
+          "Attraction::103493",
+          "Attraction::126907"
+        ]
+      },
+      "event_slots_by_date": {
+        "2024-11-26": [],
+        "2024-11-27": [],
+        "2024-11-28": []
+      }
+    },
+    "planning_slot_guide": {
+      "decision_order": [
+        "Choose outbound and return flights first.",
+        "Use selected flight times to determine day_1 and last_day required slots.",
+        "Choose accommodation as the route anchor.",
+        "Choose restaurants, attractions, and events only for feasible slots.",
+        "Prefer choices connected by candidate_packet.edges with smaller distance_m."
+      ],
+      "meal_slots_use_only_these_keys": {
+        "breakfast": [
+          {
+            "node_key": "Restaurant::19797463.0",
+            "name": "By George restaurant and bar"
+          },
+          {
+            "node_key": "Restaurant::24071158.0",
+            "name": "The Americano Atlanta"
+          }
+        ],
+        "lunch": [
+          {
+            "node_key": "Restaurant::3749141.0",
+            "name": "Aviva by Kameel"
+          },
+          {
+            "node_key": "Restaurant::24071158.0",
+            "name": "The Americano Atlanta"
+          },
+          {
+            "node_key": "Restaurant::444232.0",
+            "name": "Canoe"
+          },
+          {
+            "node_key": "Restaurant::478153.0",
+            "name": "South City Kitchen Midtown"
+          },
+          {
+            "node_key": "Restaurant::950845.0",
+            "name": "Fox Bros. Bar-B-Q"
+          },
+          {
+            "node_key": "Restaurant::435864.0",
+            "name": "Fogo de Chao Brazilian Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::435285.0",
+            "name": "Ray's in the City"
+          },
+          {
+            "node_key": "Restaurant::3165297.0",
+            "name": "The Optimist"
+          }
+        ],
+        "dinner": [
+          {
+            "node_key": "Restaurant::19797463.0",
+            "name": "By George restaurant and bar"
+          },
+          {
+            "node_key": "Restaurant::24071158.0",
+            "name": "The Americano Atlanta"
+          },
+          {
+            "node_key": "Restaurant::444232.0",
+            "name": "Canoe"
+          },
+          {
+            "node_key": "Restaurant::435880.0",
+            "name": "Bone's Restaurant"
+          },
+          {
+            "node_key": "Restaurant::478153.0",
+            "name": "South City Kitchen Midtown"
+          },
+          {
+            "node_key": "Restaurant::950845.0",
+            "name": "Fox Bros. Bar-B-Q"
+          },
+          {
+            "node_key": "Restaurant::435864.0",
+            "name": "Fogo de Chao Brazilian Steakhouse"
+          },
+          {
+            "node_key": "Restaurant::435285.0",
+            "name": "Ray's in the City"
+          },
+          {
+            "node_key": "Restaurant::3165297.0",
+            "name": "The Optimist"
+          }
+        ]
+      },
+      "events_use_only_these_keys_by_date": {
+        "2024-11-26": [],
+        "2024-11-27": [],
+        "2024-11-28": []
+      },
+      "required_slots_by_day": [
+        {
+          "day_number": 1,
+          "date": "2024-11-26",
+          "required_slots": {
+            "Flight::F1310993": [],
+            "Flight::F0331867": [],
+            "Flight::F3533726": [],
+            "Flight::F2516719": [],
+            "Flight::F2042596": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected outbound flight's expected slots as the minimum required local slots."
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-27",
+          "required_slots": [
+            "breakfast",
+            "morning_attraction",
+            "lunch",
+            "afternoon_attraction",
+            "dinner"
+          ],
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Full non-travel day."
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-28",
+          "required_slots": {
+            "Flight::F1295674": [
+              "breakfast",
+              "morning_attraction",
+              "lunch",
+              "afternoon_attraction"
+            ],
+            "Flight::F0858533": [],
+            "Flight::F3533729": [],
+            "Flight::F2986793": [],
+            "Flight::F2516722": []
+          },
+          "event_allowed_node_keys": [],
+          "event_rule": "Use null for event if event_allowed_node_keys is empty.",
+          "note": "Use the selected return flight's expected slots as the minimum required local slots."
+        }
+      ],
+      "restaurant_rule": "For breakfast/lunch/dinner, choose only from the matching meal_slots list. A restaurant valid for dinner is not automatically valid for breakfast or lunch.",
+      "event_rule": "For each date, choose event only from events_use_only_these_keys_by_date[date]; otherwise use null."
+    },
+    "date_compatible_event_node_keys": {
+      "2024-11-26": [],
+      "2024-11-27": [],
+      "2024-11-28": []
+    },
+    "rules": {
+      "choose_only_node_keys_from_nodes": true,
+      "one_accommodation_for_all_nights": true,
+      "outbound_flight_origin_to_destination_on_first_date": true,
+      "return_flight_destination_to_origin_on_last_date": true,
+      "meals_must_use_restaurant_nodes": true,
+      "attractions_must_use_attraction_nodes": true,
+      "events_must_use_event_nodes_matching_day_date_when_available": true,
+      "do_not_repeat_attractions_or_events": true,
+      "respect_total_budget": true,
+      "fill_feasible_slots": true,
+      "null_is_last_resort": true,
+      "day_type_constraints": {
+        "outbound_travel_day": [
+          "This is day 1. It must include the outbound flight.",
+          "Do not schedule anything before outbound flight arrival.",
+          "Start city activities only after arrival plus airport/city transfer buffer.",
+          "Use the accommodation as the first local anchor after arrival.",
+          "Prefer a lighter first day, but do not leave the day empty if arrival time allows local activities.",
+          "After arrival and check-in, schedule lunch or dinner and at least one attraction when feasible.",
+          "If arrival is late, schedule dinner near the accommodation when feasible.",
+          "Only schedule a first-day event if the flight arrives early enough and the event does not make the day overloaded."
+        ],
+        "non_travel_day": [
+          "This is a full day in the destination city.",
+          "Start and end at the accommodation.",
+          "Aim for breakfast, morning attraction, lunch near that attraction, afternoon attraction, event when date-compatible, and dinner.",
+          "Do not set event to null if there is a date-compatible event that fits the day.",
+          "Use proximity edges to reduce backtracking, especially accommodation-to-restaurant and attraction-to-restaurant edges.",
+          "Prefer diverse attractions and do not repeat attractions or events.",
+          "Respect meal slot compatibility for breakfast/lunch/dinner restaurants."
+        ],
+        "return_travel_day": [
+          "This is the last day. It must include the return flight.",
+          "All local activities must end before return flight departure minus a safe airport buffer.",
+          "Do not schedule dinner after the return flight.",
+          "Choose the final attraction according to visit_duration fit in the remaining time, not only distance.",
+          "When there is enough time, schedule breakfast, one or two attractions, lunch, event if date-compatible, then return_flight.",
+          "If the return flight is too early, choose a shorter morning-only plan, but still fill breakfast and one short attraction when feasible."
+        ]
+      },
+      "last_day_departure": "Choose an attraction before any event when time allows. Use attraction visit_duration as the main fit factor against return flight departure time."
+    }
+  }
+}

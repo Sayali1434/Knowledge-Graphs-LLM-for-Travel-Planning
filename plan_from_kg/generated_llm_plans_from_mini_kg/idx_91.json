@@ -1,0 +1,2953 @@
+{
+  "query_id": "idx_91",
+  "query_text": "Plan a 3-day trip for 2 people from Sioux Falls to Las Vegas from November 6th to November 8th, 2024, with a budget of $1,650. The trip should avoid self-driving transportation, and accommodations must follow house rules for visitors.",
+  "request": {
+    "org": "Sioux Falls",
+    "dest": "Las Vegas",
+    "days": 3,
+    "visiting_city_number": 1,
+    "date": "['2024-11-06', '2024-11-07', '2024-11-08']",
+    "people_number": 2,
+    "local_constraint": "{'house rule': 'visitors', 'cuisine': None, 'room type': None, 'transportation': 'no self-driving', 'event': None, 'attraction': None}",
+    "budget": 1650,
+    "query": "Plan a 3-day trip for 2 people from Sioux Falls to Las Vegas from November 6th to November 8th, 2024, with a budget of $1,650. The trip should avoid self-driving transportation, and accommodations must follow house rules for visitors.",
+    "level": "hard",
+    "persona": "Traveler Type: Laidback Traveler; Purpose of Travel: Cultural Exploration; Spending Preference: Luxury Traveler; Location Preference: Mountains"
+  },
+  "preferences": {
+    "traveler_type": "Laidback Traveler",
+    "purpose_of_travel": "Cultural Exploration",
+    "spending_preference": "Luxury Traveler",
+    "location_preference": "Mountains"
+  },
+  "constraints": {
+    "house rule": "visitors",
+    "cuisine": null,
+    "room type": null,
+    "transportation": "no self-driving",
+    "event": null,
+    "attraction": null
+  },
+  "optimization": {
+    "strategy": "llm_path_selection_from_mini_kg",
+    "objective_type": "llm_guided_with_local_validation",
+    "best_objective": [
+      "llm_selected"
+    ],
+    "hard_constraints": {
+      "total_cost_lte_budget": true,
+      "all_nodes_from_mini_kg": true,
+      "slot_domain_compatibility_satisfied": true,
+      "event_dates_satisfied": true,
+      "meal_slot_compatibility_satisfied": true
+    },
+    "llm_reasoning_summary": "Selected the best feasible path based on flight timings, accommodation proximity, and meal/event compatibility, ensuring a balanced itinerary with minimal backtracking.",
+    "validation_issues": []
+  },
+  "cost_summary": {
+    "total_budget": 1650.0,
+    "min_estimated_total_cost": 1003.77,
+    "max_estimated_total_cost": 1003.77,
+    "best_option_remaining_budget": 646.23
+  },
+  "plan_options": [
+    {
+      "plan_option_id": "option_001",
+      "option_rank": 1,
+      "objective": [
+        "llm_selected"
+      ],
+      "total_cost": 1003.77,
+      "stay": {
+        "node_key": "Accommodation::19671609.0",
+        "label": "Accommodation",
+        "name": "Studio 100% Private-Just 10 min. to Strip",
+        "id": "19671609.0",
+        "City": "Las Vegas",
+        "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+      },
+      "outbound": {
+        "node_key": "Flight::F3577733",
+        "label": "Flight",
+        "name": "F3577733: Sioux Falls to Las Vegas, 12:16-13:11",
+        "Flight Number": "F3577733",
+        "FlightDate": "2024-11-06",
+        "OriginCityName": "Sioux Falls",
+        "DestCityName": "Las Vegas",
+        "Price": 231,
+        "DepTime": "12:16",
+        "ArrTime": "13:11"
+      },
+      "return": {
+        "node_key": "Flight::F2560739",
+        "label": "Flight",
+        "name": "F2560739: Las Vegas to Sioux Falls, 16:07-20:39",
+        "Flight Number": "F2560739",
+        "FlightDate": "2024-11-08",
+        "OriginCityName": "Las Vegas",
+        "DestCityName": "Sioux Falls",
+        "Price": 339,
+        "DepTime": "16:07",
+        "ArrTime": "20:39"
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2024-11-06",
+          "current_city": "Las Vegas",
+          "llm_notes": "Outbound flight arrives late, so only an afternoon attraction and dinner are feasible.",
+          "outbound_flight": {
+            "node_key": "Flight::F3577733",
+            "label": "Flight",
+            "name": "F3577733: Sioux Falls to Las Vegas, 12:16-13:11",
+            "Flight Number": "F3577733",
+            "FlightDate": "2024-11-06",
+            "OriginCityName": "Sioux Falls",
+            "DestCityName": "Las Vegas",
+            "Price": 231,
+            "DepTime": "12:16",
+            "ArrTime": "13:11"
+          },
+          "start_accommodation": {
+            "node_key": "Accommodation::19671609.0",
+            "label": "Accommodation",
+            "name": "Studio 100% Private-Just 10 min. to Strip",
+            "id": "19671609.0",
+            "City": "Las Vegas",
+            "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::127003",
+            "label": "Attraction",
+            "name": "Fountains of Bellagio",
+            "id": "127003",
+            "City": "Las Vegas",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::19944959.0",
+            "label": "Restaurant",
+            "name": "Grand Lux Cafe",
+            "id": "19944959.0",
+            "City": "Las Vegas",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::19671609.0",
+            "label": "Accommodation",
+            "name": "Studio 100% Private-Just 10 min. to Strip",
+            "id": "19671609.0",
+            "City": "Las Vegas",
+            "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+          }
+        },
+        {
+          "day_number": 2,
+          "date": "2024-11-07",
+          "current_city": "Las Vegas",
+          "llm_notes": "Full non-travel day with diverse activities and meals.",
+          "start_accommodation": {
+            "node_key": "Accommodation::19671609.0",
+            "label": "Accommodation",
+            "name": "Studio 100% Private-Just 10 min. to Strip",
+            "id": "19671609.0",
+            "City": "Las Vegas",
+            "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::17476783.0",
+            "label": "Restaurant",
+            "name": "Eggscellent",
+            "id": "17476783.0",
+            "City": "Las Vegas",
+            "avg_cost": "21.77",
+            "rating": "5.0"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::126583",
+            "label": "Attraction",
+            "name": "The Las Vegas Strip",
+            "id": "126583",
+            "City": "Las Vegas",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::422629.0",
+            "label": "Restaurant",
+            "name": "Mon Ami Gabi",
+            "id": "422629.0",
+            "City": "Las Vegas",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "afternoon_attraction": {
+            "node_key": "Attraction::6509306",
+            "label": "Attraction",
+            "name": "High Roller",
+            "id": "6509306",
+            "City": "Las Vegas",
+            "rating": "4.5"
+          },
+          "dinner": {
+            "node_key": "Restaurant::444362.0",
+            "label": "Restaurant",
+            "name": "PRIME Steakhouse",
+            "id": "444362.0",
+            "City": "Las Vegas",
+            "avg_cost": "60.0",
+            "rating": "4.5"
+          },
+          "night_accommodation": {
+            "node_key": "Accommodation::19671609.0",
+            "label": "Accommodation",
+            "name": "Studio 100% Private-Just 10 min. to Strip",
+            "id": "19671609.0",
+            "City": "Las Vegas",
+            "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+          }
+        },
+        {
+          "day_number": 3,
+          "date": "2024-11-08",
+          "current_city": "Las Vegas",
+          "llm_notes": "Return flight is early, so only breakfast and morning attraction are feasible.",
+          "start_accommodation": {
+            "node_key": "Accommodation::19671609.0",
+            "label": "Accommodation",
+            "name": "Studio 100% Private-Just 10 min. to Strip",
+            "id": "19671609.0",
+            "City": "Las Vegas",
+            "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}"
+          },
+          "breakfast": {
+            "node_key": "Restaurant::19944959.0",
+            "label": "Restaurant",
+            "name": "Grand Lux Cafe",
+            "id": "19944959.0",
+            "City": "Las Vegas",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "morning_attraction": {
+            "node_key": "Attraction::1156204",
+            "label": "Attraction",
+            "name": "Wynn Las Vegas Casino",
+            "id": "1156204",
+            "City": "Las Vegas",
+            "rating": "4.5"
+          },
+          "lunch": {
+            "node_key": "Restaurant::2405909.0",
+            "label": "Restaurant",
+            "name": "The Peppermill Restaurant & Fireside Lounge",
+            "id": "2405909.0",
+            "City": "Las Vegas",
+            "avg_cost": "37.5",
+            "rating": "4.5"
+          },
+          "return_flight": {
+            "node_key": "Flight::F2560739",
+            "label": "Flight",
+            "name": "F2560739: Las Vegas to Sioux Falls, 16:07-20:39",
+            "Flight Number": "F2560739",
+            "FlightDate": "2024-11-08",
+            "OriginCityName": "Las Vegas",
+            "DestCityName": "Sioux Falls",
+            "Price": 339,
+            "DepTime": "16:07",
+            "ArrTime": "20:39"
+          }
+        }
+      ]
+    }
+  ],
+  "source_mini_kg": {
+    "query_id": "idx_91",
+    "node_count": 32,
+    "edge_count": 300,
+    "generation_source": "neo4j_global_kg_without_flights_plus_flights_csv"
+  },
+  "nodes": [
+    {
+      "node_key": "Accommodation::19671609.0",
+      "domain": "accommodation",
+      "labels": [
+        "Accommodation"
+      ],
+      "properties": {
+        "max_occupancy": "4",
+        "house_rules": "No visitors & No parties",
+        "State": "Nevada",
+        "name": "Studio 100% Private-Just 10 min. to Strip",
+        "coordinates": "{\"latitude\": 36.12292, \"longitude\": -115.13065}",
+        "rating": "{\"label\": \"4.85 out of 5 average rating,  525 reviews\", \"localizedLabel\": \"4.85 (525)\", \"average\": 4.85, \"reviewsCount\": 525}",
+        "id": "19671609.0",
+        "City": "Las Vegas",
+        "title": "Home in Las Vegas",
+        "url": "https://www.airbnb.com/rooms/19671609?locale=en-US&currency=USD&check_in=2024-11-17&check_out=2024-11-22",
+        "roomType": "entire_home",
+        "pricing": "{\"label\": \"$101 per night, originally $122\", \"originalPrice\": \"$122\", \"price\": \"$101\", \"qualifier\": \"night\", \"total\": \"$502 total\"}"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:543",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::1156204",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.7388459653795669}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.7910374564585899}, {\"name\": \"Las Vegas Convention Center Station\", \"localName\": \"Las Vegas Convention Center Station\", \"address\": \"3150 Paradise Road, Las Vegas, NV 89109\", \"localAddress\": \"3150 Paradise Road, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.13518142700195, \"longitude\": -115.1514892578125, \"distance\": 0.8562766761488522}, {\"name\": \"Westgate Las Vegas Station\", \"localName\": \"Westgate Las Vegas Station\", \"address\": \"3000 South Paradise Road, Las Vegas, NV 89109\", \"localAddress\": \"3000 South Paradise Road, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.136287689208984, \"longitude\": -115.15141296386719, \"distance\": 0.9164932811648737}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "6450",
+        "latitude": "36.12612",
+        "rating": "4.5",
+        "description": "Located in one of the world's largest hotels, this casino along the Strip offers new and upcoming games, poolside gaming, and its signature poker room.",
+        "visit_duration": "2.0",
+        "addressObj": "{\"street1\": \"3131 Las Vegas Blvd S\", \"street2\": \"\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-1967\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.24\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FBig-Bus-Las-Vegas-Hop-On-Hop-Off-Tour%2Fd684-5096LASHOP%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=37d2b4e7dd8e93f5e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=1156204&clt=TD&from=api&nt=true\", \"price\": \"$55.00\", \"roundedUpPrice\": \"$55\", \"offerType\": null, \"title\": \"Big Bus Vegas: Hop-On Hop-Off Sightseeing Tour by Open-top Bus\", \"productCode\": \"5096LASHOP\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/88/e1/90.jpg\", \"description\": null, \"primaryCategory\": \"Hop-on Hop-off Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FThe-Vegas-Venture-Scavenger-Hunt%2Fd684-200006P21%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=12a3b085d3981fd1f&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=1156204&clt=TD&from=api&nt=true\", \"price\": \"$24.00\", \"roundedUpPrice\": \"$24\", \"offerType\": null, \"title\": \"Vegas Venture Scavenger Hunt \", \"productCode\": \"200006P21\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/87/1b/95.jpg\", \"description\": null, \"primaryCategory\": \"Self-guided Tours & Rentals\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FMagic-Christmas-Tour-in-Las-Vegas-Nevada-city%2Fd684-209615P7%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=7ec21ecf2ccaaedf7&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=1156204&clt=TD&from=api&nt=true\", \"price\": \"$248.10\", \"roundedUpPrice\": \"$249\", \"offerType\": null, \"title\": \"Winter Wonders of Vegas: A Festive Stroll\", \"productCode\": \"209615P7\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/10/23/ca/80.jpg\", \"description\": null, \"primaryCategory\": \"Cultural Tours\"}]}",
+        "subtype": [
+          "Casinos"
+        ],
+        "ratingHistogram": "{\"count1\": 84, \"count2\": 100, \"count3\": 283, \"count4\": 1260, \"count5\": 4723}",
+        "location_contains_city": "True",
+        "id": "1156204",
+        "longitude": "-115.161934",
+        "website": "http://www.wynnlasvegas.com/Casino",
+        "rankingPosition": "20.0",
+        "address": "3131 Las Vegas Blvd S, Las Vegas, NV 89109-1967",
+        "neighborhoodLocations": "[{\"id\": \"21001958\", \"name\": \"Paradise\"}, {\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "rankingString": "#20 of 820 things to do in Las Vegas",
+        "City": "Las Vegas",
+        "localName": "Wynn Las Vegas Casino",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g45963-d1156204-Reviews-Wynn_Las_Vegas_Casino-Las_Vegas_Nevada.html",
+        "localAddress": "3131 Las Vegas Blvd S, 89109-1967",
+        "rankingDenominator": "820.0",
+        "name": "Wynn Las Vegas Casino",
+        "locationString": "Las Vegas, Nevada",
+        "subcategories": [
+          "Casinos & Gambling",
+          "Fun & Games"
+        ],
+        "rawRanking": "4.040987492"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3197",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::126583",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.1313979005297549}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.33013467581024103}, {\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.38843346322242095}, {\"name\": \"MGM Grand Station\", \"localName\": \"MGM Grand Station\", \"address\": \"3799 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3799 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.102394104003906, \"longitude\": -115.16776275634766, \"distance\": 0.7806410970234785}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "35057",
+        "latitude": "36.112858",
+        "rating": "4.5",
+        "description": "Stretching for over 4.2 miles, the most famous entertainment destination in the U.S. showcases an eclectic collection of mega hotels and resorts, glitzy casinos, lavish shopping malls, and Michelin-starred restaurants. The best way to enjoy the Strip is to stroll down the avenue and marvel at free spectacles like the dancing fountains of Bellagio and the erupting volcanoes of The Mirage. Or rest your legs by joining an open-top bus tour that cruises down the boulevard. For a more adventurous experience, splurge on a luxurious helicopter tour for a bird’s eye view of Las Vegas’ iconic landmarks. – Tripadvisor",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"S Las Vegas Blvd\", \"street2\": \"\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109\"}",
+        "offerGroup": "{\"lowestPrice\": \"$14.99\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FParty-Bus-Dayclub-Crawl%2Fd684-188345P3%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=9a53ab38c5c77d891&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=126583&clt=TD&from=api&nt=true\", \"price\": \"$30.13\", \"roundedUpPrice\": \"$31\", \"offerType\": null, \"title\": \"Party Bus Dayclub Crawl\", \"productCode\": \"188345P3\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/06/b7/fc.jpg\", \"description\": null, \"primaryCategory\": \"Nightlife\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FDeluxe-Las-Vegas-Helicopter-Night-Flight-with-VIP-Transportation%2Fd684-5516ST5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=59ae1e750204922f8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=126583&clt=TD&from=api&nt=true\", \"price\": \"$99.00\", \"roundedUpPrice\": \"$99\", \"offerType\": null, \"title\": \"Las Vegas Helicopter Night Flight and Optional VIP Transportation\", \"productCode\": \"5516ST5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/f0/89/9b.jpg\", \"description\": null, \"primaryCategory\": \"Helicopter Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FLas-Vegas-Strip-and-Downtown-Scooter-and-Foodie-Tour%2Fd684-22168P1%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=af778938a0240208a&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=126583&clt=TD&from=api&nt=true\", \"price\": \"$349.99\", \"roundedUpPrice\": \"$350\", \"offerType\": null, \"title\": \"Las Vegas Strip and Downtown Scooter with Food Tour\", \"productCode\": \"22168P1\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/6f/6b/84.jpg\", \"description\": null, \"primaryCategory\": \"Vespa, Scooter & Moped Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FLas-Vegas-Strip-Night-Flight-by-Helicopter-with-Transport%2Fd684-5847NIGHT%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=a21bdb8d88f10a8c3&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=126583&clt=TD&from=api&nt=true\", \"price\": \"$99.94\", \"roundedUpPrice\": \"$100\", \"offerType\": null, \"title\": \"Las Vegas Strip Helicopter Night Flight with Optional Transport\", \"productCode\": \"5847NIGHT\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/f0/67/da.jpg\", \"description\": null, \"primaryCategory\": \"Helicopter Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FLas-Vegas-Photo-Tour-by-Limousine-or-Party-Bus%2Fd684-39239P6%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=075f88f23d2e4c50b&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=126583&clt=TD&from=api&nt=true\", \"price\": \"$799.00\", \"roundedUpPrice\": \"$799\", \"offerType\": null, \"title\": \"Las Vegas Photo Tour by Luxurious Vehicle\", \"productCode\": \"39239P6\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/49/06.jpg\", \"description\": null, \"primaryCategory\": \"Private Sightseeing Tours\"}]}",
+        "subtype": [
+          "Points of Interest & Landmarks",
+          "Historic Walking Areas"
+        ],
+        "ratingHistogram": "{\"count1\": 569, \"count2\": 948, \"count3\": 3304, \"count4\": 9133, \"count5\": 21103}",
+        "location_contains_city": "True",
+        "id": "126583",
+        "longitude": "-115.173",
+        "website": "https://www.lasvegasnevada.gov/",
+        "rankingPosition": "7.0",
+        "address": "S Las Vegas Blvd, Las Vegas, NV 89109",
+        "neighborhoodLocations": "[{\"id\": \"21001958\", \"name\": \"Paradise\"}, {\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "rankingString": "#7 of 820 things to do in Las Vegas",
+        "City": "Las Vegas",
+        "localName": "The Las Vegas Strip",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g45963-d126583-Reviews-The_Las_Vegas_Strip-Las_Vegas_Nevada.html",
+        "localAddress": "S Las Vegas Blvd, 89109",
+        "rankingDenominator": "820.0",
+        "name": "The Las Vegas Strip",
+        "locationString": "Las Vegas, Nevada",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.397713184"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3203",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::127003",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.2270005662588078}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.4361282243221709}, {\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.4730515012233881}, {\"name\": \"MGM Grand Station\", \"localName\": \"MGM Grand Station\", \"address\": \"3799 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3799 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.102394104003906, \"longitude\": -115.16776275634766, \"distance\": 0.7767011876134009}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "92299",
+        "latitude": "36.11212",
+        "rating": "4.5",
+        "description": "Every night, over 1,000 fountains sway and dance to music and lights on an artificial lake in front of the Bellagio Resort.",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"3600 Las Vegas Blvd S\", \"street2\": \"Bellagio Hotel & Casino\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-4303\"}",
+        "offerGroup": "{\"lowestPrice\": \"$7.09\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FBig-Bus-Las-Vegas-Hop-On-Hop-Off-Tour%2Fd684-5096LASHOP%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=37d2b4e7dd8e93f5e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=127003&clt=TD&from=api&nt=true\", \"price\": \"$55.00\", \"roundedUpPrice\": \"$55\", \"offerType\": null, \"title\": \"Big Bus Vegas: Hop-On Hop-Off Sightseeing Tour by Open-top Bus\", \"productCode\": \"5096LASHOP\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/88/e1/90.jpg\", \"description\": null, \"primaryCategory\": \"Hop-on Hop-off Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FDeluxe-Las-Vegas-Helicopter-Night-Flight-with-VIP-Transportation%2Fd684-5516ST5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=59ae1e750204922f8&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=127003&clt=TD&from=api&nt=true\", \"price\": \"$99.00\", \"roundedUpPrice\": \"$99\", \"offerType\": null, \"title\": \"Las Vegas Helicopter Night Flight and Optional VIP Transportation\", \"productCode\": \"5516ST5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0a/f0/89/9b.jpg\", \"description\": null, \"primaryCategory\": \"Helicopter Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FLas-Vegas-Fountains-Photo-Shoot%2Fd684-39239P8%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=64162f4ba439d5303&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=127003&clt=TD&from=api&nt=true\", \"price\": \"$414.55\", \"roundedUpPrice\": \"$415\", \"offerType\": null, \"title\": \"Las Vegas Fountains Photo Shoot\", \"productCode\": \"39239P8\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/49/09.jpg\", \"description\": null, \"primaryCategory\": \"Private Sightseeing Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FLas-Vegas-Photo-Tour-with-Celebrity-Impersonator%2Fd684-39239P7%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=4479476a1644e056d&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=127003&clt=TD&from=api&nt=true\", \"price\": \"$1,610.39\", \"roundedUpPrice\": \"$1,611\", \"offerType\": null, \"title\": \"Las Vegas Photo Tour with Celebrity Impersonator\", \"productCode\": \"39239P7\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/06/71/49/07.jpg\", \"description\": null, \"primaryCategory\": \"Private Sightseeing Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2F120-Minute-Private-Vacation-Photography-Session-with-Photographer-in-Las-Vegas%2Fd684-103118P154%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=c1289fd265ad479dd&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=127003&clt=TD&from=api&nt=true\", \"price\": \"$299.00\", \"roundedUpPrice\": \"$299\", \"offerType\": null, \"title\": \"Private Vacation Photography Session with Photographer in Las Vegas\", \"productCode\": \"103118P154\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0b/cb/ec/3f.jpg\", \"description\": null, \"primaryCategory\": \"Photography Tours\"}]}",
+        "subtype": [
+          "Fountains",
+          "Points of Interest & Landmarks"
+        ],
+        "ratingHistogram": "{\"count1\": 211, \"count2\": 433, \"count3\": 3446, \"count4\": 16703, \"count5\": 71505}",
+        "location_contains_city": "True",
+        "id": "127003",
+        "longitude": "-115.174706",
+        "website": "http://www.bellagio.com/en/entertainment/fountains-of-bellagio.html",
+        "rankingPosition": "1.0",
+        "address": "3600 Las Vegas Blvd S Bellagio Hotel & Casino, Las Vegas, NV 89109-4303",
+        "neighborhoodLocations": "[{\"id\": \"21001958\", \"name\": \"Paradise\"}, {\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "rankingString": "#1 of 820 things to do in Las Vegas",
+        "City": "Las Vegas",
+        "localName": "Fountains of Bellagio",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g45963-d127003-Reviews-Fountains_of_Bellagio-Las_Vegas_Nevada.html",
+        "localAddress": "3600 Las Vegas Blvd S, Bellagio Hotel & Casino, 89109-4303",
+        "rankingDenominator": "820.0",
+        "name": "Fountains of Bellagio",
+        "locationString": "Las Vegas, Nevada",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "5.0"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3193",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Attraction::6509306",
+      "domain": "attraction",
+      "labels": [
+        "Attraction"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.12223906048250012}, {\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.14609616167463957}, {\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.38633871983197005}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "25964",
+        "latitude": "36.117764",
+        "rating": "4.5",
+        "description": "Currently the second largest in the world, the 550-foot tall ferris wheel located at the LINQ lets you soar above Las Vegas for panoramic views of the city. Each revolution takes about 30 minutes and each cabin holds up to 40 people. The views are prettiest at night when the city is illuminated, and you can opt for a Happy Hour ticket that comes with an open bar in the cabin. Day tickets are cheaper if you are looking to save, and tickets are also included in several Las Vegas City Passes. – Tripadvisor",
+        "visit_duration": "3.0",
+        "addressObj": "{\"street1\": \"3545 Las Vegas Blvd South\", \"street2\": \"The Linq Promenade\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-8978\"}",
+        "offerGroup": "{\"lowestPrice\": \"$0.18\", \"offerList\": [{\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FThe-High-Roller-at-The-LINQ%2Fd684-5084LASHIG%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=09b81631242857097&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=1&cnt=1&geo=6509306&clt=TD&from=api&nt=true\", \"price\": \"$18.02\", \"roundedUpPrice\": \"$19\", \"offerType\": null, \"title\": \"High Roller Wheel Admission Ticket at The LINQ\", \"productCode\": \"5084LASHIG\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/ca/e6/b1.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FHappy-Hour-on-The-High-Roller-at-The-LINQ%2Fd684-5084LASHIG_HH%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=cb45376cf572a1f76&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=2&cnt=1&geo=6509306&clt=TD&from=api&nt=true\", \"price\": \"$58.94\", \"roundedUpPrice\": \"$59\", \"offerType\": null, \"title\": \"Happy Half Hour on The High Roller at The LINQ\", \"productCode\": \"5084LASHIG_HH\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/ca/e7/7f.jpg\", \"description\": null, \"primaryCategory\": \"Attraction Tickets\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FGo-Las-Vegas-Card%2Fd684-3958GOVEGAS%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=0137560f52433cdd9&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=3&cnt=1&geo=6509306&clt=TD&from=api&nt=true\", \"price\": \"$139.00\", \"roundedUpPrice\": \"$139\", \"offerType\": null, \"title\": \"Las Vegas Pass: Save up to 50% on 45+ Activities including Shows\", \"productCode\": \"3958GOVEGAS\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/13/2c/22/5c.jpg\", \"description\": null, \"primaryCategory\": \"Sightseeing Passes\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FBig-Bus-Las-Vegas-Hop-On-Hop-Off-Tour%2Fd684-5096LASHOP%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=37d2b4e7dd8e93f5e&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=4&cnt=1&geo=6509306&clt=TD&from=api&nt=true\", \"price\": \"$55.00\", \"roundedUpPrice\": \"$55\", \"offerType\": null, \"title\": \"Big Bus Vegas: Hop-On Hop-Off Sightseeing Tour by Open-top Bus\", \"productCode\": \"5096LASHOP\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0f/88/e1/90.jpg\", \"description\": null, \"primaryCategory\": \"Hop-on Hop-off Tours\"}, {\"url\": \"https://www.tripadvisor.com/Commerce?url=https%3A%2F%2Fwww.viator.com%2Ftours%2FLas-Vegas%2FFood-Tour-of-the-Las-Vegas-Strip%2Fd684-46865P5%3Feap%3Dtripadvisor-main-11383%26aid%3Dtripen1&partnerKey=1&urlKey=920e356012084ae09&logme=true&uidparam=refid&attrc=true&Provider=Viator&area=viator_multi&slot=5&cnt=1&geo=6509306&clt=TD&from=api&nt=true\", \"price\": \"$124.00\", \"roundedUpPrice\": \"$124\", \"offerType\": null, \"title\": \"Original Las Vegas Strip Foodie Tour by Taste Buzz\", \"productCode\": \"46865P5\", \"partner\": \"Viator\", \"imageUrl\": \"https://media.tacdn.com/media/attractions-splice-spp-360x240/0c/11/c4/27.jpg\", \"description\": null, \"primaryCategory\": \"Half-day Tours\"}]}",
+        "subtype": [
+          "Observation Decks & Towers"
+        ],
+        "ratingHistogram": "{\"count1\": 266, \"count2\": 358, \"count3\": 1931, \"count4\": 6159, \"count5\": 17250}",
+        "location_contains_city": "True",
+        "id": "6509306",
+        "longitude": "-115.16821",
+        "website": "http://www.caesars.com/linq/high-roller",
+        "rankingPosition": "5.0",
+        "address": "3545 Las Vegas Blvd South The Linq Promenade, Las Vegas, NV 89109-8978",
+        "neighborhoodLocations": "[{\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "rankingString": "#5 of 820 things to do in Las Vegas",
+        "City": "Las Vegas",
+        "localName": "High Roller",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Attraction_Review-g45963-d6509306-Reviews-High_Roller-Las_Vegas_Nevada.html",
+        "localAddress": "3545 Las Vegas Blvd South, The Linq Promenade, 89109-8978",
+        "rankingDenominator": "820.0",
+        "name": "High Roller",
+        "locationString": "Las Vegas, Nevada",
+        "subcategories": [
+          "Sights & Landmarks"
+        ],
+        "rawRanking": "4.697445869"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:3187",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "City::Las Vegas",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Las Vegas"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "City::Sioux Falls",
+      "domain": "city",
+      "labels": [
+        "City"
+      ],
+      "properties": {
+        "name": "Sioux Falls"
+      },
+      "source_kind": "request"
+    },
+    {
+      "node_key": "Flight::F2560739",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F2560739",
+        "Price": 339,
+        "DepTime": "16:07",
+        "ArrTime": "20:39",
+        "ActualElapsedTime": "2 hours 32 minutes",
+        "FlightDate": "2024-11-08",
+        "OriginCityName": "Las Vegas",
+        "DestCityName": "Sioux Falls",
+        "Distance": 1104.0,
+        "route_role": "return"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Flight::F3577733",
+      "domain": "flight",
+      "labels": [
+        "Flight"
+      ],
+      "properties": {
+        "Flight Number": "F3577733",
+        "Price": 231,
+        "DepTime": "12:16",
+        "ArrTime": "13:11",
+        "ActualElapsedTime": "2 hours 55 minutes",
+        "FlightDate": "2024-11-06",
+        "OriginCityName": "Sioux Falls",
+        "DestCityName": "Las Vegas",
+        "Distance": 1104.0,
+        "route_role": "outbound"
+      },
+      "neo4j_element_id": null,
+      "source": "csv_flights",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "PlanDay::idx_91::option_001::1",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "current_city": "Las Vegas"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_91::option_001::2",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "current_city": "Las Vegas"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanDay::idx_91::option_001::3",
+      "labels": [
+        "PlanDay"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "current_city": "Las Vegas"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanOption::idx_91::option_001",
+      "labels": [
+        "PlanOption"
+      ],
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1003.77,
+        "objective": [
+          "llm_selected"
+        ],
+        "stay_node_key": "Accommodation::19671609.0",
+        "outbound_node_key": "Flight::F3577733",
+        "return_node_key": "Flight::F2560739"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "PlanQuery::idx_91",
+      "labels": [
+        "PlanQuery"
+      ],
+      "properties": {
+        "query_id": "idx_91",
+        "query": "Plan a 3-day trip for 2 people from Sioux Falls to Las Vegas from November 6th to November 8th, 2024, with a budget of $1,650. The trip should avoid self-driving transportation, and accommodations must follow house rules for visitors.",
+        "days": 3,
+        "origin_city": "Sioux Falls",
+        "destination_city": "Las Vegas",
+        "budget": 1650.0,
+        "source_mini_kg_query_id": "idx_91"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "node_key": "Restaurant::17476783.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": [],
+        "localLangCode": "en-US",
+        "numberOfReviews": "285.0",
+        "avg_cost": "21.77",
+        "rating": "5.0",
+        "type": "RESTAURANT",
+        "priceLevel": "$",
+        "addressObj": "{\"street1\": \"2534 E Desert Inn Rd\", \"street2\": null, \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89121-3611\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/23/71/8c/d3/spicy-box.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/59/e4/4b/baja-chicken-hash.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/4d/d2/b5/yummy-red-rock-benny.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/23/71/8c/9f/spicy-box.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/21/e6/3a/2d/eggscellent-time.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2e/dd/e4/eggscellent.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/5b/50/1b/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/5b/50/1a/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/21/5b/50/19/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/1f/78/25/eggscellent.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/1f/78/26/eggscellent.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/cb/3c/46/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/cb/3c/48/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/cb/3c/47/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Television",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Digital Payments",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Family style",
+          "Non-smoking restaurants"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "17476783.0",
+        "longitude": "-115.115364",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/23/71/8c/d3/spicy-box.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.77",
+        "Range.1": "50.00 - 115.00",
+        "rankingString": "#5 of 6,137 places to eat in Las Vegas",
+        "openNowText": "Opens in 21 min",
+        "City": "Las Vegas",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Brunch"
+        ],
+        "Range": "15.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Grill",
+          "Healthy"
+        ],
+        "localName": "Eggscellent",
+        "input": "Las Vegas",
+        "phone": "+1 702-550-1715",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g45963-d17476783-Reviews-Eggscellent-Las_Vegas_Nevada.html",
+        "localAddress": "2534 E Desert Inn Rd, 89121-3611",
+        "Rest-MidRange": "75.0",
+        "name": "Eggscellent",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.729532718658447",
+        "orderOnline": "[{\"providerType\": \"DELIVERY\", \"canProvideTimeslots\": false, \"buttonText\": \"Order online\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Grubhub&src=184128497&geo=17476783&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=25768&bucket=852508&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311333988&managed=false&capped=false&gosox=I-ADlg7wY8lqEq92hGOCPH9yxKao4fnJtoYdd5TLctoCVK2EaqcCi9rOMrUCyEbyyYbOyf9HtBQqdFX_ffSsl7nzxn_LjfZAknapURAAUAM&cs=1634e0b993a980a39a82ff5847fa50f66_p0U\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/grubhub_05.11.2022.png\", \"provider\": \"Grubhub\", \"providerId\": \"13712\", \"providerDisplayName\": \"Grubhub\", \"headerText\": \"Get food delivered\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "36.13085",
+        "photoCount": "242.0",
+        "ratingHistogram": "{\"count1\": 4, \"count2\": 3, \"count3\": 3, \"count4\": 14, \"count5\": 261}",
+        "email": "eggscellentlv@gmail.com",
+        "website": "https://www.facebook.com/eggscellentlv",
+        "rankingPosition": "5.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 900, \"closeHours\": \"15:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "2534 E Desert Inn Rd, Las Vegas, NV 89121-3611",
+        "neighborhoodLocations": [],
+        "dishes": [
+          "Waffles & Crepes",
+          "Burrito",
+          "French Toast",
+          "Omelette",
+          "Pancakes",
+          "Eggs Benedict",
+          "Biscuits and gravy",
+          "Waffles",
+          "Breakfast Burrito",
+          "Hash Browns",
+          "Chorizo",
+          "Hash"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 10}, {\"text\": \"baja chicken\", \"reviews\": 7}, {\"text\": \"hash\", \"reviews\": 9}, {\"text\": \"stuffed french toast\", \"reviews\": 3}, {\"text\": \"breakfast burrito\", \"reviews\": 5}, {\"text\": \"eggs benny\", \"reviews\": 2}, {\"text\": \"carne asada\", \"reviews\": 2}, {\"text\": \"cinnamon rolls\", \"reviews\": 2}, {\"text\": \"brisket\", \"reviews\": 2}, {\"text\": \"potatoes\", \"reviews\": 4}, {\"text\": \"sandwich\", \"reviews\": 2}, {\"text\": \"fries\", \"reviews\": 2}, {\"text\": \"amazing food\", \"reviews\": 10}, {\"text\": \"little hole in the wall\", \"reviews\": 2}, {\"text\": \"off the strip\", \"reviews\": 10}, {\"text\": \"breakfast spot\", \"reviews\": 2}, {\"text\": \"hollandaise sauce\", \"reviews\": 2}, {\"text\": \"great server\", \"reviews\": 2}, {\"text\": \"huge portions\", \"reviews\": 4}, {\"text\": \"visiting vegas\", \"reviews\": 2}, {\"text\": \"quick service\", \"reviews\": 2}, {\"text\": \"service was great\", \"reviews\": 4}, {\"text\": \"fast food\", \"reviews\": 2}, {\"text\": \"microgreens\", \"reviews\": 3}, {\"text\": \"spicy\", \"reviews\": 9}, {\"text\": \"yum\", \"reviews\": 5}, {\"text\": \"servers\", \"reviews\": 6}, {\"text\": \"las\", \"reviews\": 8}, {\"text\": \"bowl\", \"reviews\": 3}, {\"text\": \"lv\", \"reviews\": 3}]",
+        "travelerChoiceAward": "REGULAR_AWARD",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "38",
+        "rankingDenominator": "3852.0",
+        "locationString": "Las Vegas, Nevada",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"45963\", \"name\": \"Las Vegas\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28949\", \"name\": \"Nevada\", \"abbreviation\": \"NV\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7974",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::19944959.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.49517157462702316}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.6144420648456521}, {\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.8694297445414585}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "2922.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"3327 Las Vegas Blvd S\", \"street2\": null, \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/f3/70/8c/grand-lux-cafe.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/e2/a-world-of-food-awaits.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/f3/a-world-of-food-awaits.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/ec/a-world-of-food-awaits.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/e3/a-world-of-food-awaits.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/d6/a-world-of-food-awaits.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/20/19/3d/6c/omelettes-for-breakfast.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e6/0d/c3/menu-covernumerous-pages.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e6/0d/6a/tasty-shrimp-over-pasta.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/e6/0d/50/interior-view-from-my.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/34/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/37/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/38/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/39/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/35/caption.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2a/57/a5/36/caption.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Buffet",
+          "Seating",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "19944959.0",
+        "longitude": "-115.167625",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/12/58/66/e2/a-world-of-food-awaits.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.77",
+        "Range.1": "50.00 - 115.00",
+        "rankingString": "#92 of 5,018 Restaurants in Las Vegas",
+        "openNowText": "Open Now",
+        "City": "Las Vegas",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "15.00 - 40.00",
+        "cuisines": [
+          "American"
+        ],
+        "localName": "Grand Lux Cafe",
+        "input": "Las Vegas",
+        "phone": "+1 702-733-7411",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g45963-d19944959-Reviews-Grand_Lux_Cafe-Las_Vegas_Nevada.html",
+        "localAddress": "3327 Las Vegas Blvd S, 89109",
+        "Rest-MidRange": "75.0",
+        "name": "Grand Lux Cafe",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.304747581481934",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "36.12487",
+        "description": "A world of food awaits at Grand Lux Cafe featuring internationally inspired cuisine.Located in The PALAZZO - Resort - Hotel - Casino next to the Palazzo Theater.",
+        "photoCount": "538.0",
+        "ratingHistogram": "{\"count1\": 47, \"count2\": 61, \"count3\": 286, \"count4\": 977, \"count5\": 1576}",
+        "website": "http://locations.grandluxcafe.com/nv/las-vegas/12/",
+        "rankingPosition": "92.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 360, \"openHours\": \"06:00\", \"close\": 1560, \"closeHours\": \"02:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "3327 Las Vegas Blvd S, Las Vegas, NV 89109",
+        "neighborhoodLocations": "[{\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "dishes": [
+          "Juice & Smoothies",
+          "Sandwiches",
+          "Pasta",
+          "Cheesecake",
+          "French Toast",
+          "Burger",
+          "Omelette",
+          "Ribs",
+          "Shrimp",
+          "Salad",
+          "Pancakes",
+          "Eggs Benedict",
+          "Beignets",
+          "Calamari",
+          "Nachos",
+          "Waffles",
+          "Salmon",
+          "Toasts",
+          "Beef",
+          "Pesto",
+          "Cakes",
+          "Fish",
+          "Chicken Parma",
+          "Soup",
+          "Scampi",
+          "Hash Browns",
+          "Chicken Salad",
+          "Sausage",
+          "Cake",
+          "Fried",
+          "Hash",
+          "Pastries"
+        ],
+        "reviewTags": "[{\"text\": \"beignets\", \"reviews\": 44}, {\"text\": \"salad\", \"reviews\": 188}, {\"text\": \"hash browns\", \"reviews\": 71}, {\"text\": \"french toast\", \"reviews\": 37}, {\"text\": \"burger\", \"reviews\": 115}, {\"text\": \"bread\", \"reviews\": 74}, {\"text\": \"cheesecake\", \"reviews\": 52}, {\"text\": \"chicken\", \"reviews\": 68}, {\"text\": \"fries\", \"reviews\": 48}, {\"text\": \"breakfast buffet\", \"reviews\": 173}, {\"text\": \"ate here\", \"reviews\": 132}, {\"text\": \"large menu\", \"reviews\": 41}, {\"text\": \"venetian hotel\", \"reviews\": 37}, {\"text\": \"off the menu\", \"reviews\": 33}, {\"text\": \"portions are huge\", \"reviews\": 55}, {\"text\": \"lunch or dinner\", \"reviews\": 30}, {\"text\": \"palazzo\", \"reviews\": 487}, {\"text\": \"vegas\", \"reviews\": 495}, {\"text\": \"casino\", \"reviews\": 131}, {\"text\": \"las\", \"reviews\": 107}, {\"text\": \"strip\", \"reviews\": 98}]",
+        "travelerChoiceAward": "REGULAR_AWARD",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "38",
+        "rankingDenominator": "5018.0",
+        "locationString": "Las Vegas, Nevada",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"45963\", \"name\": \"Las Vegas\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28949\", \"name\": \"Nevada\", \"abbreviation\": \"NV\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7961",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::2405909.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Las Vegas Convention Center Station\", \"localName\": \"Las Vegas Convention Center Station\", \"address\": \"3150 Paradise Road, Las Vegas, NV 89109\", \"localAddress\": \"3150 Paradise Road, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.13518142700195, \"longitude\": -115.1514892578125, \"distance\": 0.6651253876165701}, {\"name\": \"Westgate Las Vegas Station\", \"localName\": \"Westgate Las Vegas Station\", \"address\": \"3000 South Paradise Road, Las Vegas, NV 89109\", \"localAddress\": \"3000 South Paradise Road, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.136287689208984, \"longitude\": -115.15141296386719, \"distance\": 0.6849007531920487}, {\"name\": \"SLS Station\", \"localName\": \"SLS Station\", \"address\": \"2535 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"2535 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.142337799072266, \"longitude\": -115.15630340576172, \"distance\": 0.7102749062342785}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "4037.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"2985 Las Vegas Blvd S\", \"street2\": null, \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-1930\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/04/7a/bd/29/the-peppermill-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/22/e4/4a/50/fireside-lounge.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/22/e4/4a/4f/peppermill-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/22/e4/4a/4e/peppermill-counter.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/22/e4/4a/4b/peppermill-exterior.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/a4/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/a3/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/a2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/a1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/a0/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9f/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9e/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9d/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/9a/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/99/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/98/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2e/14/f4/97/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d0/4b/bc/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/d0/4b/c1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/9e/7d/30/great-food-at-the-peppermill.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/34/25/da/the-peppermill-restaurant.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/b8/2e/9b/the-peppermill-restaurant.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/90/photo6jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/8f/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/8d/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/8c/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/8b/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/8a/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9b/54/89/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1d/32/db/41/philly-cheee-steak-and.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4a/4a/20201007-122358-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4a/49/20201007-120444-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4a/48/20201007-120556-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4a/47/20201007-120552-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/2a/4a/46/20201007-122339-largejpg.jpg"
+        ],
+        "features": [
+          "Takeout",
+          "Seating",
+          "Parking Available",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "2405909.0",
+        "longitude": "-115.16326",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/02/b9/da/57/peppermill-inn.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.77",
+        "Range.1": "50.00 - 115.00",
+        "rankingString": "#117 of 5,018 Restaurants in Las Vegas",
+        "openNowText": "Opens in 21 min",
+        "City": "Las Vegas",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "15.00 - 40.00",
+        "cuisines": [
+          "American",
+          "Bar",
+          "Diner"
+        ],
+        "localName": "The Peppermill Restaurant & Fireside Lounge",
+        "input": "Las Vegas",
+        "phone": "+1 702-735-4177",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g45963-d2405909-Reviews-The_Peppermill_Restaurant_Fireside_Lounge-Las_Vegas_Nevada.html",
+        "localAddress": "2985 Las Vegas Blvd S, 89109-1930",
+        "Rest-MidRange": "75.0",
+        "name": "The Peppermill Restaurant & Fireside Lounge",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.272368431091309",
+        "orderOnline": [],
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "36.133743",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g45963-d2405909-The_Peppermill_Restaurant_Fireside_Lounge-Las_Vegas_Nevada.html",
+        "description": "On December 26, 1972, the Peppermill Restaurant and Fireside Lounge made their debut and proudly remain as an iconic reminder of the Vegas Strip the way it used to be. Founded on hearty dishes and oversized portions, today’s menu still reflects the same. In fact, the menu features many original items such as the fresh fruit salad, French toast ambrosia and famous Peppermill burger. Visit our Fireside Lounge and delight in a 64-ounce Scorpion, or start your morning off with our award-winning Bloody Mary still made from scratch.",
+        "photoCount": "1767.0",
+        "ratingHistogram": "{\"count1\": 72, \"count2\": 86, \"count3\": 343, \"count4\": 1183, \"count5\": 2354}",
+        "website": "http://www.peppermilllasvegas.com",
+        "rankingPosition": "117.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1560, \"closeHours\": \"02:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}], [{\"open\": 0, \"openHours\": \"00:00\", \"close\": 1439, \"closeHours\": \"23:59\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "2985 Las Vegas Blvd S, Las Vegas, NV 89109-1930",
+        "neighborhoodLocations": "[{\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "dishes": [
+          "French Toast",
+          "Sandwiches",
+          "Corned Beef",
+          "Crab",
+          "Gyros",
+          "Burger",
+          "Omelette",
+          "Ribs",
+          "Shrimp",
+          "Tortillas",
+          "Salad",
+          "Pancakes",
+          "Wings",
+          "Eggs Benedict",
+          "Nachos",
+          "Waffles",
+          "Toasts",
+          "Beef",
+          "Cakes",
+          "Soup",
+          "Bloody Mary",
+          "Onion Rings",
+          "Hash Browns",
+          "Sausage",
+          "Fruit Platter",
+          "Cake",
+          "Fried",
+          "Hash"
+        ],
+        "reviewTags": "[{\"text\": \"late night\", \"reviews\": 57}, {\"text\": \"pancakes\", \"reviews\": 182}, {\"text\": \"french toast\", \"reviews\": 94}, {\"text\": \"salad\", \"reviews\": 121}, {\"text\": \"onion rings\", \"reviews\": 43}, {\"text\": \"nachos\", \"reviews\": 56}, {\"text\": \"steak\", \"reviews\": 96}, {\"text\": \"huge portions\", \"reviews\": 322}, {\"text\": \"cocktail waitress\", \"reviews\": 55}, {\"text\": \"old vegas\", \"reviews\": 165}, {\"text\": \"classic vegas\", \"reviews\": 48}, {\"text\": \"circus circus\", \"reviews\": 100}, {\"text\": \"bloody mary\", \"reviews\": 79}, {\"text\": \"minute wait\", \"reviews\": 58}, {\"text\": \"worth the wait\", \"reviews\": 72}, {\"text\": \"neon\", \"reviews\": 205}, {\"text\": \"strip\", \"reviews\": 447}, {\"text\": \"servings\", \"reviews\": 73}, {\"text\": \"leftovers\", \"reviews\": 50}, {\"text\": \"casino\", \"reviews\": 105}, {\"text\": \"lv\", \"reviews\": 50}]",
+        "travelerChoiceAward": "REGULAR_AWARD",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "38",
+        "rankingDenominator": "5018.0",
+        "locationString": "Las Vegas, Nevada",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"45963\", \"name\": \"Las Vegas\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28949\", \"name\": \"Nevada\", \"abbreviation\": \"NV\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7958",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::422629.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.10338641102815559}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.30913407962863537}, {\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.380020126907949}, {\"name\": \"MGM Grand Station\", \"localName\": \"MGM Grand Station\", \"address\": \"3799 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3799 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.102394104003906, \"longitude\": -115.16776275634766, \"distance\": 0.7706416629935035}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "19647.0",
+        "avg_cost": "37.5",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$ - $$$",
+        "addressObj": "{\"street1\": \"3655 Las Vegas Blvd S\", \"street2\": \"Paris Las Vegas\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-4345\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/0c/c5/f4/94/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/91/32/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/91/31/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/e4/11/ec/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/da/3e/1c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/da/3e/1b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/da/3e/0b/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/cd/39/b2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/cd/39/b1/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/8b/fb/45/crepe-with-apple-brie.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/03/42/5b/mon-ami-gabi.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/03/e3/27/ae/mon-ami-gabi.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/2a/48/93/seared-sea-scallops.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/a1/7c/fd/baked-brie.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/74/7c/6c/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/08/3a/45/20191106-235319-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1a/08/3a/40/20191106-235546-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/19/15/e5/01/whole-table-of-food-yum.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/bd/4c/c8/seafood-platter.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/18/30/4e/c7/mon-ami-gabi.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/f5/99/b1/the-half-size.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/4d/12/62/mon-ami-gabi.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/32/bb/42/mon-ami-gabi.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/4d/12/4d/mon-ami-gabi.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/c1/14/61/20200122-094000-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9c/d3/e9/steak-roquefort-w-fries.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9c/d3/e7/salmon-w-vegetables.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/9c/d3/e6/onion-soup-not-very-french.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/7d/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/7c/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/7a/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/79/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/78/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/a8/31/77/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/df/20200119-100420-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/de/20200119-100425-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/dd/20200119-100437-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/dc/20200119-100440-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/db/20200119-100444-largejpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1a/ad/bc/da/20200119-101241-largejpg.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Outdoor Seating",
+          "Private Dining",
+          "Seating",
+          "Highchairs Available",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Live Music",
+          "Waterfront"
+        ],
+        "dietaryRestrictions": [
+          "Vegetarian friendly",
+          "Vegan options",
+          "Gluten free options"
+        ],
+        "id": "422629.0",
+        "longitude": "-115.172485",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-o/03/e3/27/ae/mon-ami-gabi.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.77",
+        "Range.1": "50.00 - 115.00",
+        "rankingString": "#93 of 6,137 places to eat in Las Vegas",
+        "openNowText": "Opens in 21 min",
+        "City": "Las Vegas",
+        "mealTypes": [
+          "Breakfast",
+          "Lunch",
+          "Dinner",
+          "Brunch",
+          "Late Night"
+        ],
+        "Range": "15.00 - 40.00",
+        "cuisines": [
+          "French",
+          "European"
+        ],
+        "localName": "Mon Ami Gabi",
+        "input": "Las Vegas",
+        "phone": "+1 702-944-4224",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g45963-d422629-Reviews-Mon_Ami_Gabi-Las_Vegas_Nevada.html",
+        "localAddress": "3655 Las Vegas Blvd S, Paris Las Vegas, 89109-4345",
+        "Rest-MidRange": "75.0",
+        "name": "Mon Ami Gabi",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.3406829833984375",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": true, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=OpenTable&src=232176634&geo=422629&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=45582&bucket=979641&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311333974&managed=false&capped=false&gosox=9DMvibDTWdNaFeGYL8QTakyv1LBYZaGpeB4MEHn-hv2mZBN376EHVCGusTIRxmJ8hLl6yL2gBva3Uj70KdlM5yalgALVU1dAYrth7HhVGnc&cs=14763592f31e96a6b106130942a76d4f8_sIs\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/OT_Logo_1000x232.png\", \"provider\": \"OpenTable\", \"providerId\": \"15910\", \"providerDisplayName\": \"OpenTable\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "True",
+        "latitude": "36.11286",
+        "menuWebUrl": "http://www.tripadvisor.com/MobileRestaurantMenu-g45963-d422629-Mon_Ami_Gabi-Las_Vegas_Nevada.html",
+        "description": "Please note: NO RESERVATIONS are made for PATIO SEATING, this is on a first come, first serve basis. All reservations are for the indoor main dining room. Mon Ami Gabi is a classic French bistro & steakhouse located in the Paris Resort on 'The Strip!' Mon Ami Gabi specializes in Classic Bistro Fare including crepes and quiches. Our dinner menu features classics such as French Onion Soup, Trout Grenobloise, and our signature Steak Frites. French wines are served by the glass or the bottle from our rolling wine cart. We also serve breakfast specialties including French Toast, Waffles & our Big Skinny Panacakes and a variety of French sandwiches during lunch.",
+        "photoCount": "4810.0",
+        "ratingHistogram": "{\"count1\": 276, \"count2\": 489, \"count3\": 1448, \"count4\": 5239, \"count5\": 12195}",
+        "email": "leye09@aol.com",
+        "website": "http://www.monamigabi.com/home/?loc=vegas",
+        "rankingPosition": "93.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}], [{\"open\": 420, \"openHours\": \"07:00\", \"close\": 1380, \"closeHours\": \"23:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "3655 Las Vegas Blvd S Paris Las Vegas, Las Vegas, NV 89109-4345",
+        "neighborhoodLocations": "[{\"id\": \"21001958\", \"name\": \"Paradise\"}, {\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "dishes": [
+          "Filet Mignon",
+          "Baguette",
+          "Beef Bourguignon",
+          "Corned Beef",
+          "Crab",
+          "French Toast",
+          "Burger",
+          "Lobster Roll",
+          "Omelette",
+          "Pork Tenderloin",
+          "Roast Beef",
+          "Shrimp",
+          "Salad",
+          "Pancakes",
+          "Eggs Benedict",
+          "Waffles",
+          "Mussels",
+          "Crepes",
+          "Quiche",
+          "Profiteroles",
+          "Escargot",
+          "Steak Frites",
+          "Scallops",
+          "Salmon",
+          "Toasts",
+          "Beef",
+          "French onion soup",
+          "Hanger steak",
+          "Cakes",
+          "Fish",
+          "Goat",
+          "Trout",
+          "Pate",
+          "Soup",
+          "Bloody Mary",
+          "Brie",
+          "Hash Browns",
+          "Cake",
+          "Fried",
+          "Hash"
+        ],
+        "reviewTags": "[{\"text\": \"brunch\", \"reviews\": 929}, {\"text\": \"steak frites\", \"reviews\": 675}, {\"text\": \"baguette\", \"reviews\": 379}, {\"text\": \"profiteroles\", \"reviews\": 187}, {\"text\": \"onion soup\", \"reviews\": 422}, {\"text\": \"eggs benedict\", \"reviews\": 666}, {\"text\": \"french toast\", \"reviews\": 209}, {\"text\": \"salmon\", \"reviews\": 297}, {\"text\": \"potatoes\", \"reviews\": 183}, {\"text\": \"bellagio fountains\", \"reviews\": 1451}, {\"text\": \"paris hotel\", \"reviews\": 613}, {\"text\": \"french bistro\", \"reviews\": 232}, {\"text\": \"sit outside\", \"reviews\": 483}, {\"text\": \"patio seating\", \"reviews\": 254}, {\"text\": \"people watch\", \"reviews\": 538}, {\"text\": \"fountain show\", \"reviews\": 280}, {\"text\": \"eiffel tower\", \"reviews\": 240}, {\"text\": \"bloody mary\", \"reviews\": 204}, {\"text\": \"strip\", \"reviews\": 3252}, {\"text\": \"vegas\", \"reviews\": 4775}, {\"text\": \"las\", \"reviews\": 1210}, {\"text\": \"mimosas\", \"reviews\": 275}, {\"text\": \"casino\", \"reviews\": 244}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "38",
+        "rankingDenominator": "3852.0",
+        "locationString": "Las Vegas, Nevada",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"45963\", \"name\": \"Las Vegas\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28949\", \"name\": \"Nevada\", \"abbreviation\": \"NV\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7955",
+      "source_kind": "mini_kg"
+    },
+    {
+      "node_key": "Restaurant::444362.0",
+      "domain": "restaurant",
+      "labels": [
+        "Restaurant"
+      ],
+      "properties": {
+        "nearestMetroStations": "[{\"name\": \"Bally's / Paris Las Vegas Station\", \"localName\": \"Bally's / Paris Las Vegas Station\", \"address\": \"3645 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3645 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.112545013427734, \"longitude\": -115.1706771850586, \"distance\": 0.324548910430785}, {\"name\": \"Harrah's / The Linq Station\", \"localName\": \"Harrah's / The Linq Station\", \"address\": \"3475 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3475 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11817932128906, \"longitude\": -115.1707763671875, \"distance\": 0.45273499432921244}, {\"name\": \"Flamingo / Caesars Palace Station\", \"localName\": \"Flamingo / Caesars Palace Station\", \"address\": \"3555 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3555 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.11602020263672, \"longitude\": -115.16857147216797, \"distance\": 0.47099118969761505}, {\"name\": \"MGM Grand Station\", \"localName\": \"MGM Grand Station\", \"address\": \"3799 Las Vegas Boulevard South, Las Vegas, NV 89109\", \"localAddress\": \"3799 Las Vegas Boulevard South, 89109\", \"lines\": [{\"id\": \"las-vegas-las-vegas-monorail\", \"lineName\": \"Monorail\", \"lineSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"systemName\": \"Las Vegas Monorail\", \"systemSymbol\": \"https://static.tacdn.com/img/api/metro_stations/metro_placeholder.png\", \"type\": \"Monorail\"}], \"latitude\": 36.102394104003906, \"longitude\": -115.16776275634766, \"distance\": 0.9035677554034404}]",
+        "localLangCode": "en-US",
+        "numberOfReviews": "2723.0",
+        "avg_cost": "60.0",
+        "rating": "4.5",
+        "type": "RESTAURANT",
+        "priceLevel": "$$$$",
+        "addressObj": "{\"street1\": \"3600 Las Vegas Blvd S\", \"street2\": \"Bellagio Hotel and Casino\", \"city\": \"Las Vegas\", \"state\": \"NV\", \"country\": \"United States\", \"postalcode\": \"89109-4303\"}",
+        "photos": [
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/d4/ca/67/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1c/a0/08/54/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/1b/61/5a/fc/prime.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/80/c3/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/78/a2/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/78/65/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/78/64/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/2d/f2/78/63/caption.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/a9/f5/ed/view-from-our-table.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/01/9c/14/c1/seared-ahi-tuna.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/17/15/33/8c/brady-bunte-prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/16/5a/9c/8d/photo0jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/cf/b9/5f/photo1jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/53/1d/ca/20180612-195646-largejpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/13/20/b7/ab/photo9jpg.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/12/ca/48/f8/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0f/4d/c9/ac/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0e/cd/97/19/handmade-sauce.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/86/5b/9c/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/0a/86/5b/9b/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/e1/24/54/prime-steakhouse.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/05/52/fc/c1/thi-i-the-money-filet.jpg",
+          "https://media-cdn.tripadvisor.com/media/photo-o/09/0e/87/00/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/00/50/c3/valentine-s-day-dinner.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/00/50/c4/valentine-s-day-dinner.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/00/50/c5/valentine-s-day-dinner.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/00/50/c6/valentine-s-day-dinner.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1b/00/50/c7/valentine-s-day-dinner.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/aa/photo9jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a9/photo8jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a8/photo7jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a7/photo6jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a6/photo5jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a5/photo4jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a4/photo3jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a3/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a2/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/38/59/a1/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/81/bc/c2/photo0jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/81/bc/c3/photo1jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/81/bc/c4/photo2jpg.jpg",
+          "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/22/0d/0b/9d/prime-bellagio.jpg"
+        ],
+        "features": [
+          "Reservations",
+          "Outdoor Seating",
+          "Private Dining",
+          "Seating",
+          "Parking Available",
+          "Valet Parking",
+          "Wheelchair Accessible",
+          "Serves Alcohol",
+          "Full Bar",
+          "Free Wifi",
+          "Accepts Credit Cards",
+          "Table Service",
+          "Waterfront"
+        ],
+        "dietaryRestrictions": [
+          "Gluten free options"
+        ],
+        "id": "444362.0",
+        "longitude": "-115.17638",
+        "image": "https://media-cdn.tripadvisor.com/media/photo-m/1280/1b/d4/ca/67/prime-steakhouse.jpg",
+        "isLongClosed": "False",
+        "Rest-Inexpensive": "21.77",
+        "Range.1": "50.00 - 115.00",
+        "rankingString": "#267 of 6,137 places to eat in Las Vegas",
+        "openNowText": "Closed Now",
+        "City": "Las Vegas",
+        "mealTypes": [
+          "Dinner",
+          "Late Night"
+        ],
+        "Range": "15.00 - 40.00",
+        "cuisines": [
+          "Steakhouse"
+        ],
+        "localName": "PRIME Steakhouse",
+        "input": "Las Vegas",
+        "phone": "+1 702-693-8484",
+        "State": "Nevada",
+        "webUrl": "https://www.tripadvisor.com/Restaurant_Review-g45963-d444362-Reviews-PRIME_Steakhouse-Las_Vegas_Nevada.html",
+        "localAddress": "3600 Las Vegas Blvd S, Bellagio Hotel and Casino, 89109-4303",
+        "Rest-MidRange": "75.0",
+        "name": "PRIME Steakhouse",
+        "subcategories": [
+          "Sit down"
+        ],
+        "rawRanking": "4.002862453460693",
+        "orderOnline": "[{\"providerType\": \"RESERVATION\", \"canProvideTimeslots\": false, \"buttonText\": \"Reserve\", \"offerURL\": \"https://www.tripadvisor.com/Commerce?p=Restaurants_SevenRooms&src=262014830&geo=444362&from=Restaurant_Review&area=reservation_button&slot=1&matchID=1&oos=0&cnt=1&silo=29025&bucket=870813&nrank=1&crank=1&clt=R&ttype=Restaurant&tm=311333988&managed=false&capped=false&gosox=E4dS6BmBGdrr2qeEMfyM4Ykh7g7kZZMQtwvX1r7-bZn0SG8wi-cOieoDR1eMjOtRNGi9I6nuBPmXmunT2F7Y2aIvfEG_70ui0NK2weLi9NQ&cs=18d45687bba973b77d6c28821deaa2dcf_iiQ\", \"logoUrl\": \"https://static.tacdn.com/img2/branding/hotels/sevenrooms_04.23.2019.png\", \"provider\": \"Restaurants_SevenRooms\", \"providerId\": \"14051\", \"providerDisplayName\": \"SevenRooms\", \"headerText\": \"Reserve a table\"}]",
+        "establishmentTypes": [
+          "Restaurants"
+        ],
+        "isClaimedIcon": "False",
+        "latitude": "36.11345",
+        "menuWebUrl": "https://bellagio.mgmresorts.com/en/restaurants/prime-steakhouse.html#/menu=menu",
+        "description": "Relish every rich detail. Award-winning, four-star celebrity chef and restaurateur Jean-Georges Vongerichten invites you to experience steakhouse dining at its finest. Savor prime steak, seafood and lamb accompanied by fabulous sauces, sides and meticulously selected wines. The setting for this most memorable culinary experience is a handsomely designed dining room by Michael DeSantis, dressed in deep chocolate brown and delicate Tiffany blue. Commissioned artwork by Carlo Maria Mariani, George Deem and Michael Gregory, as well as a water-themed canvas screen created by Joseph Raffael, adorn the walls and a garden patio provides the perfect outdoor setting for a serene dining experience.",
+        "photoCount": "1104.0",
+        "ratingHistogram": "{\"count1\": 109, \"count2\": 161, \"count3\": 286, \"count4\": 480, \"count5\": 1687}",
+        "website": "http://www.bellagio.com/restaurants/prime-steakhouse.aspx",
+        "rankingPosition": "267.0",
+        "hours": "{\"weekRanges\": [[{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}], [{\"open\": 1020, \"openHours\": \"17:00\", \"close\": 1320, \"closeHours\": \"22:00\"}]], \"timezone\": \"America/Los_Angeles\"}",
+        "address": "3600 Las Vegas Blvd S Bellagio Hotel and Casino, Las Vegas, NV 89109-4303",
+        "neighborhoodLocations": "[{\"id\": \"20483863\", \"name\": \"The Strip\"}]",
+        "dishes": [
+          "Pasta",
+          "Cheesecake",
+          "Crab",
+          "Crab Cake",
+          "Filet Mignon",
+          "Lobster",
+          "Oyster",
+          "Ribs",
+          "Shrimp",
+          "Surf And Turf",
+          "Salad",
+          "Lamb chops",
+          "Mac and cheese",
+          "Scallops",
+          "Salmon",
+          "Tuna",
+          "Foie gras",
+          "Bass",
+          "Beef",
+          "Lamb",
+          "Cakes",
+          "Fish",
+          "Lobster Tail",
+          "Tartare",
+          "Shrimp Cocktail",
+          "Soup",
+          "Onion Rings",
+          "Short Ribs",
+          "Baked Potato",
+          "Wagyu",
+          "Cake",
+          "Fried",
+          "Sea Bass",
+          "Truffle",
+          "Mashed Potatoes"
+        ],
+        "reviewTags": "[{\"text\": \"filet\", \"reviews\": 270}, {\"text\": \"truffle mashed potatoes\", \"reviews\": 76}, {\"text\": \"new york strip\", \"reviews\": 39}, {\"text\": \"shrimp cocktail\", \"reviews\": 40}, {\"text\": \"lobster tail\", \"reviews\": 38}, {\"text\": \"salad\", \"reviews\": 116}, {\"text\": \"surf and turf\", \"reviews\": 26}, {\"text\": \"sea bass\", \"reviews\": 39}, {\"text\": \"beef\", \"reviews\": 49}, {\"text\": \"bread\", \"reviews\": 63}, {\"text\": \"crab cakes\", \"reviews\": 25}, {\"text\": \"fountain show\", \"reviews\": 75}, {\"text\": \"special occasion\", \"reviews\": 99}, {\"text\": \"bellagio fountains\", \"reviews\": 101}, {\"text\": \"our waiter\", \"reviews\": 155}, {\"text\": \"cooked to perfection\", \"reviews\": 104}, {\"text\": \"bellagio hotel\", \"reviews\": 32}, {\"text\": \"dress code\", \"reviews\": 43}, {\"text\": \"great steak\", \"reviews\": 63}, {\"text\": \"wine list\", \"reviews\": 64}, {\"text\": \"anniversary dinner\", \"reviews\": 41}, {\"text\": \"beautiful restaurant\", \"reviews\": 27}, {\"text\": \"service was impeccable\", \"reviews\": 29}, {\"text\": \"sides\", \"reviews\": 297}, {\"text\": \"peppercorn\", \"reviews\": 41}, {\"text\": \"vegas\", \"reviews\": 491}, {\"text\": \"las\", \"reviews\": 123}]",
+        "isClosed": "False",
+        "isNearbyResult": "False",
+        "S.No.": "38",
+        "rankingDenominator": "3852.0",
+        "locationString": "Las Vegas, Nevada",
+        "category": "restaurant",
+        "ancestorLocations": "[{\"id\": \"45963\", \"name\": \"Las Vegas\", \"abbreviation\": null, \"subcategory\": \"City\"}, {\"id\": \"28949\", \"name\": \"Nevada\", \"abbreviation\": \"NV\", \"subcategory\": \"State\"}, {\"id\": \"191\", \"name\": \"United States\", \"abbreviation\": null, \"subcategory\": \"Country\"}]"
+      },
+      "neo4j_element_id": "4:d7f134bb-b702-415d-abdd-c2dc696cade1:7967",
+      "source_kind": "mini_kg"
+    }
+  ],
+  "edges": [
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.031447,
+        "distance_m": 2832.25,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.043529,
+        "distance_m": 3965.17,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.04536,
+        "distance_m": 4135.51,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Attraction::127003",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.037912,
+        "distance_m": 3422.05,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::17476783.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::17476783.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.017221,
+        "distance_m": 1631.67,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::19944959.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::19944959.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.037026,
+        "distance_m": 3328.06,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::2405909.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.034359,
+        "distance_m": 3166.39,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::422629.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.043028,
+        "distance_m": 3920.75,
+        "rank": 8,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Accommodation::19671609.0",
+      "target": "Restaurant::444362.0",
+      "type": "RESTAURANT_NEAR_ACCOMMODATION",
+      "properties": {
+        "kd_distance_degrees": 0.0467,
+        "distance_m": 4240.46,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::17476783.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.04681,
+        "distance_m": 4215.47,
+        "rank": 9,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::19944959.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.005827,
+        "distance_m": 529.7,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::2405909.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::2405909.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.007737,
+        "distance_m": 855.96,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::422629.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.016946,
+        "distance_m": 1752.75,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::1156204",
+      "target": "Restaurant::444362.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.019215,
+        "distance_m": 1915.33,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Attraction::127003",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Attraction::6509306",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::17476783.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.060379,
+        "distance_m": 5549.96,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::19944959.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.01316,
+        "distance_m": 1420.25,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::2405909.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.023045,
+        "distance_m": 2481.62,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::422629.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::422629.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.000515,
+        "distance_m": 46.26,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::126583",
+      "target": "Restaurant::444362.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.003431,
+        "distance_m": 310.68,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Attraction::126583",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::126583->Attraction::127003"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Attraction::6509306",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::17476783.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.062228,
+        "distance_m": 5722.53,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::19944959.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "from_order": 3,
+        "to_order": 4
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::19944959.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.014584,
+        "distance_m": 1553.87,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::2405909.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.024466,
+        "distance_m": 2614.94,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::422629.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002341,
+        "distance_m": 215.81,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::127003",
+      "target": "Restaurant::444362.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.002138,
+        "distance_m": 210.91,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Attraction::126583",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 1,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ],
+        "reciprocal_of": "Attraction::126583->Attraction::6509306"
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Attraction::127003",
+      "type": "SIMILAR_SUBCATEGORY",
+      "properties": {
+        "kd_distance": 0.0,
+        "rank": 3,
+        "feature_space": [
+          "boat tours & water sports",
+          "casinos & gambling",
+          "concerts & shows",
+          "fun & games",
+          "museums",
+          "nature & parks",
+          "outdoor activities",
+          "shopping",
+          "sights & landmarks",
+          "spas & wellness",
+          "tours",
+          "transportation",
+          "traveler resources",
+          "water & amusement parks",
+          "zoos & aquariums"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::17476783.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.054442,
+        "distance_m": 4964.48,
+        "rank": 10,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::19944959.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.00713,
+        "distance_m": 791.9,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::2405909.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.016728,
+        "distance_m": 1831.56,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::422629.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.006506,
+        "distance_m": 666.94,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::444362.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 5,
+        "to_order": 6
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Attraction::6509306",
+      "target": "Restaurant::444362.0",
+      "type": "RESTAURANT_NEAR_ATTRACTION",
+      "properties": {
+        "kd_distance_degrees": 0.009239,
+        "distance_m": 876.75,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Flight::F3577733",
+      "target": "Accommodation::19671609.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "from_order": 1,
+        "to_order": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::1",
+      "target": "Accommodation::19671609.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "order": 2,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::1",
+      "target": "Accommodation::19671609.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "order": 5,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::1",
+      "target": "Attraction::127003",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "order": 3,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::1",
+      "target": "Flight::F3577733",
+      "type": "TAKES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "order": 1,
+        "slot": "outbound_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::1",
+      "target": "Restaurant::19944959.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "order": 4,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Accommodation::19671609.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Accommodation::19671609.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 7,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Attraction::126583",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Attraction::6509306",
+      "type": "VISITS_AFTERNOON_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 5,
+        "slot": "afternoon_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Restaurant::17476783.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Restaurant::422629.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::2",
+      "target": "Restaurant::444362.0",
+      "type": "HAS_DINNER_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "order": 6,
+        "slot": "dinner"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::3",
+      "target": "Accommodation::19671609.0",
+      "type": "STAYS_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "order": 1,
+        "slot": "accommodation"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::3",
+      "target": "Attraction::1156204",
+      "type": "VISITS_MORNING_ATTRACTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "order": 3,
+        "slot": "morning_attraction"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::3",
+      "target": "Flight::F2560739",
+      "type": "TAKES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "order": 5,
+        "slot": "return_flight"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::3",
+      "target": "Restaurant::19944959.0",
+      "type": "HAS_BREAKFAST_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "order": 2,
+        "slot": "breakfast"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanDay::idx_91::option_001::3",
+      "target": "Restaurant::2405909.0",
+      "type": "HAS_LUNCH_AT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "order": 4,
+        "slot": "lunch"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "Accommodation::19671609.0",
+      "type": "USES_STAY",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "Flight::F2560739",
+      "type": "USES_RETURN_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "Flight::F3577733",
+      "type": "USES_OUTBOUND_FLIGHT",
+      "properties": {
+        "plan_option_id": "option_001"
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "PlanDay::idx_91::option_001::1",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "PlanDay::idx_91::option_001::2",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanOption::idx_91::option_001",
+      "target": "PlanDay::idx_91::option_001::3",
+      "type": "HAS_DAY",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "PlanQuery::idx_91",
+      "target": "PlanOption::idx_91::option_001",
+      "type": "HAS_FEASIBLE_OPTION",
+      "properties": {
+        "plan_option_id": "option_001",
+        "option_rank": 1,
+        "total_cost": 1003.77
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::17476783.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.04681,
+        "distance_m": 4215.47,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::17476783.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.060379,
+        "distance_m": 5549.96,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::17476783.0",
+      "target": "Attraction::126583",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::17476783.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.062228,
+        "distance_m": 5722.53,
+        "rank": 7,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::17476783.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.054442,
+        "distance_m": 4964.48,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Accommodation::19671609.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 1,
+        "date": "2024-11-06",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.005827,
+        "distance_m": 529.7,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Attraction::1156204",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "from_order": 2,
+        "to_order": 3
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.01316,
+        "distance_m": 1420.25,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.014584,
+        "distance_m": 1553.87,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::19944959.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.00713,
+        "distance_m": 791.9,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2405909.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.007737,
+        "distance_m": 855.96,
+        "rank": 1,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2405909.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.023045,
+        "distance_m": 2481.62,
+        "rank": 4,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2405909.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.024466,
+        "distance_m": 2614.94,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2405909.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.016728,
+        "distance_m": 1831.56,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::2405909.0",
+      "target": "Flight::F2560739",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 3,
+        "date": "2024-11-08",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::422629.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.016946,
+        "distance_m": 1752.75,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::422629.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.000515,
+        "distance_m": 46.26,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::422629.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002341,
+        "distance_m": 215.81,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::422629.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.006506,
+        "distance_m": 666.94,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::422629.0",
+      "target": "Attraction::6509306",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 4,
+        "to_order": 5
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::444362.0",
+      "target": "Accommodation::19671609.0",
+      "type": "PLAN_NEXT",
+      "properties": {
+        "plan_option_id": "option_001",
+        "day_number": 2,
+        "date": "2024-11-07",
+        "from_order": 6,
+        "to_order": 7
+      },
+      "source_kind": "plan"
+    },
+    {
+      "source": "Restaurant::444362.0",
+      "target": "Attraction::1156204",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.019215,
+        "distance_m": 1915.33,
+        "rank": 6,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::444362.0",
+      "target": "Attraction::126583",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.003431,
+        "distance_m": 310.68,
+        "rank": 3,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::444362.0",
+      "target": "Attraction::127003",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.002138,
+        "distance_m": 210.91,
+        "rank": 2,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    },
+    {
+      "source": "Restaurant::444362.0",
+      "target": "Attraction::6509306",
+      "type": "ATTRACTION_NEAR_RESTAURANT",
+      "properties": {
+        "kd_distance_degrees": 0.009239,
+        "distance_m": 876.75,
+        "rank": 5,
+        "feature_space": [
+          "latitude",
+          "longitude"
+        ]
+      },
+      "source_kind": "kdtree_pipeline"
+    }
+  ],
+  "path_steps": [
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-06",
+      "order": 1,
+      "slot": "outbound_flight",
+      "node_key": "Flight::F3577733",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-06",
+      "order": 2,
+      "slot": "accommodation",
+      "node_key": "Accommodation::19671609.0",
+      "label": "Accommodation",
+      "name": "Studio 100% Private-Just 10 min. to Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-06",
+      "order": 3,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::127003",
+      "label": "Attraction",
+      "name": "Fountains of Bellagio",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-06",
+      "order": 4,
+      "slot": "dinner",
+      "node_key": "Restaurant::19944959.0",
+      "label": "Restaurant",
+      "name": "Grand Lux Cafe",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 1,
+      "date": "2024-11-06",
+      "order": 5,
+      "slot": "accommodation",
+      "node_key": "Accommodation::19671609.0",
+      "label": "Accommodation",
+      "name": "Studio 100% Private-Just 10 min. to Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::19671609.0",
+      "label": "Accommodation",
+      "name": "Studio 100% Private-Just 10 min. to Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::17476783.0",
+      "label": "Restaurant",
+      "name": "Eggscellent",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::126583",
+      "label": "Attraction",
+      "name": "The Las Vegas Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::422629.0",
+      "label": "Restaurant",
+      "name": "Mon Ami Gabi",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 5,
+      "slot": "afternoon_attraction",
+      "node_key": "Attraction::6509306",
+      "label": "Attraction",
+      "name": "High Roller",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 6,
+      "slot": "dinner",
+      "node_key": "Restaurant::444362.0",
+      "label": "Restaurant",
+      "name": "PRIME Steakhouse",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 2,
+      "date": "2024-11-07",
+      "order": 7,
+      "slot": "accommodation",
+      "node_key": "Accommodation::19671609.0",
+      "label": "Accommodation",
+      "name": "Studio 100% Private-Just 10 min. to Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-08",
+      "order": 1,
+      "slot": "accommodation",
+      "node_key": "Accommodation::19671609.0",
+      "label": "Accommodation",
+      "name": "Studio 100% Private-Just 10 min. to Strip",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-08",
+      "order": 2,
+      "slot": "breakfast",
+      "node_key": "Restaurant::19944959.0",
+      "label": "Restaurant",
+      "name": "Grand Lux Cafe",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-08",
+      "order": 3,
+      "slot": "morning_attraction",
+      "node_key": "Attraction::1156204",
+      "label": "Attraction",
+      "name": "Wynn Las Vegas Casino",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-08",
+      "order": 4,
+      "slot": "lunch",
+      "node_key": "Restaurant::2405909.0",
+      "label": "Restaurant",
+      "name": "The Peppermill Restaurant & Fireside Lounge",
+      "temporal": {}
+    },
+    {
+      "plan_option_id": "option_001",
+      "day_number": 3,
+      "date": "2024-11-08",
+      "order": 5,
+      "slot": "return_flight",
+      "node_key": "Flight::F2560739",
+      "label": "Flight",
+      "name": null,
+      "temporal": {}
+    }
+  ]
+}
